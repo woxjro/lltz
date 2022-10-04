@@ -1,5 +1,7 @@
 use mini_llvm_michelson_compiler::compiler::compile;
 use mini_llvm_michelson_compiler::mini_llvm::{Instruction, Opcode, Register, Type};
+use std::fs::File;
+use std::io::prelude::*;
 fn main() {
     //int main() {
     //  int a = 10;
@@ -127,5 +129,15 @@ fn main() {
     ];
 
     let michelson_code = compile(instructions);
+
+    let file_name = "simple_add";
+    let command_typecheck =
+        format!("#tezos-client --mode mockup typecheck script ./examples/out/{file_name}.tz\n");
+    let command_mock =
+        format!("#tezos-client --mode mockup run script ./examples/out/{file_name}.tz on storage 'Unit' and input 'Unit' --trace-stack\n");
+    let contents = format!("{command_typecheck}{command_mock}{michelson_code}");
+    let mut file = File::create(format!("examples/out/{file_name}.tz")).unwrap();
+    file.write_all(contents.as_bytes()).unwrap();
+
     println!("{}", michelson_code);
 }

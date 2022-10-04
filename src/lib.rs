@@ -9,7 +9,7 @@ pub mod mini_llvm {
         }
     }
 
-    #[derive(Hash, Eq, PartialEq, Debug)]
+    #[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
     pub enum Type {
         I32,
     }
@@ -58,103 +58,30 @@ pub mod mini_llvm {
 
 pub mod compiler {
     use super::mini_llvm::{Instruction, Opcode, Type};
-    use std::collections::{HashMap, HashSet};
+    use std::collections::HashMap;
     pub fn compile(instructions: Vec<Instruction>) -> String {
         //レジスタの下処理
         let mut register2stack_ptr = HashMap::new();
-        //let mut ty2memory_ptr = HashMap::new();
-        //let mut memory_ptr = 0;
-        let mut memory_types = HashSet::new();
+        let mut memory_types = HashMap::new();
         let mut stack_ptr = 0;
+        let mut memory_ptr = 0;
 
-        // TODO: 今の所単相のコンパイルのみ考えているため
-        // bit_map int intへのポインタは定数として扱う
-        let BM_I32 = 1; //bit_map int int へのポインタ
-        for instruction in &instructions {
-            match instruction {
-                Instruction::Alloca { reg, ty } => {
-                    let _ = register2stack_ptr.entry(reg.get_id()).or_insert_with(|| {
-                        stack_ptr += 1;
-                        stack_ptr
-                    });
-                    memory_types.insert(ty);
-                }
-                Instruction::Store { src, ptr } => {
-                    let _ = register2stack_ptr.entry(src.get_id()).or_insert_with(|| {
-                        stack_ptr += 1;
-                        stack_ptr
-                    });
-                    let _ = register2stack_ptr.entry(ptr.get_id()).or_insert_with(|| {
-                        stack_ptr += 1;
-                        stack_ptr
-                    });
-                }
-                Instruction::Load { dst, ptr } => {
-                    let _ = register2stack_ptr.entry(dst.get_id()).or_insert_with(|| {
-                        stack_ptr += 1;
-                        stack_ptr
-                    });
-                    let _ = register2stack_ptr.entry(ptr.get_id()).or_insert_with(|| {
-                        stack_ptr += 1;
-                        stack_ptr
-                    });
-                }
-                Instruction::Ifz {
-                    reg,
-                    code_block_t: _,
-                    code_block_f: _,
-                } => {
-                    // TODO:  Code Blockの中のレジスタも調べる
-                    let _ = register2stack_ptr.entry(reg.get_id()).or_insert_with(|| {
-                        stack_ptr += 1;
-                        stack_ptr
-                    });
-                }
-                Instruction::Whilez { reg, code_block: _ } => {
-                    // TODO:  Code Blockの中のレジスタも調べる
-                    let _ = register2stack_ptr.entry(reg.get_id()).or_insert_with(|| {
-                        stack_ptr += 1;
-                        stack_ptr
-                    });
-                }
-                Instruction::Op {
-                    ty: _,
-                    opcode: _,
-                    dst,
-                    reg1,
-                    reg2,
-                } => {
-                    let _ = register2stack_ptr.entry(dst.get_id()).or_insert_with(|| {
-                        stack_ptr += 1;
-                        stack_ptr
-                    });
-                    let _ = register2stack_ptr.entry(reg1.get_id()).or_insert_with(|| {
-                        stack_ptr += 1;
-                        stack_ptr
-                    });
-                    let _ = register2stack_ptr.entry(reg2.get_id()).or_insert_with(|| {
-                        stack_ptr += 1;
-                        stack_ptr
-                    });
-                }
-                Instruction::Ret { ty: _, reg } => {
-                    let _ = register2stack_ptr.entry(reg.get_id()).or_insert_with(|| {
-                        stack_ptr += 1;
-                        stack_ptr
-                    });
-                }
-            };
-        }
-
+        retrieve_registers(
+            &mut register2stack_ptr,
+            &mut memory_types,
+            &mut stack_ptr,
+            &mut memory_ptr,
+            &instructions,
+        );
         dbg!(&register2stack_ptr);
-        //dbg!(&memory_types);
+        dbg!(&memory_types);
 
         let mut michelson_code = String::new();
         let space = "       ";
 
         michelson_code = format!("{michelson_code}{space}DROP;\n");
 
-        for ty in memory_types.iter() {
+        for (ty, _v) in memory_types.iter() {
             let ty_str = match ty {
                 Type::I32 => "int",
             };
@@ -185,11 +112,12 @@ pub mod compiler {
         /* Body */
         for instruction in &instructions {
             match instruction {
-                Instruction::Alloca { reg, ty: _ } => {
+                Instruction::Alloca { reg, ty } => {
+                    let memory_ptr = memory_types.get(ty).unwrap();
                     michelson_code = format!("{michelson_code}{space}###alloca {{\n");
                     michelson_code = format!(
                         "{michelson_code}{space}DIG {};\n",
-                        register2stack_ptr.len() + BM_I32 - 1
+                        register2stack_ptr.len() + memory_ptr - 1
                     );
                     michelson_code = format!("{michelson_code}{space}UNPAIR;\n");
                     michelson_code = format!("{michelson_code}{space}SWAP;\n");
@@ -207,7 +135,7 @@ pub mod compiler {
                     michelson_code = format!("{michelson_code}{space}PAIR;\n");
                     michelson_code = format!(
                         "{michelson_code}{space}DUG {};\n",
-                        register2stack_ptr.len() + BM_I32
+                        register2stack_ptr.len() + memory_ptr
                     );
                     michelson_code = format!(
                         "{michelson_code}{space}DIG {};\n",
@@ -221,6 +149,7 @@ pub mod compiler {
                     michelson_code = format!("{michelson_code}{space}###}}\n");
                 }
                 Instruction::Store { src, ptr } => {
+                    let memory_ptr = memory_types.get(&Type::I32).unwrap();
                     michelson_code = format!("{michelson_code}{space}###store {{\n");
                     michelson_code = format!(
                         "{michelson_code}{space}DUP {};\n",
@@ -229,7 +158,7 @@ pub mod compiler {
                     michelson_code = format!("{michelson_code}{space}SOME;\n");
                     michelson_code = format!(
                         "{michelson_code}{space}DIG {};\n",
-                        register2stack_ptr.len() + BM_I32
+                        register2stack_ptr.len() + memory_ptr
                     );
                     michelson_code = format!("{michelson_code}{space}UNPAIR;\n");
                     michelson_code = format!("{michelson_code}{space}DIG 2;\n");
@@ -241,15 +170,17 @@ pub mod compiler {
                     michelson_code = format!("{michelson_code}{space}PAIR;\n");
                     michelson_code = format!(
                         "{michelson_code}{space}DUG {};\n",
-                        register2stack_ptr.len() + BM_I32 - 1
+                        register2stack_ptr.len() + memory_ptr - 1
                     );
                     michelson_code = format!("{michelson_code}{space}###}}\n");
                 }
                 Instruction::Load { dst, ptr } => {
+                    let memory_ptr = memory_types.get(&Type::I32).unwrap();
+
                     michelson_code = format!("{michelson_code}{space}###load {{\n");
                     michelson_code = format!(
                         "{michelson_code}{space}DUP {};\n",
-                        register2stack_ptr.len() + BM_I32
+                        register2stack_ptr.len() + memory_ptr
                     );
                     michelson_code = format!("{michelson_code}{space}CAR;\n");
                     michelson_code = format!(
@@ -329,5 +260,94 @@ pub mod compiler {
         michelson_code = format!("{michelson_code}{space}UNIT; NIL operation; PAIR;");
 
         format!("parameter unit;\nstorage unit;\ncode {{\n{michelson_code} }}")
+    }
+
+    //まず与えられたLLVM IRの命令列を事前に走査して
+    //命令列に出現しうる型やレジスタの種類・数などを把握する
+    fn retrieve_registers(
+        register2stack_ptr: &mut HashMap<String, usize>,
+        memory_types: &mut HashMap<Type, usize>,
+        stack_ptr: &mut usize,
+        memory_ptr: &mut usize,
+        instructions: &Vec<Instruction>,
+    ) {
+        for instruction in instructions {
+            match instruction {
+                Instruction::Alloca { reg, ty } => {
+                    let _ = register2stack_ptr.entry(reg.get_id()).or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+                    let _ = memory_types.entry(ty.clone()).or_insert_with(|| {
+                        *memory_ptr += 1;
+                        *memory_ptr
+                    });
+                }
+                Instruction::Store { src, ptr } => {
+                    let _ = register2stack_ptr.entry(src.get_id()).or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+                    let _ = register2stack_ptr.entry(ptr.get_id()).or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+                }
+                Instruction::Load { dst, ptr } => {
+                    let _ = register2stack_ptr.entry(dst.get_id()).or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+                    let _ = register2stack_ptr.entry(ptr.get_id()).or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+                }
+                Instruction::Ifz {
+                    reg,
+                    code_block_t: _,
+                    code_block_f: _,
+                } => {
+                    // TODO:  Code Blockの中のレジスタも調べる
+                    let _ = register2stack_ptr.entry(reg.get_id()).or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+                }
+                Instruction::Whilez { reg, code_block: _ } => {
+                    // TODO:  Code Blockの中のレジスタも調べる
+                    let _ = register2stack_ptr.entry(reg.get_id()).or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+                }
+                Instruction::Op {
+                    ty: _,
+                    opcode: _,
+                    dst,
+                    reg1,
+                    reg2,
+                } => {
+                    let _ = register2stack_ptr.entry(dst.get_id()).or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+                    let _ = register2stack_ptr.entry(reg1.get_id()).or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+                    let _ = register2stack_ptr.entry(reg2.get_id()).or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+                }
+                Instruction::Ret { ty: _, reg } => {
+                    let _ = register2stack_ptr.entry(reg.get_id()).or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+                }
+            };
+        }
     }
 } /* compiler */

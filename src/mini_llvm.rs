@@ -21,15 +21,17 @@ pub enum Opcode {
 
 pub enum Instruction {
     Alloca {
-        reg: Register,
+        ptr: Register,
         ty: Type,
     },
-    Store {
-        src: Register,
+    Load {
+        result: Register,
+        ty: Type,
         ptr: Register,
     },
-    Load {
-        dst: Register,
+    Store {
+        ty: Type,
+        value: Register,
         ptr: Register,
     },
     Ifz {
@@ -42,14 +44,14 @@ pub enum Instruction {
         code_block: Vec<Instruction>,
     },
     Op {
+        result: Register,
         ty: Type,
         opcode: Opcode,
-        dst: Register,
-        reg1: Register,
-        reg2: Register,
+        op1: Register,
+        op2: Register,
     },
     Ret {
         ty: Type,
-        reg: Register,
+        value: Register,
     },
 }

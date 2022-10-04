@@ -12,8 +12,8 @@ pub fn analyse_registers_and_memory(
 ) {
     for instruction in instructions {
         match instruction {
-            Instruction::Alloca { reg, ty } => {
-                let _ = register2stack_ptr.entry(reg.get_id()).or_insert_with(|| {
+            Instruction::Alloca { ptr, ty } => {
+                let _ = register2stack_ptr.entry(ptr.get_id()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
                 });
@@ -22,8 +22,8 @@ pub fn analyse_registers_and_memory(
                     *memory_ptr
                 });
             }
-            Instruction::Store { src, ptr } => {
-                let _ = register2stack_ptr.entry(src.get_id()).or_insert_with(|| {
+            Instruction::Store { ty, value, ptr } => {
+                let _ = register2stack_ptr.entry(value.get_id()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
                 });
@@ -32,11 +32,13 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr
                 });
             }
-            Instruction::Load { dst, ptr } => {
-                let _ = register2stack_ptr.entry(dst.get_id()).or_insert_with(|| {
-                    *stack_ptr += 1;
-                    *stack_ptr
-                });
+            Instruction::Load { result, ty, ptr } => {
+                let _ = register2stack_ptr
+                    .entry(result.get_id())
+                    .or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
                 let _ = register2stack_ptr.entry(ptr.get_id()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
@@ -83,25 +85,27 @@ pub fn analyse_registers_and_memory(
             Instruction::Op {
                 ty: _,
                 opcode: _,
-                dst,
-                reg1,
-                reg2,
+                result,
+                op1,
+                op2,
             } => {
-                let _ = register2stack_ptr.entry(dst.get_id()).or_insert_with(|| {
+                let _ = register2stack_ptr
+                    .entry(result.get_id())
+                    .or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+                let _ = register2stack_ptr.entry(op1.get_id()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
                 });
-                let _ = register2stack_ptr.entry(reg1.get_id()).or_insert_with(|| {
-                    *stack_ptr += 1;
-                    *stack_ptr
-                });
-                let _ = register2stack_ptr.entry(reg2.get_id()).or_insert_with(|| {
+                let _ = register2stack_ptr.entry(op2.get_id()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
                 });
             }
-            Instruction::Ret { ty: _, reg } => {
-                let _ = register2stack_ptr.entry(reg.get_id()).or_insert_with(|| {
+            Instruction::Ret { ty: _, value } => {
+                let _ = register2stack_ptr.entry(value.get_id()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
                 });
@@ -117,8 +121,7 @@ pub fn prepare(
     register2stack_ptr: &mut HashMap<String, usize>,
     memory_types: &mut HashMap<Type, usize>,
 ) -> String {
-    let mut new_michelson_code = String::new();
-    new_michelson_code = format!("{michelson_code}{space}DROP;\n");
+    let mut new_michelson_code = format!("{michelson_code}{space}DROP;\n");
 
     for (ty, _v) in memory_types.iter() {
         let ty_str = match ty {
@@ -160,7 +163,7 @@ pub fn body(
     let mut michelson_code = michelson_code;
     for instruction in instructions {
         match instruction {
-            Instruction::Alloca { reg, ty } => {
+            Instruction::Alloca { ptr, ty } => {
                 let memory_ptr = memory_types.get(ty).unwrap();
                 michelson_code = format!("{michelson_code}{space}###alloca {{\n");
                 michelson_code = format!(
@@ -186,21 +189,21 @@ pub fn body(
                 );
                 michelson_code = format!(
                     "{michelson_code}{space}DIG {};\n",
-                    register2stack_ptr.get(&reg.id).unwrap()
+                    register2stack_ptr.get(&ptr.id).unwrap()
                 );
                 michelson_code = format!("{michelson_code}{space}DROP;\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUG {};\n",
-                    register2stack_ptr.get(&reg.id).unwrap() - 1
+                    register2stack_ptr.get(&ptr.id).unwrap() - 1
                 );
                 michelson_code = format!("{michelson_code}{space}###}}\n");
             }
-            Instruction::Store { src, ptr } => {
+            Instruction::Store { ty, value, ptr } => {
                 let memory_ptr = memory_types.get(&Type::I32).unwrap();
                 michelson_code = format!("{michelson_code}{space}###store {{\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUP {};\n",
-                    register2stack_ptr.get(&src.id).unwrap()
+                    register2stack_ptr.get(&value.id).unwrap()
                 );
                 michelson_code = format!("{michelson_code}{space}SOME;\n");
                 michelson_code = format!(
@@ -221,7 +224,7 @@ pub fn body(
                 );
                 michelson_code = format!("{michelson_code}{space}###}}\n");
             }
-            Instruction::Load { dst, ptr } => {
+            Instruction::Load { result, ty, ptr } => {
                 let memory_ptr = memory_types.get(&Type::I32).unwrap();
 
                 michelson_code = format!("{michelson_code}{space}###load {{\n");
@@ -238,12 +241,12 @@ pub fn body(
                 michelson_code = format!("{michelson_code}{space}ASSERT_SOME;\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DIG {};\n",
-                    register2stack_ptr.get(&dst.id).unwrap()
+                    register2stack_ptr.get(&result.id).unwrap()
                 );
                 michelson_code = format!("{michelson_code}{space}DROP;\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUG {};\n",
-                    register2stack_ptr.get(&dst.id).unwrap() - 1
+                    register2stack_ptr.get(&result.id).unwrap() - 1
                 );
                 michelson_code = format!("{michelson_code}{space}###}}\n");
             }
@@ -259,18 +262,18 @@ pub fn body(
             Instruction::Op {
                 ty: _,
                 opcode,
-                dst,
-                reg1,
-                reg2,
+                result,
+                op1,
+                op2,
             } => {
                 michelson_code = format!("{michelson_code}{space}###Op {{\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUP {};\n",
-                    register2stack_ptr.get(&reg1.id).unwrap()
+                    register2stack_ptr.get(&op1.id).unwrap()
                 );
                 michelson_code = format!(
                     "{michelson_code}{space}DUP {};\n",
-                    register2stack_ptr.get(&reg2.id).unwrap() + 1
+                    register2stack_ptr.get(&op2.id).unwrap() + 1
                 );
                 let op = match opcode {
                     Opcode::Add => "ADD",
@@ -280,16 +283,16 @@ pub fn body(
                 michelson_code = format!("{michelson_code}{space}{op};\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DIG {};\n",
-                    register2stack_ptr.get(&dst.id).unwrap()
+                    register2stack_ptr.get(&result.id).unwrap()
                 );
                 michelson_code = format!("{michelson_code}{space}DROP;\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUG {};\n",
-                    register2stack_ptr.get(&dst.id).unwrap() - 1
+                    register2stack_ptr.get(&result.id).unwrap() - 1
                 );
                 michelson_code = format!("{michelson_code}{space}###}}\n");
             }
-            Instruction::Ret { ty: _, reg: _ } => {}
+            Instruction::Ret { ty: _, value: _ } => {}
         };
     }
     michelson_code

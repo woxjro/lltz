@@ -26,33 +26,34 @@ fn main() {
 
     //{{
     let instr1 = Instruction::Alloca {
-        reg: Register {
+        ptr: Register {
             id: "%1".to_string(),
         },
         ty: Type::I32,
     };
 
     let instr2 = Instruction::Alloca {
-        reg: Register {
+        ptr: Register {
             id: "%2".to_string(),
         },
         ty: Type::I32,
     };
     let instr3 = Instruction::Alloca {
-        reg: Register {
+        ptr: Register {
             id: "%3".to_string(),
         },
         ty: Type::I32,
     };
     let instr4 = Instruction::Alloca {
-        reg: Register {
+        ptr: Register {
             id: "%4".to_string(),
         },
         ty: Type::I32,
     };
 
     let instr5 = Instruction::Store {
-        src: Register {
+        ty: Type::I32,
+        value: Register {
             id: "0".to_string(),
         },
         ptr: Register {
@@ -61,7 +62,8 @@ fn main() {
     };
 
     let instr6 = Instruction::Store {
-        src: Register {
+        ty: Type::I32,
+        value: Register {
             id: "10".to_string(),
         },
         ptr: Register {
@@ -69,7 +71,8 @@ fn main() {
         },
     };
     let instr7 = Instruction::Store {
-        src: Register {
+        ty: Type::I32,
+        value: Register {
             id: "20".to_string(),
         },
         ptr: Register {
@@ -78,7 +81,8 @@ fn main() {
     };
 
     let instr8 = Instruction::Load {
-        dst: Register {
+        ty: Type::I32,
+        result: Register {
             id: "%5".to_string(),
         },
         ptr: Register {
@@ -86,7 +90,8 @@ fn main() {
         },
     };
     let instr9 = Instruction::Load {
-        dst: Register {
+        ty: Type::I32,
+        result: Register {
             id: "%6".to_string(),
         },
         ptr: Register {
@@ -96,18 +101,19 @@ fn main() {
     let instr10 = Instruction::Op {
         ty: Type::I32,
         opcode: Opcode::Add,
-        dst: Register {
+        result: Register {
             id: "%7".to_string(),
         },
-        reg1: Register {
+        op1: Register {
             id: "%5".to_string(),
         },
-        reg2: Register {
+        op2: Register {
             id: "%6".to_string(),
         },
     };
     let instr11 = Instruction::Store {
-        src: Register {
+        ty: Type::I32,
+        value: Register {
             id: "%7".to_string(),
         },
         ptr: Register {
@@ -117,7 +123,7 @@ fn main() {
 
     let instr12 = Instruction::Ret {
         ty: Type::I32,
-        reg: Register {
+        value: Register {
             id: "0".to_string(),
         },
     };

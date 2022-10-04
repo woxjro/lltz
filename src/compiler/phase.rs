@@ -1,4 +1,4 @@
-use crate::mini_llvm::{Instruction, Opcode, Type};
+use crate::mini_llvm::{Condition, Instruction, Opcode, Type};
 use std::collections::HashMap;
 
 //まず与えられたLLVM IRの命令列を事前に走査して
@@ -47,7 +47,6 @@ pub fn analyse_registers_and_memory(
                 code_block_t,
                 code_block_f,
             } => {
-                // TODO:  Code Blockの中のレジスタも調べる
                 let _ = register2stack_ptr.entry(reg.get_id()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
@@ -106,6 +105,26 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr
                 });
             }
+            Instruction::Icmp {
+                result,
+                cond: _,
+                ty: _,
+                op1: _,
+                op2: _,
+            } => {
+                let _ = register2stack_ptr
+                    .entry(result.get_id())
+                    .or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+                /*
+                let _ = memory_types.entry(Type::I1).or_insert_with(|| {
+                    *memory_ptr += 1;
+                    *memory_ptr
+                });
+                */
+            }
         };
     }
 }
@@ -117,12 +136,14 @@ pub fn prepare(
     register2stack_ptr: &mut HashMap<String, usize>,
     memory_types: &mut HashMap<Type, usize>,
 ) -> String {
-    let mut new_michelson_code = String::new();
-    new_michelson_code = format!("{michelson_code}{space}DROP;\n");
+    let mut new_michelson_code = format!("{michelson_code}{space}DROP;\n");
 
-    for (ty, _v) in memory_types.iter() {
+    let mut memory_types_sorted = memory_types.iter().collect::<Vec<_>>();
+    memory_types_sorted.sort_by(|a, b| (b.1).cmp(a.1));
+    for (ty, _v) in memory_types_sorted.iter() {
         let ty_str = match ty {
             Type::I32 => "int",
+            Type::I1 => "int",
         };
 
         new_michelson_code = format!("{new_michelson_code}{space}PUSH int 0;\n");
@@ -287,6 +308,39 @@ pub fn body(
                     "{michelson_code}{space}DUG {};\n",
                     register2stack_ptr.get(&dst.id).unwrap() - 1
                 );
+                michelson_code = format!("{michelson_code}{space}###}}\n");
+            }
+            Instruction::Icmp {
+                result,
+                cond,
+                ty: _,
+                op1,
+                op2,
+            } => {
+                michelson_code = format!("{michelson_code}{space}###Op {{\n");
+                match cond {
+                    Condition::Eq => {
+                        michelson_code = format!(
+                            "{michelson_code}{space}DUP {};\n",
+                            register2stack_ptr.get(&op1.id).unwrap()
+                        );
+                        michelson_code = format!(
+                            "{michelson_code}{space}DUP {};\n",
+                            register2stack_ptr.get(&op2.id).unwrap() + 1
+                        );
+                        michelson_code = format!("{michelson_code}{space}COMPARE;\n");
+                        michelson_code = format!(
+                            "{michelson_code}{space}DIG {};\n",
+                            register2stack_ptr.get(&result.id).unwrap()
+                        );
+                        michelson_code = format!("{michelson_code}{space}DROP;\n");
+                        michelson_code = format!(
+                            "{michelson_code}{space}DUG {};\n",
+                            register2stack_ptr.get(&result.id).unwrap() - 1
+                        );
+                    }
+                    _ => {}
+                };
                 michelson_code = format!("{michelson_code}{space}###}}\n");
             }
             Instruction::Ret { ty: _, reg: _ } => {}

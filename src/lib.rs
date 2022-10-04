@@ -3,6 +3,12 @@ pub mod mini_llvm {
         pub id: String,
     }
 
+    impl Register {
+        pub fn get_id(&self) -> String {
+            self.id.clone()
+        }
+    }
+
     #[derive(Hash, Eq, PartialEq, Debug)]
     pub enum Type {
         I32,
@@ -67,28 +73,28 @@ pub mod compiler {
         for instruction in &instructions {
             match instruction {
                 Instruction::Alloca { reg, ty } => {
-                    let _ = register2stack_ptr.entry(&reg.id).or_insert_with(|| {
+                    let _ = register2stack_ptr.entry(reg.get_id()).or_insert_with(|| {
                         stack_ptr += 1;
                         stack_ptr
                     });
                     memory_types.insert(ty);
                 }
                 Instruction::Store { src, ptr } => {
-                    let _ = register2stack_ptr.entry(&src.id).or_insert_with(|| {
+                    let _ = register2stack_ptr.entry(src.get_id()).or_insert_with(|| {
                         stack_ptr += 1;
                         stack_ptr
                     });
-                    let _ = register2stack_ptr.entry(&ptr.id).or_insert_with(|| {
+                    let _ = register2stack_ptr.entry(ptr.get_id()).or_insert_with(|| {
                         stack_ptr += 1;
                         stack_ptr
                     });
                 }
                 Instruction::Load { dst, ptr } => {
-                    let _ = register2stack_ptr.entry(&dst.id).or_insert_with(|| {
+                    let _ = register2stack_ptr.entry(dst.get_id()).or_insert_with(|| {
                         stack_ptr += 1;
                         stack_ptr
                     });
-                    let _ = register2stack_ptr.entry(&ptr.id).or_insert_with(|| {
+                    let _ = register2stack_ptr.entry(ptr.get_id()).or_insert_with(|| {
                         stack_ptr += 1;
                         stack_ptr
                     });
@@ -99,14 +105,14 @@ pub mod compiler {
                     code_block_f: _,
                 } => {
                     // TODO:  Code Blockの中のレジスタも調べる
-                    let _ = register2stack_ptr.entry(&reg.id).or_insert_with(|| {
+                    let _ = register2stack_ptr.entry(reg.get_id()).or_insert_with(|| {
                         stack_ptr += 1;
                         stack_ptr
                     });
                 }
                 Instruction::Whilez { reg, code_block: _ } => {
                     // TODO:  Code Blockの中のレジスタも調べる
-                    let _ = register2stack_ptr.entry(&reg.id).or_insert_with(|| {
+                    let _ = register2stack_ptr.entry(reg.get_id()).or_insert_with(|| {
                         stack_ptr += 1;
                         stack_ptr
                     });
@@ -118,21 +124,21 @@ pub mod compiler {
                     reg1,
                     reg2,
                 } => {
-                    let _ = register2stack_ptr.entry(&dst.id).or_insert_with(|| {
+                    let _ = register2stack_ptr.entry(dst.get_id()).or_insert_with(|| {
                         stack_ptr += 1;
                         stack_ptr
                     });
-                    let _ = register2stack_ptr.entry(&reg1.id).or_insert_with(|| {
+                    let _ = register2stack_ptr.entry(reg1.get_id()).or_insert_with(|| {
                         stack_ptr += 1;
                         stack_ptr
                     });
-                    let _ = register2stack_ptr.entry(&reg2.id).or_insert_with(|| {
+                    let _ = register2stack_ptr.entry(reg2.get_id()).or_insert_with(|| {
                         stack_ptr += 1;
                         stack_ptr
                     });
                 }
                 Instruction::Ret { ty: _, reg } => {
-                    let _ = register2stack_ptr.entry(&reg.id).or_insert_with(|| {
+                    let _ = register2stack_ptr.entry(reg.get_id()).or_insert_with(|| {
                         stack_ptr += 1;
                         stack_ptr
                     });

@@ -1,10 +1,11 @@
-use crate::mini_llvm::{Instruction, Opcode, Type};
+use crate::mini_llvm::{Condition, Instruction, Opcode, Type};
 use std::collections::HashMap;
 
 //まず与えられたLLVM IRの命令列を事前に走査して
 //命令列に出現しうる型やレジスタの種類・数などを把握する
 pub fn analyse_registers_and_memory(
     register2stack_ptr: &mut HashMap<String, usize>,
+    register2ty: &mut HashMap<String, Type>,
     memory_types: &mut HashMap<Type, usize>,
     stack_ptr: &mut usize,
     memory_ptr: &mut usize,
@@ -17,6 +18,9 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr += 1;
                     *stack_ptr
                 });
+
+                //pointer型はi32
+                register2ty.entry(ptr.get_id()).or_insert(Type::I32);
                 let _ = memory_types.entry(ty.clone()).or_insert_with(|| {
                     *memory_ptr += 1;
                     *memory_ptr
@@ -27,6 +31,9 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr += 1;
                     *stack_ptr
                 });
+                //pointer型はi32
+                register2ty.entry(ptr.get_id()).or_insert(Type::I32);
+                register2ty.entry(value.get_id()).or_insert(ty.clone());
                 let _ = register2stack_ptr.entry(ptr.get_id()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
@@ -39,12 +46,16 @@ pub fn analyse_registers_and_memory(
                         *stack_ptr += 1;
                         *stack_ptr
                     });
+                //pointer型はi32
+                register2ty.entry(ptr.get_id()).or_insert(Type::I32);
+                register2ty.entry(result.get_id()).or_insert(ty.clone());
+
                 let _ = register2stack_ptr.entry(ptr.get_id()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
                 });
             }
-            Instruction::Ifz {
+            Instruction::If {
                 reg,
                 code_block_t,
                 code_block_f,
@@ -54,8 +65,10 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr += 1;
                     *stack_ptr
                 });
+                register2ty.entry(reg.get_id()).or_insert(Type::I1);
                 analyse_registers_and_memory(
                     register2stack_ptr,
+                    register2ty,
                     memory_types,
                     stack_ptr,
                     memory_ptr,
@@ -63,6 +76,7 @@ pub fn analyse_registers_and_memory(
                 );
                 analyse_registers_and_memory(
                     register2stack_ptr,
+                    register2ty,
                     memory_types,
                     stack_ptr,
                     memory_ptr,
@@ -74,8 +88,10 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr += 1;
                     *stack_ptr
                 });
+                register2ty.entry(reg.get_id()).or_insert(Type::I1);
                 analyse_registers_and_memory(
                     register2stack_ptr,
+                    register2ty,
                     memory_types,
                     stack_ptr,
                     memory_ptr,
@@ -83,7 +99,7 @@ pub fn analyse_registers_and_memory(
                 );
             }
             Instruction::Op {
-                ty: _,
+                ty,
                 opcode: _,
                 result,
                 op1,
@@ -103,9 +119,35 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr += 1;
                     *stack_ptr
                 });
+                register2ty.entry(op1.get_id()).or_insert(ty.clone());
+                register2ty.entry(op2.get_id()).or_insert(ty.clone());
+                register2ty.entry(result.get_id()).or_insert(ty.clone());
             }
-            Instruction::Ret { ty: _, value } => {
+            Instruction::Ret { ty, value } => {
                 let _ = register2stack_ptr.entry(value.get_id()).or_insert_with(|| {
+                    *stack_ptr += 1;
+                    *stack_ptr
+                });
+                register2ty.entry(value.get_id()).or_insert(ty.clone());
+            }
+            Instruction::Icmp {
+                result,
+                cond: _,
+                ty: _,
+                op1,
+                op2,
+            } => {
+                let _ = register2stack_ptr
+                    .entry(result.get_id())
+                    .or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+                let _ = register2stack_ptr.entry(op1.get_id()).or_insert_with(|| {
+                    *stack_ptr += 1;
+                    *stack_ptr
+                });
+                let _ = register2stack_ptr.entry(op2.get_id()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
                 });
@@ -119,6 +161,7 @@ pub fn prepare(
     michelson_code: String,
     space: &str,
     register2stack_ptr: &mut HashMap<String, usize>,
+    register2ty: &mut HashMap<String, Type>,
     memory_types: &mut HashMap<Type, usize>,
 ) -> String {
     let mut new_michelson_code = format!("{michelson_code}{space}DROP;\n");
@@ -127,6 +170,7 @@ pub fn prepare(
     memory_types_sorted.sort_by(|a, b| (b.1).cmp(a.1));
     for (ty, _v) in memory_types_sorted.iter() {
         let ty_str = match ty {
+            Type::I1 => "bool",
             Type::I32 => "int",
         };
 
@@ -139,18 +183,31 @@ pub fn prepare(
     register2stack_ptr_sorted.sort_by(|a, b| (b.1).cmp(a.1));
 
     for (reg_str, _ptr) in register2stack_ptr_sorted {
+        let ty = register2ty.get(reg_str).unwrap();
         let is_const = !reg_str.contains("%");
-        let val = if is_const {
-            reg_str.parse::<i32>().unwrap()
-        } else {
-            0
+        let val = match ty {
+            Type::I32 => {
+                if is_const {
+                    //reg_str.parse::<i32>().unwrap()
+                    reg_str
+                } else {
+                    //0
+                    "0"
+                }
+            }
+            Type::I1 => "False",
+        };
+        let michelson_ty = match ty {
+            Type::I32 => "int",
+            Type::I1 => "bool",
         };
         let comment = if is_const {
             format!("for const {val}")
         } else {
             format!("for reg {reg_str}")
         };
-        new_michelson_code = format!("{new_michelson_code}{space}PUSH int {val}; # {comment}\n");
+        new_michelson_code =
+            format!("{new_michelson_code}{space}PUSH {michelson_ty} {val}; # {comment}\n");
     }
     new_michelson_code
 }
@@ -252,11 +309,40 @@ pub fn body(
                 );
                 michelson_code = format!("{michelson_code}{space}###}}\n");
             }
-            Instruction::Ifz {
-                reg: _,
-                code_block_t: _,
-                code_block_f: _,
-            } => {}
+            Instruction::If {
+                reg,
+                code_block_t,
+                code_block_f,
+            } => {
+                michelson_code = format!("{michelson_code}{space}###If {{\n");
+                michelson_code = format!(
+                    "{michelson_code}{space}DUP {};\n",
+                    register2stack_ptr.get(&reg.id).unwrap()
+                );
+                let michelson_code_block_t = body(
+                    String::new(),
+                    space,
+                    register2stack_ptr,
+                    memory_types,
+                    code_block_t,
+                );
+                let michelson_code_block_f = body(
+                    String::new(),
+                    space,
+                    register2stack_ptr,
+                    memory_types,
+                    code_block_f,
+                );
+
+                // TODO, FIXME: 各コードブロックが外のブラケットと揃うようにする
+                michelson_code = format!("{michelson_code}{space}IF {{\n");
+                michelson_code = format!("{michelson_code}{michelson_code_block_t}");
+                michelson_code = format!("{michelson_code}{space}   }}\n");
+                michelson_code = format!("{michelson_code}{space}   {{\n");
+                michelson_code = format!("{michelson_code}{michelson_code_block_f}");
+                michelson_code = format!("{michelson_code}{space}   }};\n");
+                michelson_code = format!("{michelson_code}{space}###}}\n");
+            }
             Instruction::Whilez {
                 reg: _,
                 code_block: _,
@@ -295,6 +381,39 @@ pub fn body(
                 michelson_code = format!("{michelson_code}{space}###}}\n");
             }
             Instruction::Ret { ty: _, value: _ } => {}
+            Instruction::Icmp {
+                result,
+                cond,
+                ty: _,
+                op1,
+                op2,
+            } => {
+                michelson_code = format!("{michelson_code}{space}###Icmp {{\n");
+                michelson_code = format!(
+                    "{michelson_code}{space}DUP {};\n",
+                    register2stack_ptr.get(&op1.id).unwrap()
+                );
+                michelson_code = format!(
+                    "{michelson_code}{space}DUP {};\n",
+                    register2stack_ptr.get(&op2.id).unwrap() + 1
+                );
+                let op = match cond {
+                    Condition::Eq => "COMPARE",
+                    _ => "COMPARE",
+                };
+                michelson_code = format!("{michelson_code}{space}{op};\n");
+                michelson_code = format!("{michelson_code}{space}EQ;\n");
+                michelson_code = format!(
+                    "{michelson_code}{space}DIG {};\n",
+                    register2stack_ptr.get(&result.id).unwrap()
+                );
+                michelson_code = format!("{michelson_code}{space}DROP;\n");
+                michelson_code = format!(
+                    "{michelson_code}{space}DUG {};\n",
+                    register2stack_ptr.get(&result.id).unwrap() - 1
+                );
+                michelson_code = format!("{michelson_code}{space}###}}\n");
+            }
         };
     }
     michelson_code

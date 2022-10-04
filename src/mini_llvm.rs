@@ -10,6 +10,7 @@ impl Register {
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
 pub enum Type {
+    I1,
     I32,
 }
 
@@ -17,6 +18,19 @@ pub enum Opcode {
     Add,
     Sub,
     Mul,
+}
+
+pub enum Condition {
+    Eq,  //equal
+    Ne,  //not equal
+    Ugt, //unsigned greater than
+    Uge, //unsigned greater or equal
+    Ult, //unsigned less than
+    Ule, //unsigned less or equal
+    Sgt, //signed greater than
+    Sge, //signed greater or equal
+    Slt, //signed less than
+    Sle, //signed less or equal
 }
 
 pub enum Instruction {
@@ -34,7 +48,7 @@ pub enum Instruction {
         value: Register,
         ptr: Register,
     },
-    Ifz {
+    If {
         reg: Register,
         code_block_t: Vec<Instruction>,
         code_block_f: Vec<Instruction>,
@@ -47,6 +61,13 @@ pub enum Instruction {
         result: Register,
         ty: Type,
         opcode: Opcode,
+        op1: Register,
+        op2: Register,
+    },
+    Icmp {
+        result: Register,
+        cond: Condition,
+        ty: Type,
         op1: Register,
         op2: Register,
     },

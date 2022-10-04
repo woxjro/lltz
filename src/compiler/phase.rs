@@ -123,7 +123,9 @@ pub fn prepare(
 ) -> String {
     let mut new_michelson_code = format!("{michelson_code}{space}DROP;\n");
 
-    for (ty, _v) in memory_types.iter() {
+    let mut memory_types_sorted = memory_types.iter().collect::<Vec<_>>();
+    memory_types_sorted.sort_by(|a, b| (b.1).cmp(a.1));
+    for (ty, _v) in memory_types_sorted.iter() {
         let ty_str = match ty {
             Type::I32 => "int",
         };
@@ -199,7 +201,7 @@ pub fn body(
                 michelson_code = format!("{michelson_code}{space}###}}\n");
             }
             Instruction::Store { ty, value, ptr } => {
-                let memory_ptr = memory_types.get(&Type::I32).unwrap();
+                let memory_ptr = memory_types.get(ty).unwrap();
                 michelson_code = format!("{michelson_code}{space}###store {{\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUP {};\n",
@@ -225,7 +227,7 @@ pub fn body(
                 michelson_code = format!("{michelson_code}{space}###}}\n");
             }
             Instruction::Load { result, ty, ptr } => {
-                let memory_ptr = memory_types.get(&Type::I32).unwrap();
+                let memory_ptr = memory_types.get(ty).unwrap();
 
                 michelson_code = format!("{michelson_code}{space}###load {{\n");
                 michelson_code = format!(

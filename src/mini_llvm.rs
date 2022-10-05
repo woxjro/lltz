@@ -53,9 +53,10 @@ pub enum Instruction {
         code_block_t: Vec<Instruction>,
         code_block_f: Vec<Instruction>,
     },
-    Whilez {
-        reg: Register,
-        code_block: Vec<Instruction>,
+    While {
+        cond: Register,
+        cond_block: Vec<Instruction>,
+        loop_block: Vec<Instruction>,
     },
     Op {
         result: Register,

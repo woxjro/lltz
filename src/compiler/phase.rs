@@ -83,19 +83,26 @@ pub fn analyse_registers_and_memory(
                     code_block_f,
                 );
             }
-            Instruction::Whilez { reg, code_block } => {
-                let _ = register2stack_ptr.entry(reg.get_id()).or_insert_with(|| {
-                    *stack_ptr += 1;
-                    *stack_ptr
-                });
-                register2ty.entry(reg.get_id()).or_insert(Type::I1);
+            Instruction::While {
+                cond: _,
+                cond_block,
+                loop_block,
+            } => {
                 analyse_registers_and_memory(
                     register2stack_ptr,
                     register2ty,
                     memory_types,
                     stack_ptr,
                     memory_ptr,
-                    code_block,
+                    cond_block,
+                );
+                analyse_registers_and_memory(
+                    register2stack_ptr,
+                    register2ty,
+                    memory_types,
+                    stack_ptr,
+                    memory_ptr,
+                    loop_block,
                 );
             }
             Instruction::Op {
@@ -133,7 +140,7 @@ pub fn analyse_registers_and_memory(
             Instruction::Icmp {
                 result,
                 cond: _,
-                ty: _,
+                ty,
                 op1,
                 op2,
             } => {
@@ -143,6 +150,7 @@ pub fn analyse_registers_and_memory(
                         *stack_ptr += 1;
                         *stack_ptr
                     });
+                register2ty.entry(result.get_id()).or_insert(ty.clone());
                 let _ = register2stack_ptr.entry(op1.get_id()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
@@ -343,10 +351,44 @@ pub fn body(
                 michelson_code = format!("{michelson_code}{space}   }};\n");
                 michelson_code = format!("{michelson_code}{space}###}}\n");
             }
-            Instruction::Whilez {
-                reg: _,
-                code_block: _,
-            } => {}
+            Instruction::While {
+                cond,
+                cond_block,
+                loop_block,
+            } => {
+                let michelson_cond_block = body(
+                    String::new(),
+                    space,
+                    register2stack_ptr,
+                    memory_types,
+                    cond_block,
+                );
+                let michelson_loop_block = body(
+                    String::new(),
+                    space,
+                    register2stack_ptr,
+                    memory_types,
+                    loop_block,
+                );
+
+                michelson_code = format!("{michelson_code}{space}###While {{\n");
+                michelson_code = format!("{michelson_code}{michelson_cond_block}");
+                michelson_code = format!(
+                    "{michelson_code}{space}DUP {};\n",
+                    register2stack_ptr.get(&cond.get_id()).unwrap()
+                );
+                michelson_code = format!("{michelson_code}{space}LOOP {{\n");
+                michelson_code = format!("{michelson_code}{michelson_loop_block}");
+                michelson_code = format!("{michelson_code}{michelson_cond_block}");
+                michelson_code = format!(
+                    "{michelson_code}{space}DUP {};\n",
+                    register2stack_ptr.get(&cond.get_id()).unwrap()
+                );
+                michelson_code = format!("{michelson_code}{space}     }};\n");
+                michelson_code = format!("{michelson_code}{space}###}}\n");
+
+                michelson_code = format!("{michelson_code}{space}###}}\n");
+            }
             Instruction::Op {
                 ty: _,
                 opcode,
@@ -354,14 +396,15 @@ pub fn body(
                 op1,
                 op2,
             } => {
+                //NOTE: 意図的にop2を先にDUPしている(LLVMとの被演算子の順番を揃えるため)
                 michelson_code = format!("{michelson_code}{space}###Op {{\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUP {};\n",
-                    register2stack_ptr.get(&op1.id).unwrap()
+                    register2stack_ptr.get(&op2.id).unwrap()
                 );
                 michelson_code = format!(
                     "{michelson_code}{space}DUP {};\n",
-                    register2stack_ptr.get(&op2.id).unwrap() + 1
+                    register2stack_ptr.get(&op1.id).unwrap() + 1
                 );
                 let op = match opcode {
                     Opcode::Add => "ADD",
@@ -398,11 +441,14 @@ pub fn body(
                     register2stack_ptr.get(&op2.id).unwrap() + 1
                 );
                 let op = match cond {
-                    Condition::Eq => "COMPARE",
-                    _ => "COMPARE",
+                    Condition::Eq => format!("COMPARE;\n{space}EQ"),
+                    Condition::Slt => {
+                        format!("SUB;\n{space}GT")
+                    }
+                    _ => format!("COMPARE"),
                 };
                 michelson_code = format!("{michelson_code}{space}{op};\n");
-                michelson_code = format!("{michelson_code}{space}EQ;\n");
+                //michelson_code = format!("{michelson_code}{space}EQ;\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DIG {};\n",
                     register2stack_ptr.get(&result.id).unwrap()

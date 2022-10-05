@@ -49,10 +49,8 @@ fn main() {
     //
     //   if i1 %5, {
     //      store i32 444, i32* %3, align 4
-    //      br label %8
     //   } {
     //      store i32 777, i32* %3, align 4
-    //      br label %8
     //   }
     //
     //   ret i32 0

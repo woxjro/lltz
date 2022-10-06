@@ -1,3 +1,4 @@
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct Register {
     id: String,
 }
@@ -10,6 +11,11 @@ impl Register {
         Register {
             id: String::from(id),
         }
+    }
+
+    //本来のレジスタではなく、即値の値を入れた仮のレジスタ(const)であるか判定
+    pub fn is_const(reg: &Register) -> bool {
+        !reg.get_id().contains("%")
     }
 }
 

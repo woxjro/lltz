@@ -1,10 +1,15 @@
 pub struct Register {
-    pub id: String,
+    id: String,
 }
 
 impl Register {
     pub fn get_id(&self) -> String {
         self.id.clone()
+    }
+    pub fn new(id: &str) -> Self {
+        Register {
+            id: String::from(id),
+        }
     }
 }
 

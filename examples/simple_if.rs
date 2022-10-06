@@ -61,22 +61,16 @@ fn main() {
     //   %2 = alloca i32, align 4
     //   %3 = alloca i32, align 4
     let instr1 = Instruction::Alloca {
-        ptr: Register {
-            id: "%1".to_string(),
-        },
+        ptr: Register::new("%1"),
         ty: Type::I32,
     };
 
     let instr2 = Instruction::Alloca {
-        ptr: Register {
-            id: "%2".to_string(),
-        },
+        ptr: Register::new("%2"),
         ty: Type::I32,
     };
     let instr3 = Instruction::Alloca {
-        ptr: Register {
-            id: "%3".to_string(),
-        },
+        ptr: Register::new("%3"),
         ty: Type::I32,
     };
 
@@ -85,32 +79,20 @@ fn main() {
     //   %4 = load i32, i32* %2, align 4
     let instr4 = Instruction::Store {
         ty: Type::I32,
-        value: Register {
-            id: "0".to_string(),
-        },
-        ptr: Register {
-            id: "%1".to_string(),
-        },
+        value: Register::new("0"),
+        ptr: Register::new("%1"),
     };
 
     let instr5 = Instruction::Store {
         ty: Type::I32,
-        value: Register {
-            id: "0".to_string(),
-        },
-        ptr: Register {
-            id: "%2".to_string(),
-        },
+        value: Register::new("0"),
+        ptr: Register::new("%2"),
     };
 
     let instr6 = Instruction::Load {
         ty: Type::I32,
-        result: Register {
-            id: "%4".to_string(),
-        },
-        ptr: Register {
-            id: "%2".to_string(),
-        },
+        result: Register::new("%4"),
+        ptr: Register::new("%2"),
     };
 
     //   %5 = icmp eq i32 %4, 0
@@ -126,41 +108,25 @@ fn main() {
     let instr7 = Instruction::Icmp {
         ty: Type::I32,
         cond: Condition::Eq,
-        result: Register {
-            id: "%5".to_string(),
-        },
-        op1: Register {
-            id: "%4".to_string(),
-        },
-        op2: Register {
-            id: "0".to_string(),
-        },
+        result: Register::new("%5"),
+        op1: Register::new("%4"),
+        op2: Register::new("0"),
     };
 
     let instr_t = Instruction::Store {
         ty: Type::I32,
-        value: Register {
-            id: "777".to_string(),
-        },
-        ptr: Register {
-            id: "%3".to_string(),
-        },
+        value: Register::new("777"),
+        ptr: Register::new("%3"),
     };
 
     let instr_f = Instruction::Store {
         ty: Type::I32,
-        value: Register {
-            id: "444".to_string(),
-        },
-        ptr: Register {
-            id: "%3".to_string(),
-        },
+        value: Register::new("444"),
+        ptr: Register::new("%3"),
     };
 
     let instr8 = Instruction::If {
-        reg: Register {
-            id: "%5".to_string(),
-        },
+        reg: Register::new("%5"),
         code_block_t: vec![instr_t],
         code_block_f: vec![instr_f],
     };

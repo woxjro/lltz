@@ -256,12 +256,12 @@ pub fn body(
                 );
                 michelson_code = format!(
                     "{michelson_code}{space}DIG {};\n",
-                    register2stack_ptr.get(&ptr.id).unwrap()
+                    register2stack_ptr.get(&ptr.get_id()).unwrap()
                 );
                 michelson_code = format!("{michelson_code}{space}DROP;\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUG {};\n",
-                    register2stack_ptr.get(&ptr.id).unwrap() - 1
+                    register2stack_ptr.get(&ptr.get_id()).unwrap() - 1
                 );
                 michelson_code = format!("{michelson_code}{space}###}}\n");
             }
@@ -270,7 +270,7 @@ pub fn body(
                 michelson_code = format!("{michelson_code}{space}###store {{\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUP {};\n",
-                    register2stack_ptr.get(&value.id).unwrap()
+                    register2stack_ptr.get(&value.get_id()).unwrap()
                 );
                 michelson_code = format!("{michelson_code}{space}SOME;\n");
                 michelson_code = format!(
@@ -281,7 +281,7 @@ pub fn body(
                 michelson_code = format!("{michelson_code}{space}DIG 2;\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUP {};\n",
-                    register2stack_ptr.get(&ptr.id).unwrap() + 3
+                    register2stack_ptr.get(&ptr.get_id()).unwrap() + 3
                 );
                 michelson_code = format!("{michelson_code}{space}UPDATE;\n");
                 michelson_code = format!("{michelson_code}{space}PAIR;\n");
@@ -302,18 +302,18 @@ pub fn body(
                 michelson_code = format!("{michelson_code}{space}CAR;\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUP {};\n",
-                    register2stack_ptr.get(&ptr.id).unwrap() + 1
+                    register2stack_ptr.get(&ptr.get_id()).unwrap() + 1
                 );
                 michelson_code = format!("{michelson_code}{space}GET;\n");
                 michelson_code = format!("{michelson_code}{space}ASSERT_SOME;\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DIG {};\n",
-                    register2stack_ptr.get(&result.id).unwrap()
+                    register2stack_ptr.get(&result.get_id()).unwrap()
                 );
                 michelson_code = format!("{michelson_code}{space}DROP;\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUG {};\n",
-                    register2stack_ptr.get(&result.id).unwrap() - 1
+                    register2stack_ptr.get(&result.get_id()).unwrap() - 1
                 );
                 michelson_code = format!("{michelson_code}{space}###}}\n");
             }
@@ -325,7 +325,7 @@ pub fn body(
                 michelson_code = format!("{michelson_code}{space}###If {{\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUP {};\n",
-                    register2stack_ptr.get(&reg.id).unwrap()
+                    register2stack_ptr.get(&reg.get_id()).unwrap()
                 );
                 let michelson_code_block_t = body(
                     String::new(),
@@ -400,11 +400,11 @@ pub fn body(
                 michelson_code = format!("{michelson_code}{space}###Op {{\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUP {};\n",
-                    register2stack_ptr.get(&op2.id).unwrap()
+                    register2stack_ptr.get(&op2.get_id()).unwrap()
                 );
                 michelson_code = format!(
                     "{michelson_code}{space}DUP {};\n",
-                    register2stack_ptr.get(&op1.id).unwrap() + 1
+                    register2stack_ptr.get(&op1.get_id()).unwrap() + 1
                 );
                 let op = match opcode {
                     Opcode::Add => "ADD",
@@ -414,12 +414,12 @@ pub fn body(
                 michelson_code = format!("{michelson_code}{space}{op};\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DIG {};\n",
-                    register2stack_ptr.get(&result.id).unwrap()
+                    register2stack_ptr.get(&result.get_id()).unwrap()
                 );
                 michelson_code = format!("{michelson_code}{space}DROP;\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUG {};\n",
-                    register2stack_ptr.get(&result.id).unwrap() - 1
+                    register2stack_ptr.get(&result.get_id()).unwrap() - 1
                 );
                 michelson_code = format!("{michelson_code}{space}###}}\n");
             }
@@ -434,11 +434,11 @@ pub fn body(
                 michelson_code = format!("{michelson_code}{space}###Icmp {{\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUP {};\n",
-                    register2stack_ptr.get(&op1.id).unwrap()
+                    register2stack_ptr.get(&op1.get_id()).unwrap()
                 );
                 michelson_code = format!(
                     "{michelson_code}{space}DUP {};\n",
-                    register2stack_ptr.get(&op2.id).unwrap() + 1
+                    register2stack_ptr.get(&op2.get_id()).unwrap() + 1
                 );
                 let op = match cond {
                     Condition::Eq => format!("COMPARE;\n{space}EQ"),
@@ -451,12 +451,12 @@ pub fn body(
                 //michelson_code = format!("{michelson_code}{space}EQ;\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DIG {};\n",
-                    register2stack_ptr.get(&result.id).unwrap()
+                    register2stack_ptr.get(&result.get_id()).unwrap()
                 );
                 michelson_code = format!("{michelson_code}{space}DROP;\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUG {};\n",
-                    register2stack_ptr.get(&result.id).unwrap() - 1
+                    register2stack_ptr.get(&result.get_id()).unwrap() - 1
                 );
                 michelson_code = format!("{michelson_code}{space}###}}\n");
             }

@@ -19,8 +19,11 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr
                 });
 
-                //pointer型はi32
-                register2ty.entry(ptr.clone()).or_insert(Type::I32);
+                //NOTE: ptrはType::Ptr(ty)のポインタ型であることに注意
+                register2ty
+                    .entry(ptr.clone())
+                    .or_insert(Type::Ptr(Box::new(ty.clone())));
+
                 let _ = memory_ty2stack_ptr.entry(ty.clone()).or_insert_with(|| {
                     *memory_ptr += 1;
                     *memory_ptr
@@ -31,8 +34,14 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr += 1;
                     *stack_ptr
                 });
-                //pointer型はi32
-                register2ty.entry(ptr.clone()).or_insert(Type::I32);
+
+                //即値を仮想レジスタとして扱うのでこの処理は（少なくとも今は）必要
+                //NOTE: ptrはType::Ptr(ty)のポインタ型であることに注意
+                register2ty
+                    .entry(ptr.clone())
+                    .or_insert(Type::Ptr(Box::new(ty.clone())));
+
+                //即値を仮想レジスタとして扱うのでこの処理は（少なくとも今は）必要
                 register2ty.entry(value.clone()).or_insert(ty.clone());
                 let _ = register2stack_ptr.entry(ptr.clone()).or_insert_with(|| {
                     *stack_ptr += 1;
@@ -44,8 +53,12 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr += 1;
                     *stack_ptr
                 });
-                //pointer型はi32
-                register2ty.entry(ptr.clone()).or_insert(Type::I32);
+
+                //NOTE: ptrはType::Ptr(ty)のポインタ型であることに注意
+                register2ty
+                    .entry(ptr.clone())
+                    .or_insert(Type::Ptr(Box::new(ty.clone())));
+
                 register2ty.entry(result.clone()).or_insert(ty.clone());
 
                 let _ = register2stack_ptr.entry(ptr.clone()).or_insert_with(|| {
@@ -173,10 +186,15 @@ pub fn prepare(
         let ty_str = match ty {
             Type::I1 => "bool",
             Type::I32 => "int",
+            Type::Ptr(_) => "int",
         };
 
+        let llvm_ty_string = Type::to_llvm_ty_string(ty);
+        let comment = format!("memory for {llvm_ty_string}");
+
         new_michelson_code = format!("{new_michelson_code}{space}PUSH int 0;\n");
-        new_michelson_code = format!("{new_michelson_code}{space}EMPTY_BIG_MAP int {ty_str};\n");
+        new_michelson_code =
+            format!("{new_michelson_code}{space}EMPTY_BIG_MAP int {ty_str}; # {comment}\n");
         new_michelson_code = format!("{new_michelson_code}{space}PAIR;\n");
     }
 
@@ -196,10 +214,20 @@ pub fn prepare(
                 }
             }
             Type::I1 => "False".to_string(),
+            Type::Ptr(_) => {
+                if Register::is_const(reg) {
+                    //reg.parse::<i32>().unwrap()
+                    reg.get_id()
+                } else {
+                    //0
+                    "0".to_string()
+                }
+            }
         };
         let michelson_ty = match ty {
             Type::I32 => "int",
             Type::I1 => "bool",
+            Type::Ptr(_) => "int",
         };
         let comment = if Register::is_const(reg) {
             format!("for const {val}")

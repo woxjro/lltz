@@ -19,10 +19,24 @@ impl Register {
     }
 }
 
-#[derive(Copy, Clone, Hash, Eq, PartialEq, Debug)]
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub enum Type {
     I1,
     I32,
+    Ptr(Box<Type>),
+}
+
+impl Type {
+    pub fn to_llvm_ty_string(ty: &Type) -> String {
+        match ty {
+            Type::I1 => "i1".to_string(),
+            Type::I32 => "i32".to_string(),
+            Type::Ptr(ty) => {
+                let inner = Type::to_llvm_ty_string(&*ty);
+                format!("{inner}*")
+            }
+        }
+    }
 }
 
 pub enum Opcode {

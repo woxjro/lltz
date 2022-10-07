@@ -229,11 +229,13 @@ pub fn prepare(
             Type::I1 => "bool",
             Type::Ptr(_) => "int",
         };
+        let llvm_ty_string = Type::to_llvm_ty_string(ty);
+
         let comment = if Register::is_const(reg) {
-            format!("for const {val}")
+            format!("for const {val} : {llvm_ty_string}")
         } else {
             let id = reg.get_id();
-            format!("for reg {id}")
+            format!("for reg {id} : {llvm_ty_string}")
         };
         new_michelson_code =
             format!("{new_michelson_code}{space}PUSH {michelson_ty} {val}; # {comment}\n");
@@ -343,6 +345,7 @@ pub fn body(
                 code_block_t,
                 code_block_f,
             } => {
+                let space2 = format!("{space}{space}");
                 michelson_code = format!("{michelson_code}{space}###If {{\n");
                 michelson_code = format!(
                     "{michelson_code}{space}DUP {};\n",
@@ -350,14 +353,14 @@ pub fn body(
                 );
                 let michelson_code_block_t = body(
                     String::new(),
-                    space,
+                    &space2,
                     register2stack_ptr,
                     memory_ty2stack_ptr,
                     code_block_t,
                 );
                 let michelson_code_block_f = body(
                     String::new(),
-                    space,
+                    &space2,
                     register2stack_ptr,
                     memory_ty2stack_ptr,
                     code_block_f,
@@ -377,6 +380,7 @@ pub fn body(
                 cond_block,
                 loop_block,
             } => {
+                let space2 = format!("{space}{space}");
                 let michelson_cond_block = body(
                     String::new(),
                     space,
@@ -384,9 +388,19 @@ pub fn body(
                     memory_ty2stack_ptr,
                     cond_block,
                 );
+
+                // FIXME: インデントを揃えるために上とほぼ同じものを生成している
+                let michelson_cond_block_used_in_loop = body(
+                    String::new(),
+                    &space2,
+                    register2stack_ptr,
+                    memory_ty2stack_ptr,
+                    cond_block,
+                );
+
                 let michelson_loop_block = body(
                     String::new(),
-                    space,
+                    &space2,
                     register2stack_ptr,
                     memory_ty2stack_ptr,
                     loop_block,
@@ -400,13 +414,12 @@ pub fn body(
                 );
                 michelson_code = format!("{michelson_code}{space}LOOP {{\n");
                 michelson_code = format!("{michelson_code}{michelson_loop_block}");
-                michelson_code = format!("{michelson_code}{michelson_cond_block}");
+                michelson_code = format!("{michelson_code}{michelson_cond_block_used_in_loop}");
                 michelson_code = format!(
-                    "{michelson_code}{space}DUP {};\n",
+                    "{michelson_code}{space2}DUP {};\n",
                     register2stack_ptr.get(&cond).unwrap()
                 );
                 michelson_code = format!("{michelson_code}{space}     }};\n");
-                michelson_code = format!("{michelson_code}{space}###}}\n");
 
                 michelson_code = format!("{michelson_code}{space}###}}\n");
             }

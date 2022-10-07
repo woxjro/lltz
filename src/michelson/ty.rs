@@ -31,6 +31,7 @@ pub enum Ty {
     Unit,
 }
 
+#[allow(dead_code)]
 fn to_string(ty: Ty) -> String {
     match ty {
         Ty::BigMap { kty, vty } => {

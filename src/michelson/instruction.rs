@@ -125,13 +125,14 @@ pub enum Instruction {
     Swap,
 }
 
+#[allow(dead_code)]
 fn to_string(instr: Instruction) -> String {
     match instr {
         //Control Structures
         //APPLY,
         //EXEC,
         //FAILWITH,
-        Instruction::If { instr1, instr2 } => "IF".to_string(),
+        //Instruction::If { instr1, instr2 } => "IF".to_string(),
         //IF_CONS instr1 instr2,
         //IF_LEFT instr1 instr2,
         //IF_NONE instr1 instr2,

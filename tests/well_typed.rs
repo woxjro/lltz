@@ -6,6 +6,7 @@ fn well_typed_test() {
     let file_names = ["simple_add", "simple_if", "simple_while", "simple_pointer"];
 
     for file_name in file_names {
+        println!("======{file_name}=====");
         //cargo run --example simple_add
         let _ = Command::new("cargo")
             .args(["run", "--example", file_name])

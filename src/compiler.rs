@@ -1,6 +1,7 @@
 use super::mini_llvm::Instruction;
 use std::collections::HashMap;
 mod backend;
+mod utils;
 pub fn compile(instructions: Vec<Instruction>) -> String {
     /*
      * RegisterをKeyとして,そのRegisterのMichelsonのStack上での位置を返すHashMap
@@ -34,7 +35,8 @@ pub fn compile(instructions: Vec<Instruction>) -> String {
     let mut memory_ptr = 0;
 
     let mut michelson_code = String::new();
-    let space = "       ";
+    let tab = "       ";
+    let mut tab_depth = 1;
 
     //レジスタの下処理
     backend::analyse_registers_and_memory(
@@ -55,7 +57,7 @@ pub fn compile(instructions: Vec<Instruction>) -> String {
 
     michelson_code = backend::prepare(
         michelson_code,
-        space,
+        tab,
         &mut register2stack_ptr,
         &mut register2ty,
         &mut memory_ty2stack_ptr,
@@ -63,7 +65,8 @@ pub fn compile(instructions: Vec<Instruction>) -> String {
 
     michelson_code = backend::body(
         michelson_code,
-        space,
+        tab,
+        tab_depth,
         &mut register2stack_ptr,
         &mut memory_ty2stack_ptr,
         &instructions,
@@ -72,7 +75,7 @@ pub fn compile(instructions: Vec<Instruction>) -> String {
     //後処理:レジスタ領域・メモリ領域をDROPする
     michelson_code = backend::exit(
         michelson_code,
-        space,
+        tab,
         &mut register2stack_ptr,
         &mut memory_ty2stack_ptr,
     );

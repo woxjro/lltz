@@ -115,6 +115,9 @@ pub fn analyse_registers_and_memory(
                     loop_block,
                 );
             }
+            Instruction::Call { .. } => {
+                todo!()
+            }
             Instruction::Op {
                 ty,
                 opcode: _,
@@ -422,6 +425,9 @@ pub fn body(
                 michelson_code = format!("{michelson_code}{space}     }};\n");
 
                 michelson_code = format!("{michelson_code}{space}###}}\n");
+            }
+            Instruction::Call { .. } => {
+                todo!()
             }
             Instruction::Op {
                 ty: _,

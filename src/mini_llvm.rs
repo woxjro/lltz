@@ -58,6 +58,11 @@ pub enum Condition {
     Sle, //signed less or equal
 }
 
+pub struct Arg {
+    ty: Type,
+    reg: Register,
+}
+
 pub enum Instruction {
     Alloca {
         ptr: Register,
@@ -82,6 +87,16 @@ pub enum Instruction {
         cond: Register,
         cond_block: Vec<Instruction>,
         loop_block: Vec<Instruction>,
+    },
+    // TODO:  その他の任意フィールドの実装
+    //<result> = [tail | musttail | notail ] call [fast-math flags] [cconv] [ret attrs]
+    //           [addrspace(<num>)] <ty>|<fnty> <fnptrval>(<function args>) [fn attrs]
+    //           [ operand bundles ]
+    Call {
+        result: Register,
+        fnty: Type,
+        fnptrval: Register,
+        function_args: Vec<Arg>,
     },
     Op {
         result: Register,

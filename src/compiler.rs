@@ -36,7 +36,7 @@ pub fn compile(instructions: Vec<Instruction>) -> String {
 
     let mut michelson_code = String::new();
     let tab = "       ";
-    let mut tab_depth = 1;
+    let tab_depth = 1;
 
     //レジスタの下処理
     backend::analyse_registers_and_memory(
@@ -54,6 +54,14 @@ pub fn compile(instructions: Vec<Instruction>) -> String {
     dbg!(&register2stack_ptr);
     dbg!(&register2ty);
     dbg!(&memory_ty2stack_ptr);
+    println!(
+        "{}",
+        utils::print_michelson_initial_stack_status(
+            &register2stack_ptr,
+            &register2ty,
+            &memory_ty2stack_ptr,
+        )
+    );
 
     michelson_code = backend::prepare(
         michelson_code,

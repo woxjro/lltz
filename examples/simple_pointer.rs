@@ -142,5 +142,5 @@ fn main() {
     let mut file = File::create(format!("examples/out/{file_name}.tz")).unwrap();
     file.write_all(contents.as_bytes()).unwrap();
 
-    println!("{}", michelson_code);
+    //println!("{}", michelson_code);
 }

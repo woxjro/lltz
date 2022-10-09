@@ -23,6 +23,7 @@ impl Register {
 pub enum Type {
     I1,
     I32,
+    Struct { id: String, fields: Vec<Type> },
     Ptr(Box<Type>),
 }
 
@@ -31,11 +32,25 @@ impl Type {
         match ty {
             Type::I1 => "i1".to_string(),
             Type::I32 => "i32".to_string(),
+            Type::Struct { id, fields: _ } => format!("%struct.{id}"),
             Type::Ptr(ty) => {
                 let inner = Type::to_llvm_ty_string(&*ty);
                 format!("{inner}*")
             }
         }
+    }
+
+    pub fn to_michelson_ty_string(ty: &Type) -> String {
+        let res = match ty {
+            Type::I1 => String::from("bool"),
+            Type::I32 => String::from("int"),
+            Type::Struct { .. } => {
+                String::from("(big_map int int)")
+                //big_map (struct.index, ptr)
+            }
+            Type::Ptr(_) => String::from("int"),
+        };
+        res
     }
 }
 
@@ -77,6 +92,15 @@ pub enum Instruction {
         ty: Type,
         value: Register,
         ptr: Register,
+    },
+    GetElementPtr {
+        result: Register,
+        //If the inbounds keyword is present, the result value of
+        //the getelementptr is a poison value
+        //inboudns
+        ty: Type,
+        ptrval: Register,
+        subsequent: Vec<(Type, Register)>,
     },
     If {
         reg: Register,

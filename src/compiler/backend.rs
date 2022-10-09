@@ -67,6 +67,17 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr
                 });
             }
+            Instruction::GetElementPtr {
+                result: _,
+                ty: _,
+                ptrval: _,
+                subsequent: _,
+            } => {
+                //result: Register
+                //ty: Type,
+                //ptrval: Register,
+                //subsequent: Vec<(Type, Register)>,
+            }
             Instruction::If {
                 reg,
                 code_block_t,
@@ -187,11 +198,7 @@ pub fn prepare(
     let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr.iter().collect::<Vec<_>>();
     memory_ty2stack_ptr_sorted.sort_by(|a, b| (b.1).cmp(a.1));
     for (ty, _v) in memory_ty2stack_ptr_sorted.iter() {
-        let ty_str = match ty {
-            Type::I1 => "bool",
-            Type::I32 => "int",
-            Type::Ptr(_) => "int",
-        };
+        let ty_str = Type::to_michelson_ty_string(&ty);
 
         let llvm_ty_string = Type::to_llvm_ty_string(ty);
         let comment = format!("memory for {llvm_ty_string}");
@@ -218,6 +225,8 @@ pub fn prepare(
                 }
             }
             Type::I1 => "False".to_string(),
+            // TODO FIXME: llvm struct to michelson type
+            Type::Struct { id: _, fields: _ } => "0".to_string(),
             Type::Ptr(_) => {
                 if Register::is_const(reg) {
                     //reg.parse::<i32>().unwrap()
@@ -228,11 +237,7 @@ pub fn prepare(
                 }
             }
         };
-        let michelson_ty = match ty {
-            Type::I32 => "int",
-            Type::I1 => "bool",
-            Type::Ptr(_) => "int",
-        };
+        let michelson_ty = Type::to_michelson_ty_string(&ty);
         let llvm_ty_string = Type::to_llvm_ty_string(ty);
 
         let comment = if Register::is_const(reg) {
@@ -328,6 +333,9 @@ pub fn body(
                     "{michelson_code}{}",
                     utils::format(&michelson_instructions, tab, tab_depth)
                 );
+            }
+            Instruction::GetElementPtr { .. } => {
+                //todo!()
             }
             Instruction::If {
                 reg,

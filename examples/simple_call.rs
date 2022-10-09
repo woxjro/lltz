@@ -1,7 +1,9 @@
+/*
 use mini_llvm_michelson_compiler::compiler::compile;
 use mini_llvm_michelson_compiler::mini_llvm::{Instruction, Opcode, Register, Type};
 use std::fs::File;
 use std::io::prelude::*;
+*/
 fn main() {
     //int add(int a, int b) {
     //    return a + b;
@@ -63,47 +65,48 @@ fn main() {
     //  %4 = load i32, i32* %2, align 4
     //  %5 = load i32, i32* %3, align 4
 
-    let instr1 = Instruction::Alloca {
-        ptr: Register::new("%1"),
-        ty: Type::I32,
-    };
+    /*
+        let instr1 = Instruction::Alloca {
+            ptr: Register::new("%1"),
+            ty: Type::I32,
+        };
 
-    let instr2 = Instruction::Alloca {
-        ptr: Register::new("%2"),
-        ty: Type::I32,
-    };
-    let instr3 = Instruction::Alloca {
-        ptr: Register::new("%3"),
-        ty: Type::I32,
-    };
+        let instr2 = Instruction::Alloca {
+            ptr: Register::new("%2"),
+            ty: Type::I32,
+        };
+        let instr3 = Instruction::Alloca {
+            ptr: Register::new("%3"),
+            ty: Type::I32,
+        };
 
-    let instr4 = Instruction::Store {
-        ty: Type::I32,
-        value: Register::new("0"),
-        ptr: Register::new("%1"),
-    };
+        let instr4 = Instruction::Store {
+            ty: Type::I32,
+            value: Register::new("0"),
+            ptr: Register::new("%1"),
+        };
 
-    let instr5 = Instruction::Store {
-        ty: Type::I32,
-        value: Register::new("92"),
-        ptr: Register::new("%2"),
-    };
-    let instr6 = Instruction::Store {
-        ty: Type::I32,
-        value: Register::new("37"),
-        ptr: Register::new("%3"),
-    };
-    let instr7 = Instruction::Load {
-        ty: Type::I32,
-        result: Register::new("%4"),
-        ptr: Register::new("%2"),
-    };
-    let instr8 = Instruction::Load {
-        ty: Type::I32,
-        result: Register::new("%5"),
-        ptr: Register::new("%3"),
-    };
-
+        let instr5 = Instruction::Store {
+            ty: Type::I32,
+            value: Register::new("92"),
+            ptr: Register::new("%2"),
+        };
+        let instr6 = Instruction::Store {
+            ty: Type::I32,
+            value: Register::new("37"),
+            ptr: Register::new("%3"),
+        };
+        let instr7 = Instruction::Load {
+            ty: Type::I32,
+            result: Register::new("%4"),
+            ptr: Register::new("%2"),
+        };
+        let instr8 = Instruction::Load {
+            ty: Type::I32,
+            result: Register::new("%5"),
+            ptr: Register::new("%3"),
+        };
+    */
     //  %6 = call i32 @add(i32 %4, i32 %5)
     //  store i32 %6, i32* %2, align 4
     //  %7 = load i32, i32* %2, align 4
@@ -117,11 +120,12 @@ fn main() {
     //  %12 = call i32 @add(i32 %11, i32 100000)
     //  store i32 %12, i32* %2, align 4
     //  ret i32 0
-    let instr12 = Instruction::Ret {
-        ty: Type::I32,
-        value: Register::new("0"),
-    };
-
+    /*
+        let instr12 = Instruction::Ret {
+            ty: Type::I32,
+            value: Register::new("0"),
+        };
+    */
     /*
 
     let instr8 = Instruction::Load {

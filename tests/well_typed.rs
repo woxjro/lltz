@@ -3,7 +3,13 @@ use std::process::Command;
 //examples/* のサンプルコードがwell typedかをテストする
 #[test]
 fn well_typed_test() {
-    let file_names = ["simple_add", "simple_if", "simple_while", "simple_pointer"];
+    let file_names = [
+        "simple_add",
+        "simple_if",
+        "simple_while",
+        "simple_pointer",
+        "simple_struct",
+    ];
 
     for file_name in file_names {
         println!("======{file_name}=====");

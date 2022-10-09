@@ -1,4 +1,4 @@
-use crate::mini_llvm::{Condition, Instruction, Opcode, Register, Type};
+use crate::mini_llvm::{Register, Type};
 use std::collections::HashMap;
 
 pub fn format(michelson_instructions: &Vec<String>, tab: &str, tab_depth: usize) -> String {
@@ -38,6 +38,8 @@ pub fn print_michelson_initial_stack_status(
                 }
             }
             Type::I1 => "False".to_string(),
+            // TODO FIXME: llvm struct to michelson type
+            Type::Struct { id: _, fields: _ } => "0".to_string(),
             Type::Ptr(_) => {
                 if Register::is_const(reg) {
                     //reg.parse::<i32>().unwrap()
@@ -48,11 +50,7 @@ pub fn print_michelson_initial_stack_status(
                 }
             }
         };
-        let michelson_ty = match ty {
-            Type::I32 => "int",
-            Type::I1 => "bool",
-            Type::Ptr(_) => "int",
-        };
+        let michelson_ty = Type::to_michelson_ty_string(&ty);
         let llvm_ty_string = Type::to_llvm_ty_string(ty);
 
         let comment = if Register::is_const(reg) {
@@ -67,16 +65,12 @@ pub fn print_michelson_initial_stack_status(
     let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr.iter().collect::<Vec<_>>();
     memory_ty2stack_ptr_sorted.sort_by(|a, b| (a.1).cmp(b.1));
     for (ty, _v) in memory_ty2stack_ptr_sorted.iter() {
-        let ty_str = match ty {
-            Type::I1 => "bool",
-            Type::I32 => "int",
-            Type::Ptr(_) => "int",
-        };
+        let ty_string = Type::to_michelson_ty_string(&ty);
 
         let llvm_ty_string = Type::to_llvm_ty_string(ty);
         let comment = format!("memory for {llvm_ty_string}");
 
-        rows.push(format!("( (big_map int {ty_str}), 0 ) # {comment}"));
+        rows.push(format!("( (big_map int {ty_string}), 0 ) # {comment}"));
     }
 
     let mut res = vec![];

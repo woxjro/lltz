@@ -1,7 +1,7 @@
+mod helper;
 use crate::compiler::utils;
 use crate::mini_llvm::{Condition, Instruction, Opcode, Register, Type};
 use std::collections::HashMap;
-
 //まず与えられたLLVM IRの命令列を事前に走査して
 //命令列に出現しうる型やレジスタの種類・数などを把握する
 pub fn analyse_registers_and_memory(
@@ -25,10 +25,9 @@ pub fn analyse_registers_and_memory(
                     .entry(ptr.clone())
                     .or_insert(Type::Ptr(Box::new(ty.clone())));
 
-                let _ = memory_ty2stack_ptr.entry(ty.clone()).or_insert_with(|| {
-                    *memory_ptr += 1;
-                    *memory_ptr
-                });
+                //（レジスタは上記で良いんだけど、）Struct型の場合は内部にも, メモリの型を
+                // 保持している（ケースがほとんどである）ので再帰的に調べる必要がある
+                helper::alloca_memory(ty.clone(), memory_ty2stack_ptr, memory_ptr);
             }
             Instruction::Store { ty, value, ptr } => {
                 let _ = register2stack_ptr.entry(value.clone()).or_insert_with(|| {
@@ -66,6 +65,43 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr += 1;
                     *stack_ptr
                 });
+            }
+            Instruction::GetElementPtr {
+                result,
+                ty,
+                ptrval,
+                subsequent,
+            } => {
+                //result: Register
+                //ty: Type,
+                //ptrval: Register,
+                //subsequent: Vec<(Type, Register)>,
+                let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
+                    *stack_ptr += 1;
+                    *stack_ptr
+                });
+                let _ = register2stack_ptr.entry(ptrval.clone()).or_insert_with(|| {
+                    *stack_ptr += 1;
+                    *stack_ptr
+                });
+                //NOTE: ptrはType::Ptr(ty)のポインタ型であることに注意
+                register2ty
+                    .entry(ptrval.clone())
+                    .or_insert(Type::Ptr(Box::new(ty.clone())));
+
+                // FIXME: elementに対するpointer型であって, Struct*ではない...
+                // しかしそれを知るすべがない. constをregisterに入れてしまっているため...
+                register2ty
+                    .entry(result.clone())
+                    .or_insert(Type::Ptr(Box::new(ty.clone())));
+
+                for (ty, reg) in subsequent {
+                    let _ = register2stack_ptr.entry(reg.clone()).or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+                    register2ty.entry(reg.clone()).or_insert(ty.clone());
+                }
             }
             Instruction::If {
                 reg,
@@ -187,11 +223,7 @@ pub fn prepare(
     let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr.iter().collect::<Vec<_>>();
     memory_ty2stack_ptr_sorted.sort_by(|a, b| (b.1).cmp(a.1));
     for (ty, _v) in memory_ty2stack_ptr_sorted.iter() {
-        let ty_str = match ty {
-            Type::I1 => "bool",
-            Type::I32 => "int",
-            Type::Ptr(_) => "int",
-        };
+        let ty_str = Type::to_michelson_ty_string(&ty);
 
         let llvm_ty_string = Type::to_llvm_ty_string(ty);
         let comment = format!("memory for {llvm_ty_string}");
@@ -218,8 +250,12 @@ pub fn prepare(
                 }
             }
             Type::I1 => "False".to_string(),
+            // TODO FIXME: llvm struct to michelson type
+            // 多分ここは実行されることはない.?? = レジスタにStructが入ることはない.?
+            Type::Struct { id: _, fields: _ } => "0".to_string(),
             Type::Ptr(_) => {
                 if Register::is_const(reg) {
+                    //即値をレジスタとして扱っているのでidは数値となる
                     //reg.parse::<i32>().unwrap()
                     reg.get_id()
                 } else {
@@ -228,11 +264,7 @@ pub fn prepare(
                 }
             }
         };
-        let michelson_ty = match ty {
-            Type::I32 => "int",
-            Type::I1 => "bool",
-            Type::Ptr(_) => "int",
-        };
+        let michelson_ty = Type::to_michelson_ty_string(&ty);
         let llvm_ty_string = Type::to_llvm_ty_string(ty);
 
         let comment = if Register::is_const(reg) {
@@ -261,28 +293,87 @@ pub fn body(
             Instruction::Alloca { ptr, ty } => {
                 let memory_ptr = memory_ty2stack_ptr.get(ty).unwrap();
 
-                let michelson_instructions = vec![
-                    format!("###alloca {{"),
-                    format!("DIG {};", register2stack_ptr.len() + memory_ptr - 1),
-                    format!("UNPAIR;"),
-                    format!("SWAP;"),
-                    format!("PUSH int 1;"),
-                    format!("ADD;"),
-                    format!("DUP;"),
-                    format!("DUP;"),
-                    format!("DIG 3;"),
-                    format!("SWAP;"),
-                    format!("PUSH int -1; # default value"),
-                    format!("SOME;"),
-                    format!("SWAP;"),
-                    format!("UPDATE;"),
-                    format!("PAIR;"),
-                    format!("DUG {};", register2stack_ptr.len() + memory_ptr),
-                    format!("DIG {};", register2stack_ptr.get(&ptr).unwrap()),
-                    format!("DROP;"),
-                    format!("DUG {};", register2stack_ptr.get(&ptr).unwrap() - 1),
-                    format!("###}}"),
-                ];
+                let michelson_instructions = match ty {
+                    Type::Struct { id: _, fields } => {
+                        let mut res = vec![format!("###alloca {{"), format!("EMPTY_MAP int int;")];
+                        for (i, field) in fields.iter().enumerate() {
+                            // FIXME TODO: structの中にstructや配列などといったものが
+                            // 入れ子になっている際の処理の場合分け.
+                            // とりあえずStruct型の中がプリミティブ型のみであると仮定して実装
+                            let field_memory_ptr = memory_ty2stack_ptr.get(field).unwrap();
+                            let mut instructions = vec![
+                                //field tyのallocaみたいな事をする
+                                format!("DIG {};", register2stack_ptr.len() + field_memory_ptr),
+                                format!("UNPAIR;"), //bm:ptr:map
+                                format!("SWAP;"),
+                                format!("PUSH int 1;"),
+                                format!("ADD;"),
+                                format!("DUP;"),
+                                format!("DUP;"),   //ptr:ptr:ptr:bm:map
+                                format!("DIG 3;"), //bm:ptr:ptr:ptr:map
+                                format!("SWAP;"),  //ptr:bm:ptr:ptr:map
+                                format!("PUSH int -1;"),
+                                format!("SOME;"),
+                                format!("SWAP;"),   //ptr:some(-1):bm:ptr:ptr:map
+                                format!("UPDATE;"), //bm:ptr:ptr:map
+                                format!("PAIR;"),   //(bm, ptr):ptr:map
+                                format!("DUG {};", register2stack_ptr.len() + field_memory_ptr + 1),
+                                format!("SOME;"),         //some(ptr):map
+                                format!("PUSH int {i};"), //idx:some(ptr):map
+                                format!("UPDATE;"),       //map
+                            ];
+
+                            res.append(&mut instructions);
+                        }
+
+                        res.append(&mut vec![
+                            format!("SOME;"), //some(map)
+                            format!("DIG {};", register2stack_ptr.len() + memory_ptr),
+                            format!("UNPAIR;"), //bm:ptr:some(map)
+                            format!("SWAP;"),   //ptr:bm:some(map)
+                            format!("PUSH int 1;"),
+                            format!("ADD;"),
+                            format!("DUP;"),
+                            format!("DUP;"),   //ptr:ptr:ptr:bm:some(map)
+                            format!("DIG 3;"), //bm:ptr:ptr:ptr:some(map)
+                            format!("DIG 4;"), //some(map):bm:ptr:ptr:ptr
+                            format!("DIG 2;"),
+                            format!("UPDATE;"), //bm:ptr:ptr
+                            format!("PAIR;"),   //(bm,ptr):ptr
+                            format!("DUG {};", register2stack_ptr.len() + memory_ptr),
+                            format!("DIG {};", register2stack_ptr.get(&ptr).unwrap()),
+                            format!("DROP;"),
+                            format!("DUG {};", register2stack_ptr.get(&ptr).unwrap() - 1),
+                            format!("###}}"),
+                        ]);
+
+                        res
+                    }
+                    _ => {
+                        vec![
+                            format!("###alloca {{"),
+                            format!("DIG {};", register2stack_ptr.len() + memory_ptr - 1),
+                            format!("UNPAIR;"),
+                            format!("SWAP;"),
+                            format!("PUSH int 1;"),
+                            format!("ADD;"),
+                            format!("DUP;"),
+                            format!("DUP;"),
+                            format!("DIG 3;"),
+                            format!("SWAP;"),
+                            format!("PUSH int -1; # default value"),
+                            format!("SOME;"),
+                            format!("SWAP;"),
+                            format!("UPDATE;"),
+                            format!("PAIR;"),
+                            format!("DUG {};", register2stack_ptr.len() + memory_ptr),
+                            format!("DIG {};", register2stack_ptr.get(&ptr).unwrap()),
+                            format!("DROP;"),
+                            format!("DUG {};", register2stack_ptr.get(&ptr).unwrap() - 1),
+                            format!("###}}"),
+                        ]
+                    }
+                };
                 michelson_code = format!(
                     "{michelson_code}{}",
                     utils::format(&michelson_instructions, tab, tab_depth)
@@ -319,6 +410,36 @@ pub fn body(
                     format!("DUP {};", register2stack_ptr.get(&ptr).unwrap() + 1),
                     format!("GET;"),
                     format!("ASSERT_SOME;"),
+                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
+                    format!("DROP;"),
+                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
+                    format!("###}}"),
+                ];
+                michelson_code = format!(
+                    "{michelson_code}{}",
+                    utils::format(&michelson_instructions, tab, tab_depth)
+                );
+            }
+            Instruction::GetElementPtr {
+                result,
+                ty,
+                ptrval,
+                subsequent,
+            } => {
+                let memory_ptr = memory_ty2stack_ptr.get(ty).unwrap();
+                // FIXME TODO: subsequent[1]で決め打ちで取得しているので直したい.
+                //              (...が, これ以外無い気がする)
+                let (_, reg) = &subsequent[1];
+                let michelson_instructions = vec![
+                    format!("###getElementPtr {{"),
+                    format!("DUP {};", register2stack_ptr.len() + memory_ptr),
+                    format!("CAR;"), //bm
+                    format!("DUP {};", register2stack_ptr.get(&ptrval).unwrap() + 1),
+                    format!("GET;"),         //some(map)
+                    format!("ASSERT_SOME;"), //map
+                    format!("DUP {};", register2stack_ptr.get(&reg).unwrap() + 1), //int:map
+                    format!("GET;"),
+                    format!("ASSERT_SOME;"), //ptr
                     format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
                     format!("DROP;"),
                     format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),

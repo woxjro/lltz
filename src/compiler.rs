@@ -66,17 +66,17 @@ pub fn compile(instructions: Vec<Instruction>) -> String {
     michelson_code = backend::prepare(
         michelson_code,
         tab,
-        &mut register2stack_ptr,
-        &mut register2ty,
-        &mut memory_ty2stack_ptr,
+        &register2stack_ptr,
+        &register2ty,
+        &memory_ty2stack_ptr,
     );
 
     michelson_code = backend::body(
         michelson_code,
         tab,
         tab_depth,
-        &mut register2stack_ptr,
-        &mut memory_ty2stack_ptr,
+        &register2stack_ptr,
+        &memory_ty2stack_ptr,
         &instructions,
     );
 
@@ -84,8 +84,8 @@ pub fn compile(instructions: Vec<Instruction>) -> String {
     michelson_code = backend::exit(
         michelson_code,
         tab,
-        &mut register2stack_ptr,
-        &mut memory_ty2stack_ptr,
+        &register2stack_ptr,
+        &memory_ty2stack_ptr,
     );
     michelson_code
 }

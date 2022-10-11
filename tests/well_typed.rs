@@ -9,6 +9,7 @@ fn well_typed_test() {
         "simple_while",
         "simple_pointer",
         "simple_struct",
+        "simple_struct2",
     ];
 
     for file_name in file_names {

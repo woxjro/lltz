@@ -27,7 +27,7 @@ pub fn analyse_registers_and_memory(
 
                 //（レジスタは上記で良いんだけど、）Struct型の場合は内部にも, メモリの型を
                 // 保持している（ケースがほとんどである）ので再帰的に調べる必要がある
-                helper::alloca_memory(ty.clone(), memory_ty2stack_ptr, memory_ptr);
+                helper::analyse_memory4alloca(ty.clone(), memory_ty2stack_ptr, memory_ptr);
             }
             Instruction::Store { ty, value, ptr } => {
                 let _ = register2stack_ptr.entry(value.clone()).or_insert_with(|| {
@@ -214,9 +214,9 @@ pub fn analyse_registers_and_memory(
 pub fn prepare(
     michelson_code: String,
     space: &str,
-    register2stack_ptr: &mut HashMap<Register, usize>,
-    register2ty: &mut HashMap<Register, Type>,
-    memory_ty2stack_ptr: &mut HashMap<Type, usize>,
+    register2stack_ptr: &HashMap<Register, usize>,
+    register2ty: &HashMap<Register, Type>,
+    memory_ty2stack_ptr: &HashMap<Type, usize>,
 ) -> String {
     let mut new_michelson_code = format!("{michelson_code}{space}DROP;\n");
 
@@ -283,100 +283,24 @@ pub fn body(
     michelson_code: String,
     tab: &str,
     tab_depth: usize,
-    register2stack_ptr: &mut HashMap<Register, usize>,
-    memory_ty2stack_ptr: &mut HashMap<Type, usize>,
+    register2stack_ptr: &HashMap<Register, usize>,
+    memory_ty2stack_ptr: &HashMap<Type, usize>,
     instructions: &Vec<Instruction>,
 ) -> String {
     let mut michelson_code = michelson_code;
     for instruction in instructions {
         match instruction {
             Instruction::Alloca { ptr, ty } => {
-                let memory_ptr = memory_ty2stack_ptr.get(ty).unwrap();
-
-                let michelson_instructions = match ty {
-                    Type::Struct { id: _, fields } => {
-                        let mut res = vec![format!("###alloca {{"), format!("EMPTY_MAP int int;")];
-                        for (i, field) in fields.iter().enumerate() {
-                            // FIXME TODO: structの中にstructや配列などといったものが
-                            // 入れ子になっている際の処理の場合分け.
-                            // とりあえずStruct型の中がプリミティブ型のみであると仮定して実装
-                            let field_memory_ptr = memory_ty2stack_ptr.get(field).unwrap();
-                            let mut instructions = vec![
-                                //field tyのallocaみたいな事をする
-                                format!("DIG {};", register2stack_ptr.len() + field_memory_ptr),
-                                format!("UNPAIR;"), //bm:ptr:map
-                                format!("SWAP;"),
-                                format!("PUSH int 1;"),
-                                format!("ADD;"),
-                                format!("DUP;"),
-                                format!("DUP;"),   //ptr:ptr:ptr:bm:map
-                                format!("DIG 3;"), //bm:ptr:ptr:ptr:map
-                                format!("SWAP;"),  //ptr:bm:ptr:ptr:map
-                                format!("PUSH int -1;"),
-                                format!("SOME;"),
-                                format!("SWAP;"),   //ptr:some(-1):bm:ptr:ptr:map
-                                format!("UPDATE;"), //bm:ptr:ptr:map
-                                format!("PAIR;"),   //(bm, ptr):ptr:map
-                                format!("DUG {};", register2stack_ptr.len() + field_memory_ptr + 1),
-                                format!("SOME;"),         //some(ptr):map
-                                format!("PUSH int {i};"), //idx:some(ptr):map
-                                format!("UPDATE;"),       //map
-                            ];
-
-                            res.append(&mut instructions);
-                        }
-
-                        res.append(&mut vec![
-                            format!("SOME;"), //some(map)
-                            format!("DIG {};", register2stack_ptr.len() + memory_ptr),
-                            format!("UNPAIR;"), //bm:ptr:some(map)
-                            format!("SWAP;"),   //ptr:bm:some(map)
-                            format!("PUSH int 1;"),
-                            format!("ADD;"),
-                            format!("DUP;"),
-                            format!("DUP;"),   //ptr:ptr:ptr:bm:some(map)
-                            format!("DIG 3;"), //bm:ptr:ptr:ptr:some(map)
-                            format!("DIG 4;"), //some(map):bm:ptr:ptr:ptr
-                            format!("DIG 2;"),
-                            format!("UPDATE;"), //bm:ptr:ptr
-                            format!("PAIR;"),   //(bm,ptr):ptr
-                            format!("DUG {};", register2stack_ptr.len() + memory_ptr),
-                            format!("DIG {};", register2stack_ptr.get(&ptr).unwrap()),
-                            format!("DROP;"),
-                            format!("DUG {};", register2stack_ptr.get(&ptr).unwrap() - 1),
-                            format!("###}}"),
-                        ]);
-
-                        res
-                    }
-                    _ => {
-                        vec![
-                            format!("###alloca {{"),
-                            format!("DIG {};", register2stack_ptr.len() + memory_ptr - 1),
-                            format!("UNPAIR;"),
-                            format!("SWAP;"),
-                            format!("PUSH int 1;"),
-                            format!("ADD;"),
-                            format!("DUP;"),
-                            format!("DUP;"),
-                            format!("DIG 3;"),
-                            format!("SWAP;"),
-                            format!("PUSH int -1; # default value"),
-                            format!("SOME;"),
-                            format!("SWAP;"),
-                            format!("UPDATE;"),
-                            format!("PAIR;"),
-                            format!("DUG {};", register2stack_ptr.len() + memory_ptr),
-                            format!("DIG {};", register2stack_ptr.get(&ptr).unwrap()),
-                            format!("DROP;"),
-                            format!("DUG {};", register2stack_ptr.get(&ptr).unwrap() - 1),
-                            format!("###}}"),
-                        ]
-                    }
-                };
                 michelson_code = format!(
                     "{michelson_code}{}",
-                    utils::format(&michelson_instructions, tab, tab_depth)
+                    helper::exec_alloca(
+                        ptr,
+                        ty,
+                        tab,
+                        tab_depth,
+                        register2stack_ptr,
+                        memory_ty2stack_ptr
+                    )
                 );
             }
             Instruction::Store { ty, value, ptr } => {
@@ -658,8 +582,8 @@ pub fn body(
 pub fn exit(
     michelson_code: String,
     space: &str,
-    register2stack_ptr: &mut HashMap<Register, usize>,
-    memory_ty2stack_ptr: &mut HashMap<Type, usize>,
+    register2stack_ptr: &HashMap<Register, usize>,
+    memory_ty2stack_ptr: &HashMap<Type, usize>,
 ) -> String {
     let mut new_michelson_code = michelson_code;
     //後処理:レジスタ領域・メモリ領域をDROPする

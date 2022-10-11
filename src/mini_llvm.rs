@@ -73,6 +73,7 @@ pub enum Condition {
     Sle, //signed less or equal
 }
 
+#[allow(dead_code)]
 pub struct Arg {
     ty: Type,
     reg: Register,

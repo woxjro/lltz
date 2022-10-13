@@ -1,6 +1,7 @@
 use crate::mini_llvm::{Register, Type};
 use std::collections::HashMap;
 
+///Michelson Codeのformatter
 pub fn format(michelson_instructions: &Vec<String>, tab: &str, tab_depth: usize) -> String {
     let mut indent = String::new();
     for _ in 0..tab_depth {
@@ -13,9 +14,7 @@ pub fn format(michelson_instructions: &Vec<String>, tab: &str, tab_depth: usize)
         .collect::<String>()
 }
 
-/*
- * デバッグ用にMichelsonのスタックの初期状態を出力する
- */
+/// デバッグ用にMichelsonのスタックの初期状態を出力する
 pub fn print_michelson_initial_stack_status(
     register2stack_ptr: &HashMap<Register, usize>,
     register2ty: &HashMap<Register, Type>,

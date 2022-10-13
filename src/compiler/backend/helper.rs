@@ -33,7 +33,7 @@ pub fn analyse_memory4alloca(
 
 ///allocaをMichelsonへとコンパイルする関数
 ///T(ty)型をallocaし, その領域へのポインタをptrへと格納する命令を生成する
-///```
+///```llvm
 ///%ptr = alloca T;
 ///```
 ///tab,tab_depthは生成するMichelsonコードをformatする際に使用する
@@ -81,7 +81,7 @@ pub fn exec_alloca(
 
 ///Struct型のAllocaを実行する
 ///Struct { id, fields } 型をallocaし, その領域へのポインタをptrへと格納する命令を生成する
-///```
+///```llvm
 ///%ptr = alloca Struct { id, fields };
 ///```
 fn exec_struct_alloca(
@@ -139,7 +139,7 @@ fn exec_struct_alloca(
 ///Struct型のメンバー型も再帰的にAllocaする
 ///呼び出し元のStruct型のメモリ領域をmap_0とするとこの関数が呼び出された際の
 ///Michelsonのスタックの状態は
-///```
+///```michelson_stack
 ///map_0:map_1:...:map_{depth-1}:register_region:memory_region
 ///```
 ///となっており、トップにStructのmapが積まれている事に注意

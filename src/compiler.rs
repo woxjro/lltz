@@ -38,7 +38,6 @@ pub fn compile(instructions: Vec<Instruction>) -> String {
     let tab = "       ";
     let tab_depth = 1;
 
-    //レジスタの下処理
     backend::analyse_registers_and_memory(
         &mut register2stack_ptr,
         &mut register2ty,

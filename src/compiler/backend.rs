@@ -2,8 +2,12 @@ mod helper;
 use crate::compiler::utils;
 use crate::mini_llvm::{Condition, Instruction, Opcode, Register, Type};
 use std::collections::HashMap;
-//まず与えられたLLVM IRの命令列を事前に走査して
-//命令列に出現しうる型やレジスタの種類・数などを把握する
+
+///Step.0
+///まず与えられたLLVM IRの命令列（instructions）を事前に走査して
+///命令列に出現しうる型やレジスタの種類・数などを把握する
+///つまり、レジスタ型環境（register2ty, register2stack_ptr）と
+///メモリ型環境（memory_ty2stack_ptr）の可変参照を受け取っておき、これらを構築する
 pub fn analyse_registers_and_memory(
     register2stack_ptr: &mut HashMap<Register, usize>,
     register2ty: &mut HashMap<Register, Type>,
@@ -210,7 +214,10 @@ pub fn analyse_registers_and_memory(
     }
 }
 
-//レジスタ・メモリ領域などに相当するMichelsonコードをスタックにPUSHする
+///Step.1
+///ここではmichelson_codeを受け取り、実際にMichelsonの命令を追加していく.
+///レジスタ型環境（register2ty, register2stack_ptr）とメモリ型環境（memory_ty2stack_ptr）を受け取り、
+///それらに相当するMichelson命令をスタックにPUSHする
 pub fn prepare(
     michelson_code: String,
     space: &str,
@@ -279,6 +286,11 @@ pub fn prepare(
     new_michelson_code
 }
 
+///Step.2
+///LLVMの命令列instructionsを実際にコンパイルしていく関数
+///レジスタ型環境（register2ty（これは今回は無し）, register2stack_ptr）と
+///メモリ型環境（memory_ty2stack_ptr）を参考にコンパイルしていく.
+///tab,tab_depthはMichelsonコードのフォーマットのために使う
 pub fn body(
     michelson_code: String,
     tab: &str,
@@ -579,6 +591,9 @@ pub fn body(
     michelson_code
 }
 
+///Step.3(将来的にはこの関数はなくなるかもしれない)
+///レジスタ型環境（register2ty（これは今回は無し）, register2stack_ptr）と
+///メモリ型環境（memory_ty2stack_ptr）に相当するMichelsonスタックをDROPする
 pub fn exit(
     michelson_code: String,
     space: &str,

@@ -75,6 +75,7 @@ pub fn compile(instructions: Vec<Instruction>) -> String {
         tab,
         tab_depth,
         &register2stack_ptr,
+        &register2ty,
         &memory_ty2stack_ptr,
         &instructions,
     );

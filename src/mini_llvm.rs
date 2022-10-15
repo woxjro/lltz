@@ -73,6 +73,12 @@ pub enum Condition {
     Sle, //signed less or equal
 }
 
+pub enum ReservedStructKind {
+    Parameter,
+    Storage,
+    Operation,
+}
+
 #[allow(dead_code)]
 pub struct Arg {
     ty: Type,
@@ -136,6 +142,16 @@ pub enum Instruction {
         ty: Type,
         op1: Register,
         op2: Register,
+    },
+    //Structなどのポインタを受け取り, srcからdstへと再帰的にコピーする
+    //%5 = bitcast %struct.Storage* %4 to i8*
+    //%6 = bitcast %struct.Storage* %2 to i8*
+    //call void @llvm.memcpy.p0i8.p0i8.i64(
+    //     i8* align 4 %5, i8* align 8 %6, i64 36, i1 false)
+    LlvmMemcpy {
+        dest: Register,
+        src: Register,
+        ty: Type, //ポインタdest,srcが指す中身の型
     },
     Ret {
         ty: Type,

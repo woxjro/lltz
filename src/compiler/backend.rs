@@ -182,6 +182,24 @@ pub fn analyse_registers_and_memory(
                 register2ty.entry(op2.clone()).or_insert(ty.clone());
                 register2ty.entry(result.clone()).or_insert(ty.clone());
             }
+            Instruction::LlvmMemcpy {
+                dest: _,
+                src: _,
+                ty: _,
+            } => {
+                //dest, srcともに既にレジスタ環境に無ければ行けない事を考えると
+                //これらの処理はいらないかもしれない
+                /*
+                let _ = register2stack_ptr.entry(dest.clone()).or_insert_with(|| {
+                    *stack_ptr += 1;
+                    *stack_ptr
+                });
+                let _ = register2stack_ptr.entry(src.clone()).or_insert_with(|| {
+                    *stack_ptr += 1;
+                    *stack_ptr
+                });
+                */
+            }
             Instruction::Ret { ty, value } => {
                 let _ = register2stack_ptr.entry(value.clone()).or_insert_with(|| {
                     *stack_ptr += 1;
@@ -296,6 +314,7 @@ pub fn body(
     tab: &str,
     tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
+    register2ty: &HashMap<Register, Type>,
     memory_ty2stack_ptr: &HashMap<Type, usize>,
     instructions: &Vec<Instruction>,
 ) -> String {
@@ -401,6 +420,7 @@ pub fn body(
                     tab,
                     tab_depth + 1,
                     register2stack_ptr,
+                    register2ty,
                     memory_ty2stack_ptr,
                     code_block_t,
                 );
@@ -409,6 +429,7 @@ pub fn body(
                     tab,
                     tab_depth + 1,
                     register2stack_ptr,
+                    register2ty,
                     memory_ty2stack_ptr,
                     code_block_f,
                 );
@@ -449,6 +470,7 @@ pub fn body(
                     tab,
                     tab_depth,
                     register2stack_ptr,
+                    register2ty,
                     memory_ty2stack_ptr,
                     cond_block,
                 );
@@ -459,6 +481,7 @@ pub fn body(
                     tab,
                     tab_depth + 1,
                     register2stack_ptr,
+                    register2ty,
                     memory_ty2stack_ptr,
                     cond_block,
                 );
@@ -468,6 +491,7 @@ pub fn body(
                     tab,
                     tab_depth + 1,
                     register2stack_ptr,
+                    register2ty,
                     memory_ty2stack_ptr,
                     loop_block,
                 );
@@ -539,6 +563,21 @@ pub fn body(
                 michelson_code = format!(
                     "{michelson_code}{}",
                     utils::format(&michelson_instructions, tab, tab_depth)
+                );
+            }
+            Instruction::LlvmMemcpy { dest, src, ty } => {
+                michelson_code = format!(
+                    "{michelson_code}{}",
+                    helper::exec_llvm_memcpy(
+                        dest,
+                        src,
+                        ty,
+                        tab,
+                        tab_depth,
+                        register2stack_ptr,
+                        register2ty,
+                        memory_ty2stack_ptr
+                    )
                 );
             }
             Instruction::Ret { ty: _, value: _ } => {}

@@ -1,5 +1,5 @@
 use mini_llvm_michelson_compiler::compiler::compile;
-use mini_llvm_michelson_compiler::mini_llvm::{Instruction, Register, Type};
+use mini_llvm_michelson_compiler::mini_llvm::{Function, Instruction, MiniLlvm, Register, Type};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -204,7 +204,17 @@ fn main() {
 
     //}}
 
-    let michelson_code = compile(instructions);
+    let mini_llvm = MiniLlvm {
+        structure_types: vec![],
+        functions: vec![Function {
+            function_name: String::from("smart_contract"),
+            result_type: Type::I32,
+            argument_list: vec![],
+            instructions,
+        }],
+    };
+
+    let michelson_code = compile(mini_llvm);
 
     let file_name = "simple_struct2";
     let command_typecheck =

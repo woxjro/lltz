@@ -1,8 +1,8 @@
-use super::mini_llvm::Instruction;
+use super::mini_llvm::MiniLlvm;
 use std::collections::HashMap;
 mod backend;
 mod utils;
-pub fn compile(instructions: Vec<Instruction>) -> String {
+pub fn compile(mini_llvm: MiniLlvm) -> String {
     /*
      * RegisterをKeyとして,そのRegisterのMichelsonのStack上での位置を返すHashMap
      * Registerの1-indexでのレジスタ領域における相対位置を返す事に注意
@@ -38,13 +38,18 @@ pub fn compile(instructions: Vec<Instruction>) -> String {
     let tab = "       ";
     let tab_depth = 1;
 
+    let smart_contract_function = mini_llvm
+        .functions
+        .iter()
+        .find(|f| f.function_name == String::from("smart_contract"))
+        .unwrap();
     backend::analyse_registers_and_memory(
         &mut register2stack_ptr,
         &mut register2ty,
         &mut memory_ty2stack_ptr,
         &mut stack_ptr,
         &mut memory_ptr,
-        &instructions,
+        &smart_contract_function.instructions,
     );
 
     drop(stack_ptr);
@@ -77,7 +82,7 @@ pub fn compile(instructions: Vec<Instruction>) -> String {
         &register2stack_ptr,
         &register2ty,
         &memory_ty2stack_ptr,
-        &instructions,
+        &smart_contract_function.instructions,
     );
 
     //後処理:レジスタ領域・メモリ領域をDROPする

@@ -85,6 +85,25 @@ pub struct Arg {
     reg: Register,
 }
 
+pub struct MiniLlvm {
+    pub structure_types: Vec<Type>, //構造体宣言
+    pub functions: Vec<Function>,
+}
+
+///define [linkage] [PreemptionSpecifier] [visibility] [DLLStorageClass]
+///       [cconv] [ret attrs]
+///       <ResultType> @<FunctionName> ([argument list])
+///       [(unnamed_addr|local_unnamed_addr)] [AddrSpace] [fn Attrs]
+///       [section "name"] [partition "name"] [comdat [($name)]] [align N]
+///       [gc] [prefix Constant] [prologue Constant] [personality Constant]
+///       (!name !N)* { ... }
+pub struct Function {
+    pub function_name: String,
+    pub result_type: Type,
+    pub argument_list: Vec<Arg>,
+    pub instructions: Vec<Instruction>,
+}
+
 pub enum Instruction {
     Alloca {
         ptr: Register,

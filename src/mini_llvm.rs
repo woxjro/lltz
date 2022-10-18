@@ -27,6 +27,32 @@ pub enum Type {
     Ptr(Box<Type>),
 }
 
+///予約語Typeを受け取り, MichelsonのPairを返す.
+///Storage, Parameter, PairなどといったMichelsonコードの引数を生成するために使う
+pub fn reserved_type2michelson_pair(ty: Type) -> String {
+    match ty {
+        Type::Struct { id: _, fields } => {
+            let mut res = String::new();
+            if fields.len() > 0 {
+                for (i, field) in fields.iter().enumerate() {
+                    if i == 0 {
+                        res = self::reserved_type2michelson_pair(field.clone())
+                    } else {
+                        res = format!(
+                            "{res} {}",
+                            self::reserved_type2michelson_pair(field.clone())
+                        );
+                    }
+                }
+                format!("(pair {res})")
+            } else {
+                format!("unit")
+            }
+        }
+        _ => Type::to_michelson_ty_string(&ty),
+    }
+}
+
 impl Type {
     pub fn to_llvm_ty_string(ty: &Type) -> String {
         match ty {

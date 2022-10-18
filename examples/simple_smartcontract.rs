@@ -5,10 +5,23 @@ use mini_llvm_michelson_compiler::mini_llvm::{
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
+    let parameter = Type::Struct {
+        id: String::from("Parameter"),
+        fields: vec![Type::I32, Type::I32],
+    };
+    let storage = Type::Struct {
+        id: String::from("Storage"),
+        fields: vec![Type::I32, Type::I32, Type::I32],
+    };
+    let pair = Type::Struct {
+        id: String::from("Storage"),
+        fields: vec![parameter.clone(), storage.clone()],
+    };
+
     let mini_llvm = MiniLlvm {
-        structure_types: vec![],
+        structure_types: vec![parameter, storage, pair],
         functions: vec![Function {
-            function_name: String::from("main"),
+            function_name: String::from("smart_contract"),
             result_type: Type::I32,
             argument_list: vec![],
             instructions: vec![],

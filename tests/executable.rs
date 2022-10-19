@@ -10,6 +10,7 @@ fn executabl_test() {
         "simple_pointer",
         "simple_struct",
         "simple_struct2",
+        "simple_llvm_memcpy",
     ];
 
     for file_name in file_names {

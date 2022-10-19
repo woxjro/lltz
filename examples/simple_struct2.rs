@@ -205,7 +205,18 @@ fn main() {
     //}}
 
     let mini_llvm = MiniLlvm {
-        structure_types: vec![],
+        structure_types: vec![
+            Type::Struct {
+                id: String::from("Storage"),
+                fields: vec![],
+            },
+            Type::Struct {
+                id: String::from("Parameter"),
+                fields: vec![],
+            },
+            struct_prefecture.clone(),
+            struct_fish.clone(),
+        ],
         functions: vec![Function {
             function_name: String::from("smart_contract"),
             result_type: Type::I32,

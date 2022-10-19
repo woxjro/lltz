@@ -43,6 +43,13 @@ pub fn compile(mini_llvm: MiniLlvm) -> String {
         .iter()
         .find(|f| f.function_name == String::from("smart_contract"))
         .unwrap();
+
+    backend::analyse_structure_types(
+        &mut memory_ty2stack_ptr,
+        &mut memory_ptr,
+        &mini_llvm.structure_types,
+    );
+
     backend::analyse_registers_and_memory(
         &mut register2stack_ptr,
         &mut register2ty,
@@ -91,6 +98,7 @@ pub fn compile(mini_llvm: MiniLlvm) -> String {
         tab,
         &register2stack_ptr,
         &memory_ty2stack_ptr,
+        &mini_llvm.structure_types,
     );
     michelson_code
 }

@@ -107,8 +107,8 @@ pub enum ReservedStructKind {
 
 #[allow(dead_code)]
 pub struct Arg {
-    ty: Type,
-    reg: Register,
+    pub ty: Type,
+    pub reg: Register,
 }
 
 pub struct MiniLlvm {

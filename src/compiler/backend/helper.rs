@@ -15,19 +15,23 @@ pub fn analyse_memory4alloca(
         _ => {}
     };
 
-    //tyはまずメモリに（無ければ）登録する
-    let _ = memory_ty2stack_ptr.entry(ty.clone()).or_insert_with(|| {
-        *memory_ptr += 1;
-        *memory_ptr
-    });
-
-    match ty {
+    match ty.clone() {
         Type::Struct { id: _, fields } => {
+            //先に子Fieldを登録する
             for field in fields {
                 self::analyse_memory4alloca(field, memory_ty2stack_ptr, memory_ptr);
             }
+            let _ = memory_ty2stack_ptr.entry(ty.clone()).or_insert_with(|| {
+                *memory_ptr += 1;
+                *memory_ptr
+            });
         }
-        _ => {}
+        _ => {
+            let _ = memory_ty2stack_ptr.entry(ty.clone()).or_insert_with(|| {
+                *memory_ptr += 1;
+                *memory_ptr
+            });
+        }
     }
 }
 
@@ -352,7 +356,7 @@ fn get_field_element(
                     format!("PUSH int {child_idx};"), //idx:bm:bm:rest
                     format!("GET;"),
                     format!("ASSERT_SOME;"), // ptr4field:bm:rest
-                    format!("DUP {};", register2stack_ptr.len() + memory_ptr + depth - 1),
+                    format!("DUP {};", register2stack_ptr.len() + memory_ptr + depth),
                     format!("CAR;"),
                     format!("SWAP;"),
                     format!("GET;"),

@@ -45,102 +45,105 @@ fn main() {
     //  ret i32 0
     //}
 
-    //{{
-    //  %1 = alloca i32, align 4
-    //  %2 = alloca %struct.Fish, align 4
-    //  store i32 0, i32* %1, align 4
-    let instr1 = Instruction::Alloca {
-        ptr: Register::new("%1"),
-        ty: Type::I32,
-    };
-
-    let instr2 = Instruction::Alloca {
-        ptr: Register::new("%2"),
-        ty: Type::Struct {
-            id: String::from("Fish"),
-            fields: vec![Type::I32, Type::I32, Type::I32],
-        },
-    };
-
-    let instr3 = Instruction::Store {
-        ty: Type::I32,
-        value: Register::new("0"),
-        ptr: Register::new("%1"),
-    };
-
-    //  %3 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 0
-    //  store i32 1, i32* %3, align 4
-    let instr4 = Instruction::GetElementPtr {
-        result: Register::new("%3"),
-        ty: Type::Struct {
-            id: String::from("Fish"),
-            fields: vec![Type::I32, Type::I32, Type::I32],
-        },
-        ptrval: Register::new("%2"),
-        subsequent: vec![
-            (Type::I32, Register::new("0")),
-            (Type::I32, Register::new("0")),
-        ],
-    };
-
-    let instr5 = Instruction::Store {
-        ty: Type::I32,
-        value: Register::new("1"),
-        ptr: Register::new("%3"),
-    };
-
-    //  %4 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 1
-    //  store i32 0, i32* %4, align 4
-    let instr6 = Instruction::GetElementPtr {
-        result: Register::new("%4"),
-        ty: Type::Struct {
-            id: String::from("Fish"),
-            fields: vec![Type::I32, Type::I32, Type::I32],
-        },
-        ptrval: Register::new("%2"),
-        subsequent: vec![
-            (Type::I32, Register::new("0")),
-            (Type::I32, Register::new("1")),
-        ],
-    };
-    let instr7 = Instruction::Store {
-        ty: Type::I32,
-        value: Register::new("0"),
-        ptr: Register::new("%4"),
-    };
-    //  %5 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 2
-    //  store i32 700, i32* %5, align 4
-    let instr8 = Instruction::GetElementPtr {
-        result: Register::new("%5"),
-        ty: Type::Struct {
-            id: String::from("Fish"),
-            fields: vec![Type::I32, Type::I32, Type::I32],
-        },
-        ptrval: Register::new("%2"),
-        subsequent: vec![
-            (Type::I32, Register::new("0")),
-            (Type::I32, Register::new("2")),
-        ],
-    };
-
-    let instr9 = Instruction::Store {
-        ty: Type::I32,
-        value: Register::new("700"),
-        ptr: Register::new("%5"),
-    };
-
-    let instr10 = Instruction::Ret {
-        ty: Type::I32,
-        value: Register::new("0"),
-    };
-    //}}
-
     let instructions = vec![
-        instr1, instr2, instr3, instr4, instr5, instr6, instr7, instr8, instr9, instr10,
+        //{{
+        //  %1 = alloca i32, align 4
+        //  %2 = alloca %struct.Fish, align 4
+        //  store i32 0, i32* %1, align 4
+        Instruction::Alloca {
+            ptr: Register::new("%1"),
+            ty: Type::I32,
+        },
+        Instruction::Alloca {
+            ptr: Register::new("%2"),
+            ty: Type::Struct {
+                id: String::from("Fish"),
+                fields: vec![Type::I32, Type::I32, Type::I32],
+            },
+        },
+        Instruction::Store {
+            ty: Type::I32,
+            value: Register::new("0"),
+            ptr: Register::new("%1"),
+        },
+        //  %3 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 0
+        //  store i32 1, i32* %3, align 4
+        Instruction::GetElementPtr {
+            result: Register::new("%3"),
+            ty: Type::Struct {
+                id: String::from("Fish"),
+                fields: vec![Type::I32, Type::I32, Type::I32],
+            },
+            ptrval: Register::new("%2"),
+            subsequent: vec![
+                (Type::I32, Register::new("0")),
+                (Type::I32, Register::new("0")),
+            ],
+        },
+        Instruction::Store {
+            ty: Type::I32,
+            value: Register::new("1"),
+            ptr: Register::new("%3"),
+        },
+        //  %4 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 1
+        //  store i32 0, i32* %4, align 4
+        Instruction::GetElementPtr {
+            result: Register::new("%4"),
+            ty: Type::Struct {
+                id: String::from("Fish"),
+                fields: vec![Type::I32, Type::I32, Type::I32],
+            },
+            ptrval: Register::new("%2"),
+            subsequent: vec![
+                (Type::I32, Register::new("0")),
+                (Type::I32, Register::new("1")),
+            ],
+        },
+        Instruction::Store {
+            ty: Type::I32,
+            value: Register::new("0"),
+            ptr: Register::new("%4"),
+        },
+        //  %5 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 2
+        //  store i32 700, i32* %5, align 4
+        Instruction::GetElementPtr {
+            result: Register::new("%5"),
+            ty: Type::Struct {
+                id: String::from("Fish"),
+                fields: vec![Type::I32, Type::I32, Type::I32],
+            },
+            ptrval: Register::new("%2"),
+            subsequent: vec![
+                (Type::I32, Register::new("0")),
+                (Type::I32, Register::new("2")),
+            ],
+        },
+        Instruction::Store {
+            ty: Type::I32,
+            value: Register::new("700"),
+            ptr: Register::new("%5"),
+        },
+        Instruction::Ret {
+            ty: Type::I32,
+            value: Register::new("0"),
+        }, //}}
     ];
 
     let mini_llvm = MiniLlvm {
-        structure_types: vec![],
+        structure_types: vec![
+            Type::Struct {
+                id: String::from("Storage"),
+                fields: vec![],
+            },
+            Type::Struct {
+                id: String::from("Parameter"),
+                fields: vec![],
+            },
+            Type::Struct {
+                id: String::from("Fish"),
+                fields: vec![Type::I32, Type::I32, Type::I32],
+            },
+        ],
         functions: vec![Function {
             function_name: String::from("smart_contract"),
             result_type: Type::I32,

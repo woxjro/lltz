@@ -1,7 +1,45 @@
 mod helper;
 use crate::compiler::utils;
-use crate::mini_llvm::{Condition, Instruction, Opcode, Register, Type};
+use crate::mini_llvm::{
+    reserved_type2michelson_pair, Condition, Instruction, Opcode, Register, Type,
+};
 use std::collections::HashMap;
+
+pub fn analyse_structure_types(
+    memory_ty2stack_ptr: &mut HashMap<Type, usize>,
+    memory_ptr: &mut usize,
+    structure_types: &Vec<Type>,
+) {
+    for structure_type in structure_types {
+        match memory_ty2stack_ptr.get(&structure_type) {
+            //既にtyが登録されていたらexit
+            Some(_) => {}
+            _ => {
+                match structure_type {
+                    Type::Struct { id: _, fields } => {
+                        for field in fields {
+                            helper::analyse_memory4alloca(
+                                field.clone(),
+                                memory_ty2stack_ptr,
+                                memory_ptr,
+                            );
+                        }
+                        //登録する
+                        let _ = memory_ty2stack_ptr
+                            .entry(structure_type.clone())
+                            .or_insert_with(|| {
+                                *memory_ptr += 1;
+                                *memory_ptr
+                            });
+                    }
+                    _ => {
+                        panic!("Struct型宣言にPrimitive型が混ざっています")
+                    }
+                }
+            }
+        };
+    }
+}
 
 ///Step.0
 ///まず与えられたLLVM IRの命令列（instructions）を事前に走査して
@@ -638,6 +676,7 @@ pub fn exit(
     space: &str,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<Type, usize>,
+    structure_types: &Vec<Type>,
 ) -> String {
     let mut new_michelson_code = michelson_code;
     //後処理:レジスタ領域・メモリ領域をDROPする
@@ -653,5 +692,26 @@ pub fn exit(
     new_michelson_code = format!("{new_michelson_code}\n");
     new_michelson_code = format!("{new_michelson_code}{space}UNIT; NIL operation; PAIR;");
 
-    format!("parameter unit;\nstorage unit;\ncode {{\n{new_michelson_code} }}")
+    let parameter_michelson_ty = reserved_type2michelson_pair(
+        structure_types
+            .iter()
+            .find(|ty| match ty {
+                Type::Struct { id, fields: _ } => id == &String::from("Parameter"),
+                _ => false,
+            })
+            .expect("Parameter型が宣言されていません.")
+            .clone(),
+    );
+    let storage_michelson_ty = reserved_type2michelson_pair(
+        structure_types
+            .iter()
+            .find(|ty| match ty {
+                Type::Struct { id, fields: _ } => id == &String::from("Storage"),
+                _ => false,
+            })
+            .expect("Storage型が宣言されていません.")
+            .clone(),
+    );
+
+    format!("parameter {parameter_michelson_ty};\nstorage {storage_michelson_ty};\ncode {{\n{new_michelson_code} }}")
 }

@@ -1,7 +1,7 @@
 mod helper;
 use crate::compiler::utils;
 use crate::mini_llvm::{
-    reserved_type2michelson_pair, Condition, Instruction, Opcode, Register, Type,
+    reserved_type2michelson_pair, Arg, Condition, Function, Instruction, Opcode, Register, Type,
 };
 use std::collections::HashMap;
 
@@ -18,7 +18,7 @@ pub fn analyse_structure_types(
                 match structure_type {
                     Type::Struct { id: _, fields } => {
                         for field in fields {
-                            helper::analyse_memory4alloca(
+                            helper::analyse::analyse_memory4alloca(
                                 field.clone(),
                                 memory_ty2stack_ptr,
                                 memory_ptr,
@@ -38,6 +38,36 @@ pub fn analyse_structure_types(
                 }
             }
         };
+    }
+}
+
+pub fn analyse_argument_list(
+    register2stack_ptr: &mut HashMap<Register, usize>,
+    register2ty: &mut HashMap<Register, Type>,
+    stack_ptr: &mut usize,
+    argument_list: &Vec<Arg>,
+) {
+    //vec![
+    //    Arg {
+    //        ty: Type::Ptr(Box::new(pair.clone())),
+    //        reg: Register::new("%0"),
+    //    },
+    //    Arg {
+    //        ty: Type::Ptr(Box::new(parameter.clone())),
+    //        reg: Register::new("%1"),
+    //    },
+    //    Arg {
+    //        ty: Type::Ptr(Box::new(storage.clone())),
+    //        reg: Register::new("%2"),
+    //    },
+    //]
+    for Arg { ty, reg } in argument_list {
+        let _ = register2stack_ptr.entry(reg.clone()).or_insert_with(|| {
+            *stack_ptr += 1;
+            *stack_ptr
+        });
+
+        register2ty.entry(reg.clone()).or_insert(ty.clone());
     }
 }
 
@@ -69,7 +99,7 @@ pub fn analyse_registers_and_memory(
 
                 //（レジスタは上記で良いんだけど、）Struct型の場合は内部にも, メモリの型を
                 // 保持している（ケースがほとんどである）ので再帰的に調べる必要がある
-                helper::analyse_memory4alloca(ty.clone(), memory_ty2stack_ptr, memory_ptr);
+                helper::analyse::analyse_memory4alloca(ty.clone(), memory_ty2stack_ptr, memory_ptr);
             }
             Instruction::Store { ty, value, ptr } => {
                 let _ = register2stack_ptr.entry(value.clone()).or_insert_with(|| {
@@ -270,6 +300,64 @@ pub fn analyse_registers_and_memory(
     }
 }
 
+///ここが終わった段階ではMichelson StackのTopに(Parameter, Storage)が乗っている
+pub fn prepare_storage(
+    smart_contract_function: &Function,
+    michelson_code: String,
+    tab: &str,
+    tab_depth: usize,
+    register2stack_ptr: &HashMap<Register, usize>,
+    memory_ty2stack_ptr: &HashMap<Type, usize>,
+) -> String {
+    let storage_arg = smart_contract_function
+        .argument_list
+        .iter()
+        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+            Type::Struct { id, fields: _ } => id == String::from("Storage"),
+            _ => false,
+        })
+        .unwrap();
+    format!(
+        "{michelson_code}{}",
+        helper::storage::alloca_storage_by_value(
+            storage_arg,
+            tab,
+            tab_depth,
+            &register2stack_ptr,
+            &memory_ty2stack_ptr,
+        )
+    )
+}
+
+///ここが終わった段階では(Parameter, Strorage)はもう要らないのでDROP.
+pub fn prepare_parameter(
+    smart_contract_function: &Function,
+    michelson_code: String,
+    tab: &str,
+    tab_depth: usize,
+    register2stack_ptr: &HashMap<Register, usize>,
+    memory_ty2stack_ptr: &HashMap<Type, usize>,
+) -> String {
+    let parameter_arg = smart_contract_function
+        .argument_list
+        .iter()
+        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+            Type::Struct { id, fields: _ } => id == String::from("Parameter"),
+            _ => false,
+        })
+        .unwrap();
+    format!(
+        "{michelson_code}{}",
+        helper::parameter::alloca_parameter_by_value(
+            parameter_arg,
+            tab,
+            tab_depth,
+            &register2stack_ptr,
+            &memory_ty2stack_ptr,
+        )
+    )
+}
+
 ///Step.1
 ///ここではmichelson_codeを受け取り、実際にMichelsonの命令を追加していく.
 ///レジスタ型環境（register2ty, register2stack_ptr）とメモリ型環境（memory_ty2stack_ptr）を受け取り、
@@ -281,7 +369,7 @@ pub fn prepare(
     register2ty: &HashMap<Register, Type>,
     memory_ty2stack_ptr: &HashMap<Type, usize>,
 ) -> String {
-    let mut new_michelson_code = format!("{michelson_code}{space}DROP;\n");
+    let mut new_michelson_code = michelson_code;
 
     let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr.iter().collect::<Vec<_>>();
     memory_ty2stack_ptr_sorted.sort_by(|a, b| (b.1).cmp(a.1));
@@ -339,6 +427,12 @@ pub fn prepare(
         new_michelson_code =
             format!("{new_michelson_code}{space}PUSH {michelson_ty} {val}; # {comment}\n");
     }
+    //(param, storage)を一番上に持ってくる
+    new_michelson_code = format!(
+        "{new_michelson_code}{space}DIG {};\n",
+        register2stack_ptr.len() + memory_ty2stack_ptr.len()
+    );
+    //new_michelson_code = format!("{new_michelson_code}{space}DROP;\n");
     new_michelson_code
 }
 
@@ -362,7 +456,7 @@ pub fn body(
             Instruction::Alloca { ptr, ty } => {
                 michelson_code = format!(
                     "{michelson_code}{}",
-                    helper::exec_alloca(
+                    helper::alloca::exec_alloca(
                         ptr,
                         ty,
                         tab,
@@ -606,7 +700,7 @@ pub fn body(
             Instruction::LlvmMemcpy { dest, src, ty } => {
                 michelson_code = format!(
                     "{michelson_code}{}",
-                    helper::exec_llvm_memcpy(
+                    helper::llvm_memcpy::exec_llvm_memcpy(
                         dest,
                         src,
                         ty,

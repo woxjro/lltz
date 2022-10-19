@@ -50,6 +50,13 @@ pub fn compile(mini_llvm: MiniLlvm) -> String {
         &mini_llvm.structure_types,
     );
 
+    backend::analyse_argument_list(
+        &mut register2stack_ptr,
+        &mut register2ty,
+        &mut stack_ptr,
+        &smart_contract_function.argument_list,
+    );
+
     backend::analyse_registers_and_memory(
         &mut register2stack_ptr,
         &mut register2ty,
@@ -79,6 +86,24 @@ pub fn compile(mini_llvm: MiniLlvm) -> String {
         tab,
         &register2stack_ptr,
         &register2ty,
+        &memory_ty2stack_ptr,
+    );
+
+    michelson_code = backend::prepare_storage(
+        smart_contract_function,
+        michelson_code,
+        tab,
+        tab_depth,
+        &register2stack_ptr,
+        &memory_ty2stack_ptr,
+    );
+
+    michelson_code = backend::prepare_parameter(
+        smart_contract_function,
+        michelson_code,
+        tab,
+        tab_depth,
+        &register2stack_ptr,
         &memory_ty2stack_ptr,
     );
 

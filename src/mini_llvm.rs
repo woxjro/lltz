@@ -33,7 +33,7 @@ pub fn reserved_type2michelson_pair(ty: Type) -> String {
     match ty {
         Type::Struct { id: _, fields } => {
             let mut res = String::new();
-            if fields.len() > 0 {
+            if fields.len() >= 2 {
                 for (i, field) in fields.iter().enumerate() {
                     if i == 0 {
                         res = self::reserved_type2michelson_pair(field.clone())
@@ -45,6 +45,8 @@ pub fn reserved_type2michelson_pair(ty: Type) -> String {
                     }
                 }
                 format!("(pair {res})")
+            } else if fields.len() == 1 {
+                self::reserved_type2michelson_pair(fields.iter().nth(0).unwrap().clone())
             } else {
                 format!("unit")
             }
@@ -77,6 +79,13 @@ impl Type {
             Type::Ptr(_) => String::from("int"),
         };
         res
+    }
+
+    pub fn deref(ty: &Type) -> Type {
+        match ty {
+            Type::Ptr(inner) => *(inner.clone()),
+            _ => panic!(),
+        }
     }
 }
 

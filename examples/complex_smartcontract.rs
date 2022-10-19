@@ -109,6 +109,38 @@ fn main() {
     //  ret void
     //}
 
+    //%struct.Fish = type { i32, i32, i32 }
+    let fish = Type::Struct {
+        id: String::from("Fish"),
+        fields: vec![Type::I32, Type::I32, Type::I32],
+    };
+
+    //%struct.Parameter = type { i32, i32, i32, %struct.Fish }
+    let parameter = Type::Struct {
+        id: String::from("Parameter"),
+        fields: vec![Type::I32, Type::I32, Type::I32, fish.clone()],
+    };
+
+    //%struct.Storage = type { i32, i32, i32, i32, %struct.Fish }
+    let storage = Type::Struct {
+        id: String::from("Storage"),
+        fields: vec![Type::I32, Type::I32, Type::I32, fish.clone()],
+    };
+
+    //%struct.Operation = type {}
+    let operation = Type::Struct {
+        id: String::from("Operation"),
+        fields: vec![],
+    };
+
+    //%struct.Pair = type { [0 x %struct.Operation], %struct.Storage }
+    let pair = Type::Struct {
+        id: String::from("Pair"),
+        // FIXME: [0 x %struct.Operation]にしたい.
+        //        配列をサポートしていない
+        fields: vec![operation.clone(), storage.clone()],
+    };
+
     //; Function Attrs: noinline nounwind optnone uwtable
     //define dso_local void @initial_value() #0 {
     let initial_value: Vec<Instruction> = vec![
@@ -209,43 +241,12 @@ fn main() {
     //  ret void
     //}
 
-    //%struct.Parameter = type { i32, i32, i32, %struct.Fish }
-    let parameter = Type::Struct {
-        id: String::from("Parameter"),
-        fields: vec![Type::I32, Type::I32],
-    };
-    let fish = Type::Struct {
-        id: String::from("Fish"),
-        fields: vec![Type::I32, Type::I32, Type::I32],
-    };
-
-    //%struct.Storage = type { i32, i32, i32, i32, %struct.Fish }
-    let storage = Type::Struct {
-        id: String::from("Storage"),
-        //fields: vec![Type::I32, Type::I32, fish.clone()],
-        fields: vec![Type::I32, fish.clone(), Type::I32],
-    };
-
-    //%struct.Operation = type {}
-    let operation = Type::Struct {
-        id: String::from("Operation"),
-        fields: vec![],
-    };
-
-    //%struct.Pair = type { [0 x %struct.Operation], %struct.Storage }
-    let pair = Type::Struct {
-        id: String::from("Pair"),
-        // FIXME: [0 x %struct.Operation]にしたい.
-        //        配列をサポートしていない
-        fields: vec![operation.clone(), storage.clone()],
-    };
-
     let mini_llvm = MiniLlvm {
         structure_types: vec![
+            fish.clone(),
             operation.clone(),
             pair.clone(),
             parameter.clone(),
-            fish.clone(),
             storage.clone(),
         ],
         functions: vec![
@@ -292,7 +293,7 @@ fn main() {
     let command_typecheck =
         format!("#tezos-client --mode mockup typecheck script ./examples/out/{file_name}.tz\n");
     let command_mock =
-        format!("#tezos-client --mode mockup run script ./examples/out/{file_name}.tz on storage 'Pair 1 (Pair 2 3 4) 5' and input 'Pair 6 7' --trace-stack\n");
+        format!("#tezos-client --mode mockup run script ./examples/out/{file_name}.tz on storage 'Unit' and input 'Unit' --trace-stack\n");
     let contents = format!("{command_typecheck}{command_mock}{michelson_code}");
     let mut file = File::create(format!("examples/out/{file_name}.tz")).unwrap();
     file.write_all(contents.as_bytes()).unwrap();

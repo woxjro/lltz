@@ -1,5 +1,7 @@
 use mini_llvm_michelson_compiler::compiler::compile;
-use mini_llvm_michelson_compiler::mini_llvm::{Function, Instruction, MiniLlvm, Register, Type};
+use mini_llvm_michelson_compiler::mini_llvm::{
+    Arg, Function, Instruction, MiniLlvm, Register, Type,
+};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -30,7 +32,7 @@ fn main() {
     //    struct Prefecture p;
     //};
     //
-    //int main()
+    //struct Pair main(struct Parameter p, struct Storage s) {
     //{
     //    struct Fish fish;
     //    fish.kind = Ika;
@@ -45,8 +47,16 @@ fn main() {
     //
     //%struct.Fish = type { i32, i32, i32, %struct.Prefecture }
     //%struct.Prefecture = type { i32, i32 }
+    //%struct.Parameter = type {}
+    //%struct.Storage   = type {}
+    //%struct.Operation = type {}
+    //%struct.Pair = type { [0 x %struct.Operation], %struct.Storage }
     //
-    //define dso_local i32 @main() #0 {
+    //define dso_local void @smart_contract(
+    //  %struct.Pair* noalias sret %pair,
+    //  %struct.Parameter* byval(%struct.Parameter) align 8 %parameter,
+    //  %struct.Storage* byval(%struct.Storage) align 8 %storage
+    //) #0 {
     //  %1 = alloca i32, align 4
     //  %2 = alloca %struct.Fish, align 4
     //  store i32 0, i32* %1, align 4
@@ -62,6 +72,7 @@ fn main() {
     //  %8 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 3
     //  %9 = getelementptr inbounds %struct.Prefecture, %struct.Prefecture* %8, i32 0, i32 1
     //  store i32 8800000, i32* %9, align 4
+    //  FIXME: return void
     //  ret i32 0
     //}
 
@@ -204,23 +215,55 @@ fn main() {
 
     //}}
 
+    let parameter = Type::Struct {
+        id: String::from("Parameter"),
+        fields: vec![],
+    };
+
+    let storage = Type::Struct {
+        id: String::from("Storage"),
+        fields: vec![],
+    };
+
+    let operation = Type::Struct {
+        id: String::from("Operation"),
+        fields: vec![],
+    };
+
+    //%struct.Pair = type { [0 x %struct.Operation], %struct.Storage }
+    let pair = Type::Struct {
+        id: String::from("Pair"),
+        // FIXME: [0 x %struct.Operation]にしたい.
+        //        配列をサポートしていない
+        fields: vec![operation.clone(), storage.clone()],
+    };
+
     let mini_llvm = MiniLlvm {
         structure_types: vec![
-            Type::Struct {
-                id: String::from("Storage"),
-                fields: vec![],
-            },
-            Type::Struct {
-                id: String::from("Parameter"),
-                fields: vec![],
-            },
+            parameter.clone(),
+            storage.clone(),
+            operation.clone(),
+            pair.clone(),
             struct_prefecture.clone(),
             struct_fish.clone(),
         ],
         functions: vec![Function {
             function_name: String::from("smart_contract"),
             result_type: Type::I32,
-            argument_list: vec![],
+            argument_list: vec![
+                Arg {
+                    ty: Type::Ptr(Box::new(pair.clone())),
+                    reg: Register::new("%pair"),
+                },
+                Arg {
+                    ty: Type::Ptr(Box::new(parameter.clone())),
+                    reg: Register::new("%parameter"),
+                },
+                Arg {
+                    ty: Type::Ptr(Box::new(storage.clone())),
+                    reg: Register::new("%storage"),
+                },
+            ],
             instructions,
         }],
     };

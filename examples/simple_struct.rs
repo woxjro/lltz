@@ -1,5 +1,7 @@
 use mini_llvm_michelson_compiler::compiler::compile;
-use mini_llvm_michelson_compiler::mini_llvm::{Function, Instruction, MiniLlvm, Register, Type};
+use mini_llvm_michelson_compiler::mini_llvm::{
+    Arg, Function, Instruction, MiniLlvm, Register, Type,
+};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -129,16 +131,35 @@ fn main() {
         }, //}}
     ];
 
+    let parameter = Type::Struct {
+        id: String::from("Parameter"),
+        fields: vec![],
+    };
+
+    let storage = Type::Struct {
+        id: String::from("Storage"),
+        fields: vec![],
+    };
+
+    let operation = Type::Struct {
+        id: String::from("Operation"),
+        fields: vec![],
+    };
+
+    //%struct.Pair = type { [0 x %struct.Operation], %struct.Storage }
+    let pair = Type::Struct {
+        id: String::from("Pair"),
+        // FIXME: [0 x %struct.Operation]にしたい.
+        //        配列をサポートしていない
+        fields: vec![operation.clone(), storage.clone()],
+    };
+
     let mini_llvm = MiniLlvm {
         structure_types: vec![
-            Type::Struct {
-                id: String::from("Storage"),
-                fields: vec![],
-            },
-            Type::Struct {
-                id: String::from("Parameter"),
-                fields: vec![],
-            },
+            parameter.clone(),
+            storage.clone(),
+            operation.clone(),
+            pair.clone(),
             Type::Struct {
                 id: String::from("Fish"),
                 fields: vec![Type::I32, Type::I32, Type::I32],
@@ -147,7 +168,20 @@ fn main() {
         functions: vec![Function {
             function_name: String::from("smart_contract"),
             result_type: Type::I32,
-            argument_list: vec![],
+            argument_list: vec![
+                Arg {
+                    ty: Type::Ptr(Box::new(pair.clone())),
+                    reg: Register::new("%pair"),
+                },
+                Arg {
+                    ty: Type::Ptr(Box::new(parameter.clone())),
+                    reg: Register::new("%parameter"),
+                },
+                Arg {
+                    ty: Type::Ptr(Box::new(storage.clone())),
+                    reg: Register::new("%storage"),
+                },
+            ],
             instructions,
         }],
     };

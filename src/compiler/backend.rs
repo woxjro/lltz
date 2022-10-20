@@ -358,10 +358,41 @@ pub fn prepare_parameter(
     )
 }
 
+///スマートコントラクトの返り値として使うPairをAllocaする関数
+///（ここでAllocaしたPairをエンコードしてコントラクトの返り値とする）
+pub fn prepare_pair(
+    smart_contract_function: &Function,
+    michelson_code: String,
+    tab: &str,
+    tab_depth: usize,
+    register2stack_ptr: &HashMap<Register, usize>,
+    memory_ty2stack_ptr: &HashMap<Type, usize>,
+) -> String {
+    let pair_arg = smart_contract_function
+        .argument_list
+        .iter()
+        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+            Type::Struct { id, fields: _ } => id == String::from("Pair"),
+            _ => false,
+        })
+        .unwrap();
+    format!(
+        "{michelson_code}{}",
+        helper::alloca::exec_alloca(
+            &pair_arg.reg,
+            &Type::deref(&pair_arg.ty),
+            tab,
+            tab_depth,
+            &register2stack_ptr,
+            &memory_ty2stack_ptr,
+        )
+    )
+}
+
 ///Step.1
 ///ここではmichelson_codeを受け取り、実際にMichelsonの命令を追加していく.
-///レジスタ型環境（register2ty, register2stack_ptr）とメモリ型環境（memory_ty2stack_ptr）を受け取り、
-///それらに相当するMichelson命令をスタックにPUSHする
+///レジスタ型環境（register2ty, register2stack_ptr）とメモリ型環境（memory_ty2stack_ptr）
+///を受け取り,それらに相当するMichelson命令をスタックにPUSHする
 pub fn prepare(
     michelson_code: String,
     space: &str,

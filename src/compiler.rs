@@ -89,8 +89,7 @@ pub fn compile(mini_llvm: MiniLlvm) -> String {
         &memory_ty2stack_ptr,
     );
 
-    // TODO: ここの３つをまとめたい {{
-    michelson_code = backend::prepare_storage(
+    michelson_code = backend::prepare_from_argument_list(
         smart_contract_function,
         michelson_code,
         tab,
@@ -98,25 +97,6 @@ pub fn compile(mini_llvm: MiniLlvm) -> String {
         &register2stack_ptr,
         &memory_ty2stack_ptr,
     );
-
-    michelson_code = backend::prepare_parameter(
-        smart_contract_function,
-        michelson_code,
-        tab,
-        tab_depth,
-        &register2stack_ptr,
-        &memory_ty2stack_ptr,
-    );
-
-    michelson_code = backend::prepare_pair(
-        smart_contract_function,
-        michelson_code,
-        tab,
-        tab_depth,
-        &register2stack_ptr,
-        &memory_ty2stack_ptr,
-    );
-    // }}
 
     michelson_code = backend::body(
         michelson_code,

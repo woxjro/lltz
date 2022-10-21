@@ -1,4 +1,5 @@
 mod helper;
+mod prepare;
 use crate::compiler::utils;
 use crate::mini_llvm::{
     reserved_type2michelson_pair, Arg, Condition, Function, Instruction, Opcode, Register, Type,
@@ -300,8 +301,7 @@ pub fn analyse_registers_and_memory(
     }
 }
 
-///ここが終わった段階ではMichelson StackのTopに(Parameter, Storage)が乗っている
-pub fn prepare_storage(
+pub fn prepare_from_argument_list(
     smart_contract_function: &Function,
     michelson_code: String,
     tab: &str,
@@ -309,84 +309,35 @@ pub fn prepare_storage(
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<Type, usize>,
 ) -> String {
-    let storage_arg = smart_contract_function
-        .argument_list
-        .iter()
-        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
-            Type::Struct { id, fields: _ } => id == String::from("Storage"),
-            _ => false,
-        })
-        .unwrap();
-    format!(
-        "{michelson_code}{}",
-        helper::storage::alloca_storage_by_value(
-            storage_arg,
-            tab,
-            tab_depth,
-            &register2stack_ptr,
-            &memory_ty2stack_ptr,
-        )
-    )
-}
+    let mut michelson_code = michelson_code;
+    michelson_code = prepare::prepare_storage(
+        smart_contract_function,
+        michelson_code,
+        tab,
+        tab_depth,
+        register2stack_ptr,
+        memory_ty2stack_ptr,
+    );
 
-///ここが終わった段階では(Parameter, Strorage)はもう要らないのでDROP.
-pub fn prepare_parameter(
-    smart_contract_function: &Function,
-    michelson_code: String,
-    tab: &str,
-    tab_depth: usize,
-    register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
-) -> String {
-    let parameter_arg = smart_contract_function
-        .argument_list
-        .iter()
-        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
-            Type::Struct { id, fields: _ } => id == String::from("Parameter"),
-            _ => false,
-        })
-        .unwrap();
-    format!(
-        "{michelson_code}{}",
-        helper::parameter::alloca_parameter_by_value(
-            parameter_arg,
-            tab,
-            tab_depth,
-            &register2stack_ptr,
-            &memory_ty2stack_ptr,
-        )
-    )
-}
+    michelson_code = prepare::prepare_parameter(
+        smart_contract_function,
+        michelson_code,
+        tab,
+        tab_depth,
+        register2stack_ptr,
+        memory_ty2stack_ptr,
+    );
 
-///スマートコントラクトの返り値として使うPairをAllocaする関数
-///（ここでAllocaしたPairをエンコードしてコントラクトの返り値とする）
-pub fn prepare_pair(
-    smart_contract_function: &Function,
-    michelson_code: String,
-    tab: &str,
-    tab_depth: usize,
-    register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
-) -> String {
-    let pair_arg = smart_contract_function
-        .argument_list
-        .iter()
-        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
-            Type::Struct { id, fields: _ } => id == String::from("Pair"),
-            _ => false,
-        })
-        .unwrap();
-    format!(
-        "{michelson_code}{}",
-        helper::alloca::exec_alloca(
-            &pair_arg.reg,
-            &Type::deref(&pair_arg.ty),
-            tab,
-            tab_depth,
-            &register2stack_ptr,
-            &memory_ty2stack_ptr,
-        )
-    )
+    michelson_code = prepare::prepare_pair(
+        smart_contract_function,
+        michelson_code,
+        tab,
+        tab_depth,
+        register2stack_ptr,
+        memory_ty2stack_ptr,
+    );
+
+    michelson_code
 }
 
 ///Step.1
@@ -395,13 +346,12 @@ pub fn prepare_pair(
 ///を受け取り,それらに相当するMichelson命令をスタックにPUSHする
 pub fn prepare(
     michelson_code: String,
-    space: &str,
+    tab: &str,
     register2stack_ptr: &HashMap<Register, usize>,
     register2ty: &HashMap<Register, Type>,
     memory_ty2stack_ptr: &HashMap<Type, usize>,
 ) -> String {
-    let mut new_michelson_code = michelson_code;
-
+    let mut michelson_instructions = vec![];
     let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr.iter().collect::<Vec<_>>();
     memory_ty2stack_ptr_sorted.sort_by(|a, b| (b.1).cmp(a.1));
     for (ty, _v) in memory_ty2stack_ptr_sorted.iter() {
@@ -410,10 +360,11 @@ pub fn prepare(
         let llvm_ty_string = Type::to_llvm_ty_string(ty);
         let comment = format!("memory for {llvm_ty_string}");
 
-        new_michelson_code = format!("{new_michelson_code}{space}PUSH int 0;\n");
-        new_michelson_code =
-            format!("{new_michelson_code}{space}EMPTY_MAP int {ty_str}; # {comment}\n");
-        new_michelson_code = format!("{new_michelson_code}{space}PAIR;\n");
+        michelson_instructions.append(&mut vec![
+            format!("PUSH int 0;"),
+            format!("EMPTY_MAP int {ty_str}; # {comment}"),
+            format!("PAIR;"),
+        ]);
     }
 
     let mut register2stack_ptr_sorted = register2stack_ptr.iter().collect::<Vec<_>>();
@@ -455,16 +406,17 @@ pub fn prepare(
             let id = reg.get_id();
             format!("for reg {id} : {llvm_ty_string}")
         };
-        new_michelson_code =
-            format!("{new_michelson_code}{space}PUSH {michelson_ty} {val}; # {comment}\n");
+        michelson_instructions.push(format!("PUSH {michelson_ty} {val}; # {comment}"));
     }
     //(param, storage)を一番上に持ってくる
-    new_michelson_code = format!(
-        "{new_michelson_code}{space}DIG {};\n",
+    michelson_instructions.push(format!(
+        "DIG {};",
         register2stack_ptr.len() + memory_ty2stack_ptr.len()
-    );
-    //new_michelson_code = format!("{new_michelson_code}{space}DROP;\n");
-    new_michelson_code
+    ));
+    format!(
+        "{michelson_code}{}",
+        utils::format(&michelson_instructions, tab, 1)
+    )
 }
 
 ///Step.2

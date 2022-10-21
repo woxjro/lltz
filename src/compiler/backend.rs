@@ -412,7 +412,7 @@ pub fn prepare(
 
         new_michelson_code = format!("{new_michelson_code}{space}PUSH int 0;\n");
         new_michelson_code =
-            format!("{new_michelson_code}{space}EMPTY_BIG_MAP int {ty_str}; # {comment}\n");
+            format!("{new_michelson_code}{space}EMPTY_MAP int {ty_str}; # {comment}\n");
         new_michelson_code = format!("{new_michelson_code}{space}PAIR;\n");
     }
 

@@ -53,7 +53,7 @@ pub fn alloca_storage_by_value(
         memory_ty2stack_ptr,
     ));
 
-    michelson_instructions.push(format!("###}}"));
+    michelson_instructions.push(format!("### }}"));
     utils::format(&michelson_instructions, tab, tab_depth)
 }
 

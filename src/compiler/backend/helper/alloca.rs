@@ -24,7 +24,11 @@ pub fn exec_alloca(
         }
         _ => {
             vec![
-                format!("###alloca {{"),
+                format!(
+                    "### {} = alloca {} {{",
+                    ptr.get_id(),
+                    Type::to_llvm_ty_string(ty),
+                ),
                 format!("DIG {};", register2stack_ptr.len() + memory_ptr - 1),
                 format!("UNPAIR;"),
                 format!("SWAP;"),
@@ -43,7 +47,7 @@ pub fn exec_alloca(
                 format!("DIG {};", register2stack_ptr.get(&ptr).unwrap()),
                 format!("DROP;"),
                 format!("DUG {};", register2stack_ptr.get(&ptr).unwrap() - 1),
-                format!("###}}"),
+                format!("### }}"),
             ]
         }
     };
@@ -69,9 +73,22 @@ pub fn exec_struct_alloca(
             fields: fields.clone(),
         })
         .unwrap();
-    let mut res = vec![format!("###alloca {{"), format!("EMPTY_MAP int int;")];
+    let mut res = vec![
+        format!(
+            "### {} = alloca {} {{",
+            ptr.get_id(),
+            Type::to_llvm_ty_string(&Type::Struct {
+                id: id.to_string(),
+                fields: fields.clone()
+            })
+        ),
+        format!("EMPTY_MAP int int;"),
+    ];
     for (idx, field) in fields.iter().enumerate() {
-        res.append(&mut vec![format!("###alloca for field No.{idx} {{")]);
+        res.append(&mut vec![format!(
+            "### alloca field idx={idx} : {} {{",
+            Type::to_llvm_ty_string(field)
+        )]);
         res.append(&mut exec_struct_field_alloca(
             idx,
             field,
@@ -80,7 +97,7 @@ pub fn exec_struct_alloca(
             register2stack_ptr,
             memory_ty2stack_ptr,
         ));
-        res.append(&mut vec![format!("###}}")]);
+        res.append(&mut vec![format!("### }}")]);
     }
 
     res.append(&mut vec![
@@ -101,7 +118,7 @@ pub fn exec_struct_alloca(
         format!("DIG {};", register2stack_ptr.get(&ptr).unwrap()),
         format!("DROP;"),
         format!("DUG {};", register2stack_ptr.get(&ptr).unwrap() - 1),
-        format!("###}}"),
+        format!("### }}"),
     ]);
 
     res
@@ -128,7 +145,7 @@ fn exec_struct_field_alloca(
             let mut res = vec![format!("EMPTY_MAP int int;")];
             for (child_field_idx, child_field) in fields.iter().enumerate() {
                 res.append(&mut vec![format!(
-                    "###alloca for field No.{child_field_idx} {{"
+                    "### alloca for field No.{child_field_idx} {{"
                 )]);
                 res.append(&mut self::exec_struct_field_alloca(
                     child_field_idx,
@@ -138,7 +155,7 @@ fn exec_struct_field_alloca(
                     register2stack_ptr,
                     memory_ty2stack_ptr,
                 ));
-                res.append(&mut vec![format!("###}}")]);
+                res.append(&mut vec![format!("### }}")]);
             }
             //TODO: MAP int int をUPDATEでどっかに入れる必要がある
             //child_map:parent_map

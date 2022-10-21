@@ -463,7 +463,13 @@ pub fn body(
                 let memory_ptr = memory_ty2stack_ptr.get(ty).unwrap();
 
                 let michelson_instructions = vec![
-                    format!("###store {{"),
+                    format!(
+                        "### store {} {}, {}* {} {{",
+                        Type::to_llvm_ty_string(ty),
+                        value.get_id(),
+                        Type::to_llvm_ty_string(ty),
+                        ptr.get_id()
+                    ),
                     format!("DUP {};", register2stack_ptr.get(&value).unwrap()),
                     format!("SOME;"),
                     format!("DIG {};", register2stack_ptr.len() + memory_ptr),
@@ -473,7 +479,7 @@ pub fn body(
                     format!("UPDATE;"),
                     format!("PAIR;"),
                     format!("DUG {};", register2stack_ptr.len() + memory_ptr - 1),
-                    format!("###}}"),
+                    format!("### }}"),
                 ];
                 michelson_code = format!(
                     "{michelson_code}{}",
@@ -484,7 +490,13 @@ pub fn body(
                 let memory_ptr = memory_ty2stack_ptr.get(ty).unwrap();
 
                 let michelson_instructions = vec![
-                    format!("###load {{"),
+                    format!(
+                        "### {} = load {}, {}* {} {{",
+                        result.get_id(),
+                        Type::to_llvm_ty_string(ty),
+                        Type::to_llvm_ty_string(ty),
+                        ptr.get_id()
+                    ),
                     format!("DUP {};", register2stack_ptr.len() + memory_ptr),
                     format!("CAR;"),
                     format!("DUP {};", register2stack_ptr.get(&ptr).unwrap() + 1),
@@ -493,7 +505,7 @@ pub fn body(
                     format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
                     format!("DROP;"),
                     format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
-                    format!("###}}"),
+                    format!("### }}"),
                 ];
                 michelson_code = format!(
                     "{michelson_code}{}",
@@ -511,7 +523,13 @@ pub fn body(
                 //              (...が, これ以外無い気がする)
                 let (_, reg) = &subsequent[1];
                 let michelson_instructions = vec![
-                    format!("###getElementPtr {{"),
+                    format!(
+                        "### {} = getElementPtr {}, {}*, {} {{",
+                        result.get_id(),
+                        Type::to_llvm_ty_string(ty),
+                        Type::to_llvm_ty_string(ty),
+                        ptrval.get_id()
+                    ),
                     format!("DUP {};", register2stack_ptr.len() + memory_ptr),
                     format!("CAR;"), //bm
                     format!("DUP {};", register2stack_ptr.get(&ptrval).unwrap() + 1),
@@ -523,7 +541,7 @@ pub fn body(
                     format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
                     format!("DROP;"),
                     format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
-                    format!("###}}"),
+                    format!("### }}"),
                 ];
                 michelson_code = format!(
                     "{michelson_code}{}",
@@ -535,7 +553,7 @@ pub fn body(
                 code_block_t,
                 code_block_f,
             } => {
-                michelson_code = format!("{michelson_code}{tab}###If {{\n");
+                michelson_code = format!("{michelson_code}{tab}### If {{\n");
                 michelson_code = format!(
                     "{michelson_code}{tab}DUP {};\n",
                     register2stack_ptr.get(&reg).unwrap()
@@ -573,7 +591,7 @@ pub fn body(
                 michelson_code = format!("{michelson_code}{michelson_code_block_f}");
                 michelson_code = format!(
                     "{michelson_code}{}",
-                    utils::format(&vec![format!("   }};"), format!("###}}"),], tab, tab_depth),
+                    utils::format(&vec![format!("   }};"), format!("### }}"),], tab, tab_depth),
                 );
             }
             Instruction::While {
@@ -623,7 +641,7 @@ pub fn body(
 
                 michelson_code = format!(
                     "{michelson_code}{}",
-                    utils::format(&vec![format!("###While {{")], tab, tab_depth)
+                    utils::format(&vec![format!("### While {{")], tab, tab_depth)
                 );
                 michelson_code = format!("{michelson_code}{}", michelson_cond_block);
 
@@ -653,7 +671,11 @@ pub fn body(
 
                 michelson_code = format!(
                     "{michelson_code}{}",
-                    utils::format(&vec![format!("     }};"), format!("###}}")], tab, tab_depth)
+                    utils::format(
+                        &vec![format!("     }};"), format!("### }}")],
+                        tab,
+                        tab_depth
+                    )
                 );
 
                 //];
@@ -676,14 +698,14 @@ pub fn body(
 
                 let michelson_instructions = vec![
                     //NOTE: 意図的にop2を先にDUPしている(LLVMとの被演算子の順番を揃えるため)
-                    format!("###Op {{"),
+                    format!("### Op {{"),
                     format!("DUP {};", register2stack_ptr.get(&op2).unwrap()),
                     format!("DUP {};", register2stack_ptr.get(&op1).unwrap() + 1),
                     format!("{op};"),
                     format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
                     format!("DROP;"),
                     format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
-                    format!("###}}"),
+                    format!("### }}"),
                 ];
                 michelson_code = format!(
                     "{michelson_code}{}",
@@ -714,7 +736,7 @@ pub fn body(
                 op2,
             } => {
                 let mut michelson_instructions = vec![
-                    format!("###Icmp {{"),
+                    format!("### Icmp {{"),
                     format!("DUP {};", register2stack_ptr.get(&op1).unwrap()),
                     format!("DUP {};", register2stack_ptr.get(&op2).unwrap() + 1),
                 ];
@@ -739,7 +761,7 @@ pub fn body(
                     format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
                     format!("DROP;"),
                     format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
-                    format!("###}}"),
+                    format!("### }}"),
                 ];
 
                 michelson_instructions.append(&mut op);

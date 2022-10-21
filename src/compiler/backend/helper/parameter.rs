@@ -53,7 +53,7 @@ pub fn alloca_parameter_by_value(
         memory_ty2stack_ptr,
     ));
 
-    michelson_instructions.push(format!("###}}"));
+    michelson_instructions.push(format!("### }}"));
     michelson_instructions.push(format!("DROP; # DROP (Paramter, Storage)"));
     utils::format(&michelson_instructions, tab, tab_depth)
 }

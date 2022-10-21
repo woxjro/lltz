@@ -152,6 +152,11 @@ fn decode_storage_field_from_input(
                     memory_ty2stack_ptr,
                 ));
             }
+            //最後の要素だった場合は後処理
+            //Struct { .. }から出るときは後処理が必要。入る時にDUPしている為.
+            if is_last_field {
+                michelson_instructions.push(format!("DROP;"));
+            }
         }
         _ => {
             /* primitiveの値がスタックの上に乗っているのでそれを使って,Memoryに入れる */

@@ -17,25 +17,34 @@ pub fn exec_llvm_memcpy(
     memory_ty2stack_ptr: &HashMap<Type, usize>,
 ) -> String {
     //validation
+
     match register2ty.get(&dest).unwrap() {
         Type::Ptr(inner) => {
             if inner != &Box::new(ty.clone()) {
-                panic!();
+                panic!(
+                    "@llvm.memcpyでdestの指す先の型:{}がty:{}と一致していません.",
+                    Type::to_llvm_ty_string(inner),
+                    Type::to_llvm_ty_string(ty)
+                );
             }
         }
         _ => {
-            panic!();
+            panic!("@llvm.memcpyのdestがポインタ型になっていません.");
         }
     }
 
     match register2ty.get(&src).unwrap() {
         Type::Ptr(inner) => {
             if inner != &Box::new(ty.clone()) {
-                panic!();
+                panic!(
+                    "@llvm.memcpyでsrcの指す先の型:{}がty:{}と一致していません.",
+                    Type::to_llvm_ty_string(inner),
+                    Type::to_llvm_ty_string(ty)
+                );
             }
         }
         _ => {
-            panic!();
+            panic!("@llvm.memcpyのsrcがポインタ型になっていません.");
         }
     }
 

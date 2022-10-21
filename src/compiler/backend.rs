@@ -164,9 +164,19 @@ pub fn analyse_registers_and_memory(
 
                 // FIXME: elementに対するpointer型であって, Struct*ではない...
                 // しかしそれを知るすべがない. constをregisterに入れてしまっているため...
-                register2ty
-                    .entry(result.clone())
-                    .or_insert(Type::Ptr(Box::new(ty.clone())));
+                // => とりあえず、SubsequentにはConstしか来ないと仮定してParse
+                match ty {
+                    Type::Struct { id: _, fields } => {
+                        let idx = subsequent[1].1.get_id().parse::<usize>().unwrap();
+                        let t = fields.iter().nth(idx).unwrap();
+                        register2ty
+                            .entry(result.clone())
+                            .or_insert(Type::Ptr(Box::new(t.clone())));
+                    }
+                    _ => {
+                        panic!("Primitive型に対してGetElementPtrは使えません.")
+                    }
+                }
 
                 for (ty, reg) in subsequent {
                     let _ = register2stack_ptr.entry(reg.clone()).or_insert_with(|| {
@@ -800,7 +810,7 @@ pub fn retrieve_storage_from_memory(
         format!("ASSERT_SOME; # {}", "Storage MAP Instance"),
     ]);
 
-    match storage_ty {
+    match storage_ty.clone() {
         Type::Struct { id, fields } => {
             if fields.len() >= 2 {
                 //逆順にスタックにencodeしたものを積んでいき、最後にPAIR nまとめる.
@@ -808,13 +818,16 @@ pub fn retrieve_storage_from_memory(
                     michelson_instructions.append(&mut retrieve_storage_field_from_memory(
                         field_idx,
                         field,
-                        fields.len() - field_idx,
+                        vec![fields.len() - field_idx],
                         register2stack_ptr,
                         memory_ty2stack_ptr,
                     ));
                 }
-                michelson_instructions
-                    .push(format!("PAIR {}; # PACK Struct {{ {id} }}", fields.len()));
+                michelson_instructions.append(&mut vec![
+                    format!("PAIR {}; # PACK Struct {{ {id} }}", fields.len()),
+                    format!("SWAP;"),
+                    format!("DROP; # Storage MAP Instance"),
+                ]);
             } else if fields.len() == 1 {
                 todo!()
             } else {
@@ -840,43 +853,73 @@ pub fn retrieve_storage_from_memory(
 fn retrieve_storage_field_from_memory(
     field_idx: usize,
     field: &Type,
-    depth: usize,
+    path: Vec<usize>,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<Type, usize>,
 ) -> Vec<String> {
+    let memory_ptr = memory_ty2stack_ptr.get(&field).unwrap();
     match field {
         Type::Struct {
-            id: _,
+            id: child_id,
             fields: child_fields,
         } => {
-            let mut michelson_instructions = vec![];
-            for (child_field_idx, child_field) in child_fields.iter().enumerate().rev() {
-                michelson_instructions.append(&mut retrieve_storage_field_from_memory(
-                    child_field_idx,
-                    child_field,
-                    depth + child_fields.len() - child_field_idx - 1,
-                    register2stack_ptr,
-                    memory_ty2stack_ptr,
-                ));
-            }
-            michelson_instructions
-        }
-        _ => {
-            let memory_ptr = memory_ty2stack_ptr.get(&field).unwrap();
-            vec![
-                format!("DUP {} ;", depth),
+            //TODO: child_fields.len() > 2, == 1, == 0で場合分け
+            let mut michelson_instructions = vec![
+                format!("### {{"),
+                format!("DUP {}; # MAP instance", path[path.len() - 1]),
                 format!("PUSH int {};", field_idx),
                 format!("GET;"),
                 format!("ASSERT_SOME;"),
                 format!(
-                    "DUP {} # memory: {};",
-                    register2stack_ptr.len() + memory_ptr + depth,
+                    "DUP {}; # memory: {}",
+                    register2stack_ptr.len() + memory_ptr + path.iter().sum::<usize>() + 1,
                     Type::to_llvm_ty_string(field)
                 ),
                 format!("CAR;"),
                 format!("SWAP;"),
                 format!("GET;"),
                 format!("ASSERT_SOME;"),
+            ];
+            for (child_field_idx, child_field) in child_fields.iter().enumerate().rev() {
+                let new_path =
+                    vec![path.clone(), vec![child_fields.len() - child_field_idx]].concat();
+                michelson_instructions.append(&mut retrieve_storage_field_from_memory(
+                    child_field_idx,
+                    child_field,
+                    new_path,
+                    register2stack_ptr,
+                    memory_ty2stack_ptr,
+                ));
+            }
+            michelson_instructions.append(&mut vec![
+                format!(
+                    "PAIR {}; # PACK Struct {{ {child_id} }}",
+                    child_fields.len()
+                ),
+                format!("SWAP;"),
+                format!("DROP; # child field MAP Instance"),
+                format!("### }}"),
+            ]);
+
+            michelson_instructions
+        }
+        _ => {
+            vec![
+                format!("### {{"),
+                format!("DUP {}; # MAP instance", path[path.len() - 1]),
+                format!("PUSH int {};", field_idx),
+                format!("GET;"),
+                format!("ASSERT_SOME;"),
+                format!(
+                    "DUP {}; # memory: {}",
+                    register2stack_ptr.len() + memory_ptr + path.iter().sum::<usize>() + 1,
+                    Type::to_llvm_ty_string(field)
+                ),
+                format!("CAR;"),
+                format!("SWAP;"),
+                format!("GET;"),
+                format!("ASSERT_SOME;"),
+                format!("### }}"),
             ]
         }
     }

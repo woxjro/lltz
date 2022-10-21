@@ -131,7 +131,7 @@ fn main() {
     //%struct.Storage = type { i32, i32, i32, i32, %struct.Fish }
     let storage = Type::Struct {
         id: String::from("Storage"),
-        fields: vec![Type::I32, Type::I32, Type::I32, fish.clone()],
+        fields: vec![Type::I32, Type::I32, Type::I32, Type::I32, fish.clone()],
     };
 
     //%struct.Operation = type {}
@@ -288,7 +288,7 @@ fn main() {
         },
         Instruction::GetElementPtr {
             result: Register::new("%14"),
-            ty: parameter.clone(),
+            ty: storage.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
                 (Type::I32, Register::new("0")),
@@ -324,7 +324,7 @@ fn main() {
         },
         Instruction::GetElementPtr {
             result: Register::new("%18"),
-            ty: parameter.clone(),
+            ty: storage.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
                 (Type::I32, Register::new("0")),
@@ -360,7 +360,7 @@ fn main() {
         },
         Instruction::GetElementPtr {
             result: Register::new("%22"),
-            ty: parameter.clone(),
+            ty: storage.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
                 (Type::I32, Register::new("0")),
@@ -396,7 +396,7 @@ fn main() {
         },
         Instruction::GetElementPtr {
             result: Register::new("%26"),
-            ty: parameter.clone(),
+            ty: storage.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
                 (Type::I32, Register::new("0")),
@@ -432,7 +432,7 @@ fn main() {
         },
         Instruction::GetElementPtr {
             result: Register::new("%30"),
-            ty: parameter.clone(),
+            ty: storage.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
                 (Type::I32, Register::new("0")),
@@ -468,7 +468,7 @@ fn main() {
         },
         Instruction::GetElementPtr {
             result: Register::new("%34"),
-            ty: parameter.clone(),
+            ty: storage.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
                 (Type::I32, Register::new("0")),
@@ -496,7 +496,7 @@ fn main() {
         //  %38 = getelementptr inbounds %struct.Parameter, %struct.Parameter* %1, i32 0, i32 3
         Instruction::GetElementPtr {
             result: Register::new("%37"),
-            ty: parameter.clone(),
+            ty: storage.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
                 (Type::I32, Register::new("0")),
@@ -526,7 +526,7 @@ fn main() {
         //  %41 = getelementptr inbounds %struct.Pair, %struct.Pair* %0, i32 0, i32 1
         Instruction::GetElementPtr {
             result: Register::new("%41"),
-            ty: parameter.clone(),
+            ty: pair.clone(),
             ptrval: Register::new("%0"),
             subsequent: vec![
                 (Type::I32, Register::new("0")),
@@ -551,9 +551,9 @@ fn main() {
         structure_types: vec![
             fish.clone(),
             operation.clone(),
-            pair.clone(),
-            parameter.clone(),
             storage.clone(),
+            parameter.clone(),
+            pair.clone(),
         ],
         functions: vec![
             //define dso_local void @smart_contract(
@@ -593,7 +593,7 @@ fn main() {
     let command_typecheck =
         format!("#tezos-client --mode mockup typecheck script ./examples/out/{file_name}.tz\n");
     let command_mock =
-        format!("#tezos-client --mode mockup run script ./examples/out/{file_name}.tz on storage 'Unit' and input 'Unit' --trace-stack\n");
+        format!("#tezos-client --mode mockup run script ./examples/out/{file_name}.tz on storage 'Pair 1 2 3 4 (Pair 5 6 7)' and input 'Pair 8 9 10 (Pair 11 12 13)' --trace-stack\n");
     let contents = format!("{command_typecheck}{command_mock}{michelson_code}");
     let mut file = File::create(format!("examples/out/{file_name}.tz")).unwrap();
     file.write_all(contents.as_bytes()).unwrap();

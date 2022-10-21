@@ -39,4 +39,20 @@ fn mini_llvm_test() {
         fields: vec![],
     });
     assert_eq!(res, String::from("unit"));
+
+    let res = reserved_type2michelson_pair(Type::Struct {
+        id: String::from("aaa"),
+        fields: vec![
+            Type::Struct {
+                id: String::from("bbb"),
+                fields: vec![Type::I32],
+            },
+            Type::Struct {
+                id: String::from("ccc"),
+                fields: vec![],
+            },
+            Type::I32,
+        ],
+    });
+    assert_eq!(res, String::from("(pair int unit int)"));
 }

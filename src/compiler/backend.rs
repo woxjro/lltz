@@ -793,6 +793,143 @@ pub fn body(
     michelson_code
 }
 
+/// input:                 [register]:[memory]
+///output: encoded_storage:[register]:[memory]
+pub fn retrieve_storage_from_memory(
+    smart_contract_function: &Function,
+    michelson_code: String,
+    tab: &str,
+    tab_depth: usize,
+    register2stack_ptr: &HashMap<Register, usize>,
+    memory_ty2stack_ptr: &HashMap<Type, usize>,
+) -> String {
+    let Arg {
+        reg,
+        ty: pair_ty_ptr,
+    } = smart_contract_function
+        .argument_list
+        .iter()
+        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+            Type::Struct { id, fields: _ } => id == String::from("Pair"),
+            _ => false,
+        })
+        .unwrap();
+
+    let Arg {
+        reg: _,
+        ty: storage_ty_ptr,
+    } = smart_contract_function
+        .argument_list
+        .iter()
+        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+            Type::Struct { id, fields: _ } => id == String::from("Storage"),
+            _ => false,
+        })
+        .unwrap();
+
+    let storage_ty = Type::deref(storage_ty_ptr);
+    let storage_memory_ptr = memory_ty2stack_ptr.get(&storage_ty).unwrap();
+    let pair_memory_ptr = memory_ty2stack_ptr.get(&Type::deref(pair_ty_ptr)).unwrap();
+    let mut michelson_instructions = vec![];
+    michelson_instructions.append(&mut vec![
+        format!("### encode Storage {{"),
+        format!("DUP {};", register2stack_ptr.len() + pair_memory_ptr),
+        format!("CAR;"),
+        format!("PUSH int {};", register2stack_ptr.get(reg).unwrap()),
+        format!("GET;"),
+        format!("ASSERT_SOME; # {}", "Pair MAP Instance"),
+        format!("PUSH int {};", 1), // StorageのIndex(=1)
+        format!("GET;"),
+        format!("ASSERT_SOME; # {}", "Storage Ptr"),
+        format!("DUP {};", register2stack_ptr.len() + storage_memory_ptr + 1),
+        format!("CAR;"),
+        format!("SWAP;"),
+        format!("GET;"),
+        format!("ASSERT_SOME; # {}", "Storage MAP Instance"),
+    ]);
+
+    match storage_ty {
+        Type::Struct { id, fields } => {
+            if fields.len() >= 2 {
+                //逆順にスタックにencodeしたものを積んでいき、最後にPAIR nまとめる.
+                for (field_idx, field) in fields.iter().enumerate().rev() {
+                    michelson_instructions.append(&mut retrieve_storage_field_from_memory(
+                        field_idx,
+                        field,
+                        fields.len() - field_idx,
+                        register2stack_ptr,
+                        memory_ty2stack_ptr,
+                    ));
+                }
+                michelson_instructions
+                    .push(format!("PAIR {}; # PACK Struct {{ {id} }}", fields.len()));
+            } else if fields.len() == 1 {
+                todo!()
+            } else {
+                michelson_instructions.push(format!("DROP;"));
+                michelson_instructions.push(format!("UNIT;"));
+            }
+        }
+        _ => {
+            panic!("StorageがStruct型ではなくPrimitive型になっています.")
+        }
+    }
+    michelson_instructions.push(format!("### }}"));
+
+    format!(
+        "{michelson_code}{}",
+        utils::format(&michelson_instructions, tab, tab_depth)
+    )
+}
+
+///FIXME:
+/// input:          [es_idx+1]:..:[es_n]:[storage map instance]:[register]:[memory]
+///output: [es_idx]:[es_idx+1]:..:[es_n]:[register]:[memory]
+fn retrieve_storage_field_from_memory(
+    field_idx: usize,
+    field: &Type,
+    depth: usize,
+    register2stack_ptr: &HashMap<Register, usize>,
+    memory_ty2stack_ptr: &HashMap<Type, usize>,
+) -> Vec<String> {
+    match field {
+        Type::Struct {
+            id: _,
+            fields: child_fields,
+        } => {
+            let mut michelson_instructions = vec![];
+            for (child_field_idx, child_field) in child_fields.iter().enumerate().rev() {
+                michelson_instructions.append(&mut retrieve_storage_field_from_memory(
+                    child_field_idx,
+                    child_field,
+                    depth + child_fields.len() - child_field_idx - 1,
+                    register2stack_ptr,
+                    memory_ty2stack_ptr,
+                ));
+            }
+            michelson_instructions
+        }
+        _ => {
+            let memory_ptr = memory_ty2stack_ptr.get(&field).unwrap();
+            vec![
+                format!("DUP {} ;", depth),
+                format!("PUSH int {};", field_idx),
+                format!("GET;"),
+                format!("ASSERT_SOME;"),
+                format!(
+                    "DUP {} # memory: {};",
+                    register2stack_ptr.len() + memory_ptr + depth,
+                    Type::to_llvm_ty_string(field)
+                ),
+                format!("CAR;"),
+                format!("SWAP;"),
+                format!("GET;"),
+                format!("ASSERT_SOME;"),
+            ]
+        }
+    }
+}
+
 ///Step.3(将来的にはこの関数はなくなるかもしれない)
 ///レジスタ型環境（register2ty（これは今回は無し）, register2stack_ptr）と
 ///メモリ型環境（memory_ty2stack_ptr）に相当するMichelsonスタックをDROPする
@@ -804,6 +941,11 @@ pub fn exit(
     structure_types: &Vec<Type>,
 ) -> String {
     let mut new_michelson_code = michelson_code;
+    new_michelson_code = format!(
+        "{new_michelson_code}{space}DUG {}; # {}\n",
+        register2stack_ptr.len() + memory_ty2stack_ptr.len(),
+        "move a storage to the stack bottom"
+    );
     //後処理:レジスタ領域・メモリ領域をDROPする
     for i in 0..(register2stack_ptr.iter().len() + memory_ty2stack_ptr.iter().len()) {
         if i % 5 == 0 {
@@ -815,7 +957,9 @@ pub fn exit(
         }
     }
     new_michelson_code = format!("{new_michelson_code}\n");
-    new_michelson_code = format!("{new_michelson_code}{space}UNIT; NIL operation; PAIR;");
+
+    //TODO: operationがハードコードされている。ここを直したい
+    new_michelson_code = format!("{new_michelson_code}{space}NIL operation; PAIR;");
 
     let parameter_michelson_ty = reserved_type2michelson_pair(
         structure_types

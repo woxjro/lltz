@@ -11,6 +11,8 @@ fn executabl_test() {
         "simple_struct",
         "simple_struct2",
         "simple_llvm_memcpy",
+        "simple_smartcontract",
+        "complex_smartcontract",
     ];
 
     for file_name in file_names {

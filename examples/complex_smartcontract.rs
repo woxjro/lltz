@@ -229,7 +229,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::I32,
-            value: Register::new("8"),
+            value: Register::new("%8"),
             ptr: Register::new("%4"),
         },
         //  %9 = getelementptr inbounds %struct.Parameter, %struct.Parameter* %1, i32 0, i32 0
@@ -251,7 +251,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::I32,
-            value: Register::new("10"),
+            value: Register::new("%10"),
             ptr: Register::new("%5"),
         },
         //  %11 = getelementptr inbounds %struct.Parameter, %struct.Parameter* %1, i32 0, i32 1
@@ -273,7 +273,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::I32,
-            value: Register::new("12"),
+            value: Register::new("%12"),
             ptr: Register::new("%6"),
         },
         //  %13 = load i32, i32* %4, align 4
@@ -309,7 +309,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::I32,
-            value: Register::new("16"),
+            value: Register::new("%16"),
             ptr: Register::new("%14"),
         },
         //  %17 = load i32, i32* %6, align 4

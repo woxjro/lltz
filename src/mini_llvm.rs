@@ -1,3 +1,5 @@
+//! LLVM IRに出てくるもの（命令, 型定義, 関数...）を定義しているモジュール
+
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct Register {
     id: String,

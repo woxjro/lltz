@@ -1,3 +1,6 @@
+//! 以下のコンパイルフローにおけるLLVM IR'からMichelsonへのコンパイル（Backend）を担当するモジュール
+//! LLVM IR ---> LLVM IR' ---> Michelson
+
 mod analyse;
 mod helper;
 mod prepare;

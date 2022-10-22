@@ -1,7 +1,10 @@
+//! LLVMからMichelsonへのコンパイルを担当するTOPレベルのモジュール
 use super::mini_llvm::MiniLlvm;
 use std::collections::HashMap;
 mod backend;
 mod utils;
+
+///LLVM IRファイルを擬似的に表現したMiniLlvmを入力として受け取り, コンパイル後のMichelsonを返す
 pub fn compile(mini_llvm: MiniLlvm) -> String {
     /*
      * RegisterをKeyとして,そのRegisterのMichelsonのStack上での位置を返すHashMap

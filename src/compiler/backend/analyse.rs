@@ -1,7 +1,10 @@
+//! MiniLlvmの中をコンパイル前に事前に走査し, 出てきうるレジスタ, メモリの数や型などを
+//! 洗い出しておくといった事前分析を担当するモジュール
 use super::helper;
 use crate::mini_llvm::{Arg, Instruction, Register, Type};
 use std::collections::HashMap;
 
+/// 構造体宣言を事前に走査し, 必要なメモリの型を洗い出しておく関数
 pub fn analyse_structure_types(
     memory_ty2stack_ptr: &mut HashMap<Type, usize>,
     memory_ptr: &mut usize,
@@ -38,6 +41,8 @@ pub fn analyse_structure_types(
     }
 }
 
+/// （主にsmart_contract関数の）MiniLlvmのargument_listを受け取り, その中に出てくる
+/// レジスタなどを洗い出しておく関数
 pub fn analyse_argument_list(
     register2stack_ptr: &mut HashMap<Register, usize>,
     register2ty: &mut HashMap<Register, Type>,

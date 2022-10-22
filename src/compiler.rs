@@ -44,26 +44,15 @@ pub fn compile(mini_llvm: MiniLlvm) -> String {
         .find(|f| f.function_name == String::from("smart_contract"))
         .unwrap();
 
-    backend::analyse_structure_types(
-        &mut memory_ty2stack_ptr,
-        &mut memory_ptr,
+    backend::analyse(
         &mini_llvm.structure_types,
-    );
-
-    backend::analyse_argument_list(
-        &mut register2stack_ptr,
-        &mut register2ty,
-        &mut stack_ptr,
         &smart_contract_function.argument_list,
-    );
-
-    backend::analyse_registers_and_memory(
-        &mut register2stack_ptr,
-        &mut register2ty,
-        &mut memory_ty2stack_ptr,
-        &mut stack_ptr,
-        &mut memory_ptr,
         &smart_contract_function.instructions,
+        &mut stack_ptr,
+        &mut register2stack_ptr,
+        &mut memory_ptr,
+        &mut memory_ty2stack_ptr,
+        &mut register2ty,
     );
 
     drop(stack_ptr);

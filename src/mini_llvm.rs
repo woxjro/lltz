@@ -1,5 +1,6 @@
 //! LLVM IRに出てくるもの（命令, 型定義, 関数...）を定義しているモジュール
 
+///LLVMのレジスタ
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct Register {
     id: String,
@@ -21,6 +22,7 @@ impl Register {
     }
 }
 
+///LLVMに出てくるデータ型
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub enum Type {
     I1,

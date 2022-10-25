@@ -10,6 +10,8 @@ use crate::mini_llvm::{
 };
 use std::collections::HashMap;
 
+///MiniLlvmの構造体宣言,引数リスト,命令列を受け取り,それらに現れるレジスタ、メモリや型
+///などを調べる.
 pub fn analyse(
     structure_types: &Vec<Type>,
     argument_list: &Vec<Arg>,
@@ -34,6 +36,8 @@ pub fn analyse(
     );
 }
 
+///（主に）MiniLlvmの`smart_contract_function`を受け取りそのargument_listである引数について
+///Allocaに相当する事をしたり, Michelson引数であるStorage, Parameterなどの値を挿入したりする
 pub fn prepare_from_argument_list(
     smart_contract_function: &Function,
     michelson_code: String,
@@ -73,7 +77,6 @@ pub fn prepare_from_argument_list(
     michelson_code
 }
 
-///Step.1
 ///ここではmichelson_codeを受け取り、実際にMichelsonの命令を追加していく.
 ///レジスタ型環境（register2ty, register2stack_ptr）とメモリ型環境（memory_ty2stack_ptr）
 ///を受け取り,それらに相当するMichelson命令をスタックにPUSHする
@@ -152,7 +155,6 @@ pub fn prepare(
     )
 }
 
-///Step.2
 ///LLVMの命令列instructionsを実際にコンパイルしていく関数
 ///レジスタ型環境（register2ty（これは今回は無し）, register2stack_ptr）と
 ///メモリ型環境（memory_ty2stack_ptr）を参考にコンパイルしていく.
@@ -500,6 +502,9 @@ pub fn body(
     michelson_code
 }
 
+///Michelsonコントラクトとして最後の返り値の準備をする段階において、
+///返り値となるStorageをメモリ領域から回収し, Michelsonの入力Storageの
+///型に合わせた状態でスタックのトップに持ってくる関数
 /// input:                 [register]:[memory]
 ///output: encoded_storage:[register]:[memory]
 pub fn retrieve_storage_from_memory(
@@ -592,9 +597,7 @@ pub fn retrieve_storage_from_memory(
     )
 }
 
-///FIXME:
-/// input:          [es_idx+1]:..:[es_n]:[storage map instance]:[register]:[memory]
-///output: [es_idx]:[es_idx+1]:..:[es_n]:[register]:[memory]
+///FIXME: 方針はあっているが少しややこしい.
 fn retrieve_storage_field_from_memory(
     field_idx: usize,
     field: &Type,
@@ -670,7 +673,7 @@ fn retrieve_storage_field_from_memory(
     }
 }
 
-///Step.3(将来的にはこの関数はなくなるかもしれない)
+///(将来的にはこの関数はなくなるかもしれない)
 ///レジスタ型環境（register2ty（これは今回は無し）, register2stack_ptr）と
 ///メモリ型環境（memory_ty2stack_ptr）に相当するMichelsonスタックをDROPする
 pub fn exit(

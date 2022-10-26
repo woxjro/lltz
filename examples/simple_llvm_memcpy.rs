@@ -290,9 +290,9 @@ fn main() {
 
     let file_name = "simple_llvm_memcpy";
     let command_typecheck =
-        format!("#tezos-client --mode mockup typecheck script ./examples/out/{file_name}.tz\n");
+        format!("#tezos-client --mode mockup --base-dir /tmp/mockup typecheck script ./examples/out/{file_name}.tz\n");
     let command_mock =
-        format!("#tezos-client --mode mockup run script ./examples/out/{file_name}.tz on storage 'Unit' and input 'Unit' --trace-stack\n");
+        format!("#tezos-client --mode mockup --base-dir /tmp/mockup run script ./examples/out/{file_name}.tz on storage 'Unit' and input 'Unit' --trace-stack\n");
     let contents = format!("{command_typecheck}{command_mock}{michelson_code}");
     let mut file = File::create(format!("examples/out/{file_name}.tz")).unwrap();
     file.write_all(contents.as_bytes()).unwrap();

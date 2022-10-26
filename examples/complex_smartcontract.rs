@@ -5,6 +5,24 @@ use mini_llvm_michelson_compiler::mini_llvm::{
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
+    //enum FKind {
+    //    Ayu,
+    //    Ika,
+    //    Kisu
+    //};
+    //
+    //enum Place {
+    //    Fukui,
+    //    Kyoto,
+    //    Osaka,
+    //    Shiga,
+    //};
+    //
+    //struct Fish {
+    //    enum FKind kind;
+    //    enum Place place;
+    //    int weight;
+    //};
     //%struct.Parameter = type { i32, i32, i32, %struct.Fish }
     //%struct.Fish = type { i32, i32, i32 }
     //%struct.Storage = type { i32, i32, i32, i32, %struct.Fish }
@@ -590,11 +608,32 @@ fn main() {
     let michelson_code = compile(mini_llvm);
 
     let file_name = "complex_smartcontract";
+    let explanation = "#struct Storage s = {
+#    .total = 18,
+#    .ayu_count = 10,
+#    .ika_count = 5,
+#    .kisu_count = 3,
+#    .favorite = {
+#        .kind = Kisu, //2
+#        .place = Fukui, //0
+#        .weight = 300,
+#    }
+#}
+#struct Parameter p = {
+#    .ayu_count = 3,
+#    .ika_count = 6,
+#    .kisu_count = 9,
+#    .favorite = {
+#        .kind = Ika, //1
+#        .place = Osaka, //2
+#        .weight = 400,
+#    }
+#};\n";
     let command_typecheck =
-        format!("#tezos-client --mode mockup typecheck script ./examples/out/{file_name}.tz\n");
+        format!("#tezos-client --mode mockup --base-dir /tmp/mockup typecheck script ./examples/out/{file_name}.tz\n");
     let command_mock =
-        format!("#tezos-client --mode mockup run script ./examples/out/{file_name}.tz on storage 'Pair 1 2 3 4 (Pair 5 6 7)' and input 'Pair 8 9 10 (Pair 11 12 13)' --trace-stack\n");
-    let contents = format!("{command_typecheck}{command_mock}{michelson_code}");
+        format!("#tezos-client --mode mockup --base-dir /tmp/mockup run script ./examples/out/{file_name}.tz on storage 'Pair 18 10 5 3 (Pair 2 0 300)' and input 'Pair 3 6 9 (Pair 1 2 400)' --trace-stack\n");
+    let contents = format!("{command_typecheck}{command_mock}{explanation}{michelson_code}");
     let mut file = File::create(format!("examples/out/{file_name}.tz")).unwrap();
     file.write_all(contents.as_bytes()).unwrap();
 }

@@ -25,8 +25,12 @@ impl Register {
 ///LLVMに出てくるデータ型
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub enum Type {
-    I1,
-    I32,
+    I1, // for michelson bool
+    // いずれは消す. or I{N}のNが偶数の時はint, 奇数はnatにするなど
+    I32,  // for michelson int
+    I64,  // for michelson mutez
+    I128, // for michelson int
+    I129, // for michelson nat
     Struct { id: String, fields: Vec<Type> },
     Ptr(Box<Type>),
 }
@@ -64,6 +68,9 @@ impl Type {
         match ty {
             Type::I1 => "i1".to_string(),
             Type::I32 => "i32".to_string(),
+            Type::I64 => "i64".to_string(),
+            Type::I128 => "i128".to_string(),
+            Type::I129 => "i129".to_string(),
             Type::Struct { id, fields: _ } => format!("%struct.{id}"),
             Type::Ptr(ty) => {
                 let inner = Type::to_llvm_ty_string(&*ty);
@@ -76,11 +83,30 @@ impl Type {
         let res = match ty {
             Type::I1 => String::from("bool"),
             Type::I32 => String::from("int"),
+            Type::I64 => String::from("mutez"),
+            Type::I128 => String::from("int"),
+            Type::I129 => String::from("nat"),
             Type::Struct { .. } => {
                 String::from("(map int int)")
                 //map (struct.index, ptr)
             }
             Type::Ptr(_) => String::from("int"),
+        };
+        res
+    }
+
+    pub fn default_value(ty: &Type) -> String {
+        let res = match ty {
+            Type::I1 => String::from("False"),
+            Type::I32 => String::from("0"),
+            Type::I64 => String::from("0"),
+            Type::I128 => String::from("0"),
+            Type::I129 => String::from("0"),
+            Type::Struct { .. } => {
+                panic!("Struct型にはDefaultの値はありません.")
+            }
+            Type::Ptr(_) => String::from("-1"),
+            _ => String::from("0"),
         };
         res
     }

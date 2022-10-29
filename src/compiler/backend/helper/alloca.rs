@@ -38,7 +38,11 @@ pub fn exec_alloca(
                 format!("DUP;"),
                 format!("DIG 3;"),
                 format!("SWAP;"),
-                format!("PUSH int -1; # default value"),
+                format!(
+                    "PUSH {} {}; # default value",
+                    Type::to_michelson_ty_string(&ty),
+                    Type::default_value(&ty)
+                ),
                 format!("SOME;"),
                 format!("SWAP;"),
                 format!("UPDATE;"),
@@ -206,7 +210,11 @@ fn exec_struct_field_alloca(
                 format!("DUP;"),   //ptr:ptr:ptr:bm:map
                 format!("DIG 3;"), //bm:ptr:ptr:ptr:map
                 format!("SWAP;"),  //ptr:bm:ptr:ptr:map
-                format!("PUSH int -1;"),
+                format!(
+                    "PUSH {} {}; # default value",
+                    Type::to_michelson_ty_string(&field),
+                    Type::default_value(&field)
+                ),
                 format!("SOME;"),
                 format!("SWAP;"),   //ptr:some(-1):bm:ptr:ptr:map
                 format!("UPDATE;"), //bm:ptr:ptr:map

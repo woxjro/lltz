@@ -108,30 +108,11 @@ pub fn prepare(
 
     for (reg, _ptr) in register2stack_ptr_sorted {
         let ty = register2ty.get(reg).unwrap();
-        let val = match ty {
-            Type::I32 => {
-                if Register::is_const(reg) {
-                    //reg.parse::<i32>().unwrap()
-                    reg.get_id()
-                } else {
-                    //0
-                    "0".to_string()
-                }
-            }
-            Type::I1 => "False".to_string(),
-            // TODO FIXME: llvm struct to michelson type
-            // 多分ここは実行されることはない.?? = レジスタにStructが入ることはない.?
-            Type::Struct { id: _, fields: _ } => "0".to_string(),
-            Type::Ptr(_) => {
-                if Register::is_const(reg) {
-                    //即値をレジスタとして扱っているのでidは数値となる
-                    //reg.parse::<i32>().unwrap()
-                    reg.get_id()
-                } else {
-                    //0
-                    "0".to_string()
-                }
-            }
+        let val = if Register::is_const(reg) {
+            //reg.parse::<i32>().unwrap()
+            reg.get_id()
+        } else {
+            Type::default_value(&ty)
         };
         let michelson_ty = Type::to_michelson_ty_string(&ty);
         let llvm_ty_string = Type::to_llvm_ty_string(ty);

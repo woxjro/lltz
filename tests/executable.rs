@@ -5,6 +5,8 @@ use std::process::Command;
 fn executabl_test() {
     let file_names = [
         "simple_add",
+        "simple_add_nat",
+        "simple_add_mutez",
         "simple_if",
         "simple_while",
         "simple_pointer",

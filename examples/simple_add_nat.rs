@@ -24,76 +24,76 @@ fn main() {
     //  %struct.Parameter* byval(%struct.Parameter) align 8 %parameter,
     //  %struct.Storage* byval(%struct.Storage) align 8 %storage
     //) #0 {
-    //  %1 = alloca i129, align 4
-    //  %2 = alloca i129, align 4
-    //  %3 = alloca i129, align 4
-    //  %4 = alloca i129, align 4
-    //  store i129 0, i129* %1, align 4
-    //  store i129 10, i129* %2, align 4
-    //  store i129 20, i129* %3, align 4
-    //  %5 = load i129, i129* %2, align 4
-    //  %6 = load i129, i129* %3, align 4
-    //  %7 = add nsw i129 %5, %6
-    //  store i129 %7, i129* %4, align 4
-    //  ret i129 0
+    //  %1 = alloca nat, align 4
+    //  %2 = alloca nat, align 4
+    //  %3 = alloca nat, align 4
+    //  %4 = alloca nat, align 4
+    //  store nat 0, nat* %1, align 4
+    //  store nat 10, nat* %2, align 4
+    //  store nat 20, nat* %3, align 4
+    //  %5 = load nat, nat* %2, align 4
+    //  %6 = load nat, nat* %3, align 4
+    //  %7 = add nsw nat %5, %6
+    //  store nat %7, nat* %4, align 4
+    //  ret nat 0
     //}
 
     let instructions = vec![
         Instruction::Alloca {
             ptr: Register::new("%1"),
-            ty: Type::I129,
+            ty: Type::Nat,
         },
         Instruction::Alloca {
             ptr: Register::new("%2"),
-            ty: Type::I129,
+            ty: Type::Nat,
         },
         Instruction::Alloca {
             ptr: Register::new("%3"),
-            ty: Type::I129,
+            ty: Type::Nat,
         },
         Instruction::Alloca {
             ptr: Register::new("%4"),
-            ty: Type::I129,
+            ty: Type::Nat,
         },
         Instruction::Store {
-            ty: Type::I129,
+            ty: Type::Nat,
             value: Register::new("0"),
             ptr: Register::new("%1"),
         },
         Instruction::Store {
-            ty: Type::I129,
+            ty: Type::Nat,
             value: Register::new("10"),
             ptr: Register::new("%2"),
         },
         Instruction::Store {
-            ty: Type::I129,
+            ty: Type::Nat,
             value: Register::new("20"),
             ptr: Register::new("%3"),
         },
         Instruction::Load {
-            ty: Type::I129,
+            ty: Type::Nat,
             result: Register::new("%5"),
             ptr: Register::new("%2"),
         },
         Instruction::Load {
-            ty: Type::I129,
+            ty: Type::Nat,
             result: Register::new("%6"),
             ptr: Register::new("%3"),
         },
         Instruction::Op {
-            ty: Type::I129,
+            ty: Type::Nat,
             opcode: Opcode::Add,
             result: Register::new("%7"),
             op1: Register::new("%5"),
             op2: Register::new("%6"),
         },
         Instruction::Store {
-            ty: Type::I129,
+            ty: Type::Nat,
             value: Register::new("%7"),
             ptr: Register::new("%4"),
         },
         Instruction::Ret {
-            ty: Type::I129,
+            ty: Type::Nat,
             value: Register::new("0"),
         },
     ];
@@ -130,7 +130,7 @@ fn main() {
         ],
         functions: vec![Function {
             function_name: String::from("smart_contract"),
-            result_type: Type::I129,
+            result_type: Type::Nat,
             argument_list: vec![
                 Arg {
                     ty: Type::Ptr(Box::new(pair.clone())),

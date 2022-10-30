@@ -5,21 +5,21 @@ use mini_llvm_michelson_compiler::mini_llvm::{
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
-    //%struct.Parameter = type { i32, i32, i32, %struct.Fish }
+    //%struct.Parameter = type { Int, Int, Int, %struct.Fish }
     let parameter = Type::Struct {
         id: String::from("Parameter"),
-        fields: vec![Type::I32, Type::I32],
+        fields: vec![Type::Int, Type::Int],
     };
     let fish = Type::Struct {
         id: String::from("Fish"),
-        fields: vec![Type::I32, Type::I32, Type::I32],
+        fields: vec![Type::Int, Type::Int, Type::Int],
     };
 
-    //%struct.Storage = type { i32, i32, i32, i32, %struct.Fish }
+    //%struct.Storage = type { Int, Int, Int, Int, %struct.Fish }
     let storage = Type::Struct {
         id: String::from("Storage"),
-        //fields: vec![Type::I32, Type::I32, fish.clone()],
-        fields: vec![Type::I32, fish.clone(), Type::I32],
+        //fields: vec![Type::Int, Type::Int, fish.clone()],
+        fields: vec![Type::Int, fish.clone(), Type::Int],
     };
 
     //%struct.Operation = type {}
@@ -53,8 +53,8 @@ fn main() {
             Function {
                 //define dso_local void @smart_contract(
                 function_name: String::from("smart_contract"),
-                //FIXME: i32ではない. void
-                result_type: Type::I32,
+                //FIXME: Intではない. void
+                result_type: Type::Int,
                 //      %struct.Pair* noalias sret %0,
                 //      %struct.Parameter* byval(%struct.Parameter) align 8 %1,
                 //      %struct.Storage* byval(%struct.Storage) align 8 %2
@@ -78,8 +78,8 @@ fn main() {
                         ty: pair.clone(),
                         ptrval: Register::new("%0"),
                         subsequent: vec![
-                            (Type::I32, Register::new("0")),
-                            (Type::I32, Register::new("1")),
+                            (Type::Int, Register::new("0")),
+                            (Type::Int, Register::new("1")),
                         ],
                     },
                     Instruction::LlvmMemcpy {

@@ -26,32 +26,32 @@ fn main() {
     //  %struct.Parameter* byval(%struct.Parameter) align 8 %parameter,
     //  %struct.Storage* byval(%struct.Storage) align 8 %storage
     //) #0 {
-    //  %1 = alloca i32, align 4
-    //  %2 = alloca i32, align 4
-    //  %3 = alloca i32, align 4
-    //  store i32 0, i32* %1, align 4
-    //  store i32 10, i32* %2, align 4
-    //  store i32 1, i32* %3, align 4
+    //  %1 = alloca Int, align 4
+    //  %2 = alloca Int, align 4
+    //  %3 = alloca Int, align 4
+    //  store Int 0, Int* %1, align 4
+    //  store Int 10, Int* %2, align 4
+    //  store Int 1, Int* %3, align 4
     //  br label %4
     //
     //4:                                                ; preds = %7, %0
-    //  %5 = load i32, i32* %2, align 4
-    //  %6 = icmp slt i32 0, %5
+    //  %5 = load Int, Int* %2, align 4
+    //  %6 = icmp slt Int 0, %5
     //  br i1 %6, label %7, label %13
     //
     //7:                                                ; preds = %4
-    //  %8 = load i32, i32* %2, align 4
-    //  %9 = load i32, i32* %3, align 4
-    //  %10 = mul nsw i32 %9, %8
-    //  store i32 %10, i32* %3, align 4
-    //  %11 = load i32, i32* %2, align 4
-    //  %12 = sub nsw i32 %11, 1
-    //  store i32 %12, i32* %2, align 4
+    //  %8 = load Int, Int* %2, align 4
+    //  %9 = load Int, Int* %3, align 4
+    //  %10 = mul nsw Int %9, %8
+    //  store Int %10, Int* %3, align 4
+    //  %11 = load Int, Int* %2, align 4
+    //  %12 = sub nsw Int %11, 1
+    //  store Int %12, Int* %2, align 4
     //  br label %4
     //
     //13:                                               ; preds = %4
-    //  %14 = load i32, i32* %3, align 4
-    //  ret i32 %14
+    //  %14 = load Int, Int* %3, align 4
+    //  ret Int %14
     //}
 
     // mini LLVM IR
@@ -65,85 +65,85 @@ fn main() {
     //  %struct.Parameter* byval(%struct.Parameter) align 8 %parameter,
     //  %struct.Storage* byval(%struct.Storage) align 8 %storage
     //) #0 {
-    //  %1 = alloca i32, align 4
-    //  %2 = alloca i32, align 4
-    //  %3 = alloca i32, align 4
-    //  store i32 0, i32* %1, align 4
-    //  store i32 10, i32* %2, align 4
-    //  store i32 1, i32* %3, align 4
+    //  %1 = alloca Int, align 4
+    //  %2 = alloca Int, align 4
+    //  %3 = alloca Int, align 4
+    //  store Int 0, Int* %1, align 4
+    //  store Int 10, Int* %2, align 4
+    //  store Int 1, Int* %3, align 4
     //
     // while {
-    //      %5 = load i32, i32* %2, align 4
-    //      %6 = icmp slt i32 0, %5
+    //      %5 = load Int, Int* %2, align 4
+    //      %6 = icmp slt Int 0, %5
     //      %6
     // } {
-    //      %8 = load i32, i32* %2, align 4
-    //      %9 = load i32, i32* %3, align 4
-    //      %10 = mul nsw i32 %9, %8
-    //      store i32 %10, i32* %3, align 4
-    //      %11 = load i32, i32* %2, align 4
-    //      %12 = sub nsw i32 %11, 1
-    //      store i32 %12, i32* %2, align 4
+    //      %8 = load Int, Int* %2, align 4
+    //      %9 = load Int, Int* %3, align 4
+    //      %10 = mul nsw Int %9, %8
+    //      store Int %10, Int* %3, align 4
+    //      %11 = load Int, Int* %2, align 4
+    //      %12 = sub nsw Int %11, 1
+    //      store Int %12, Int* %2, align 4
     //  }
     //
-    //  %14 = load i32, i32* %3, align 4
-    //  ret i32 %14
+    //  %14 = load Int, Int* %3, align 4
+    //  ret Int %14
     //}
 
     //{{
 
-    //  ret i32 %14
+    //  ret Int %14
     //}}
 
     let instructions = vec![
-        //  %1 = alloca i32, align 4
-        //  %2 = alloca i32, align 4
-        //  %3 = alloca i32, align 4
+        //  %1 = alloca Int, align 4
+        //  %2 = alloca Int, align 4
+        //  %3 = alloca Int, align 4
         Instruction::Alloca {
             ptr: Register::new("%1"),
-            ty: Type::I32,
+            ty: Type::Int,
         },
         Instruction::Alloca {
             ptr: Register::new("%2"),
-            ty: Type::I32,
+            ty: Type::Int,
         },
         Instruction::Alloca {
             ptr: Register::new("%3"),
-            ty: Type::I32,
+            ty: Type::Int,
         },
-        //  store i32 0, i32* %1, align 4
-        //  store i32 10, i32* %2, align 4
-        //  store i32 1, i32* %3, align 4
+        //  store Int 0, Int* %1, align 4
+        //  store Int 10, Int* %2, align 4
+        //  store Int 1, Int* %3, align 4
         Instruction::Store {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("0"),
             ptr: Register::new("%1"),
         },
         Instruction::Store {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("10"),
             ptr: Register::new("%2"),
         },
         Instruction::Store {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("1"),
             ptr: Register::new("%3"),
         },
         Instruction::While {
             cond: Register::new("%6"),
             // while {
-            //      %5 = load i32, i32* %2, align 4
-            //      %6 = icmp slt i32 0, %5
+            //      %5 = load Int, Int* %2, align 4
+            //      %6 = icmp slt Int 0, %5
             //      %6
             // }
             cond_block: vec![
                 Instruction::Load {
-                    ty: Type::I32,
+                    ty: Type::Int,
                     result: Register::new("%5"),
                     ptr: Register::new("%2"),
                 },
                 Instruction::Icmp {
-                    ty: Type::I1,
+                    ty: Type::Bool,
                     cond: Condition::Slt,
                     result: Register::new("%6"),
                     op1: Register::new("0"),
@@ -151,58 +151,58 @@ fn main() {
                 },
             ],
             // {
-            //      %8 = load i32, i32* %2, align 4
-            //      %9 = load i32, i32* %3, align 4
-            //      %10 = mul nsw i32 %9, %8
-            //      store i32 %10, i32* %3, align 4
-            //      %11 = load i32, i32* %2, align 4
-            //      %12 = sub nsw i32 %11, 1
-            //      store i32 %12, i32* %2, align 4
+            //      %8 = load Int, Int* %2, align 4
+            //      %9 = load Int, Int* %3, align 4
+            //      %10 = mul nsw Int %9, %8
+            //      store Int %10, Int* %3, align 4
+            //      %11 = load Int, Int* %2, align 4
+            //      %12 = sub nsw Int %11, 1
+            //      store Int %12, Int* %2, align 4
             loop_block: vec![
                 Instruction::Load {
-                    ty: Type::I32,
+                    ty: Type::Int,
                     result: Register::new("%8"),
                     ptr: Register::new("%2"),
                 },
                 Instruction::Load {
-                    ty: Type::I32,
+                    ty: Type::Int,
                     result: Register::new("%9"),
                     ptr: Register::new("%3"),
                 },
                 Instruction::Op {
-                    ty: Type::I32,
+                    ty: Type::Int,
                     opcode: Opcode::Mul,
                     result: Register::new("%10"),
                     op1: Register::new("%9"),
                     op2: Register::new("%8"),
                 },
                 Instruction::Store {
-                    ty: Type::I32,
+                    ty: Type::Int,
                     value: Register::new("%10"),
                     ptr: Register::new("%3"),
                 },
                 Instruction::Load {
-                    ty: Type::I32,
+                    ty: Type::Int,
                     result: Register::new("%11"),
                     ptr: Register::new("%2"),
                 },
                 Instruction::Op {
-                    ty: Type::I32,
+                    ty: Type::Int,
                     opcode: Opcode::Sub,
                     result: Register::new("%12"),
                     op1: Register::new("%11"),
                     op2: Register::new("1"),
                 },
                 Instruction::Store {
-                    ty: Type::I32,
+                    ty: Type::Int,
                     value: Register::new("%12"),
                     ptr: Register::new("%2"),
                 },
             ], //  }
         },
-        //  %14 = load i32, i32* %3, align 4
+        //  %14 = load Int, Int* %3, align 4
         Instruction::Load {
-            ty: Type::I32,
+            ty: Type::Int,
             result: Register::new("%14"),
             ptr: Register::new("%3"),
         },
@@ -240,7 +240,7 @@ fn main() {
         ],
         functions: vec![Function {
             function_name: String::from("smart_contract"),
-            result_type: Type::I32,
+            result_type: Type::Int,
             argument_list: vec![
                 Arg {
                     ty: Type::Ptr(Box::new(pair.clone())),

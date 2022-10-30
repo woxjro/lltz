@@ -196,7 +196,7 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr += 1;
                     *stack_ptr
                 });
-                register2ty.entry(reg.clone()).or_insert(Type::I1);
+                register2ty.entry(reg.clone()).or_insert(Type::Bool);
                 analyse_registers_and_memory(
                     register2stack_ptr,
                     register2ty,

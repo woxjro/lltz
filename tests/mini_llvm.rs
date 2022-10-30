@@ -2,33 +2,33 @@ use mini_llvm_michelson_compiler::mini_llvm::{reserved_type2michelson_pair, Type
 
 #[test]
 fn mini_llvm_test() {
-    let res = reserved_type2michelson_pair(Type::I32);
+    let res = reserved_type2michelson_pair(Type::Int);
     assert_eq!(res, String::from("int"));
 
-    let res = reserved_type2michelson_pair(Type::I1);
+    let res = reserved_type2michelson_pair(Type::Bool);
     assert_eq!(res, String::from("bool"));
 
     let res = reserved_type2michelson_pair(Type::Struct {
         id: String::from("Storage"),
-        fields: vec![Type::I32, Type::I32, Type::I32],
+        fields: vec![Type::Int, Type::Int, Type::Int],
     });
     assert_eq!(res, String::from("(pair int int int)"));
 
     let res = reserved_type2michelson_pair(Type::Struct {
         id: String::from("Storage"),
-        fields: vec![Type::I32, Type::I1, Type::I1, Type::I32],
+        fields: vec![Type::Int, Type::Bool, Type::Bool, Type::Int],
     });
     assert_eq!(res, String::from("(pair int bool bool int)"));
 
     let struct_prefecture = Type::Struct {
         id: String::from("Prefecture"),
-        fields: vec![Type::I32, Type::I32],
+        fields: vec![Type::Int, Type::Int],
     };
 
     //%struct.Fish = type { i32, i32, i32, %struct.Prefecture }
     let struct_fish = Type::Struct {
         id: String::from("Fish"),
-        fields: vec![Type::I32, Type::I32, Type::I32, struct_prefecture.clone()],
+        fields: vec![Type::Int, Type::Int, Type::Int, struct_prefecture.clone()],
     };
 
     let res = reserved_type2michelson_pair(struct_fish);
@@ -45,13 +45,13 @@ fn mini_llvm_test() {
         fields: vec![
             Type::Struct {
                 id: String::from("bbb"),
-                fields: vec![Type::I32],
+                fields: vec![Type::Int],
             },
             Type::Struct {
                 id: String::from("ccc"),
                 fields: vec![],
             },
-            Type::I32,
+            Type::Int,
         ],
     });
     assert_eq!(res, String::from("(pair int unit int)"));

@@ -24,76 +24,76 @@ fn main() {
     //  %struct.Parameter* byval(%struct.Parameter) align 8 %parameter,
     //  %struct.Storage* byval(%struct.Storage) align 8 %storage
     //) #0 {
-    //  %1 = alloca i32, align 4
-    //  %2 = alloca i32, align 4
-    //  %3 = alloca i32, align 4
-    //  %4 = alloca i32, align 4
-    //  store i32 0, i32* %1, align 4
-    //  store i32 10, i32* %2, align 4
-    //  store i32 20, i32* %3, align 4
-    //  %5 = load i32, i32* %2, align 4
-    //  %6 = load i32, i32* %3, align 4
-    //  %7 = add nsw i32 %5, %6
-    //  store i32 %7, i32* %4, align 4
-    //  ret i32 0
+    //  %1 = alloca int, align 4
+    //  %2 = alloca int, align 4
+    //  %3 = alloca int, align 4
+    //  %4 = alloca int, align 4
+    //  store int 0, int* %1, align 4
+    //  store int 10, int* %2, align 4
+    //  store int 20, int* %3, align 4
+    //  %5 = load int, int* %2, align 4
+    //  %6 = load int, int* %3, align 4
+    //  %7 = add nsw int %5, %6
+    //  store int %7, int* %4, align 4
+    //  ret int 0
     //}
 
     let instructions = vec![
         Instruction::Alloca {
             ptr: Register::new("%1"),
-            ty: Type::I32,
+            ty: Type::Int,
         },
         Instruction::Alloca {
             ptr: Register::new("%2"),
-            ty: Type::I32,
+            ty: Type::Int,
         },
         Instruction::Alloca {
             ptr: Register::new("%3"),
-            ty: Type::I32,
+            ty: Type::Int,
         },
         Instruction::Alloca {
             ptr: Register::new("%4"),
-            ty: Type::I32,
+            ty: Type::Int,
         },
         Instruction::Store {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("0"),
             ptr: Register::new("%1"),
         },
         Instruction::Store {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("10"),
             ptr: Register::new("%2"),
         },
         Instruction::Store {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("20"),
             ptr: Register::new("%3"),
         },
         Instruction::Load {
-            ty: Type::I32,
+            ty: Type::Int,
             result: Register::new("%5"),
             ptr: Register::new("%2"),
         },
         Instruction::Load {
-            ty: Type::I32,
+            ty: Type::Int,
             result: Register::new("%6"),
             ptr: Register::new("%3"),
         },
         Instruction::Op {
-            ty: Type::I32,
+            ty: Type::Int,
             opcode: Opcode::Add,
             result: Register::new("%7"),
             op1: Register::new("%5"),
             op2: Register::new("%6"),
         },
         Instruction::Store {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("%7"),
             ptr: Register::new("%4"),
         },
         Instruction::Ret {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("0"),
         },
     ];
@@ -130,7 +130,7 @@ fn main() {
         ],
         functions: vec![Function {
             function_name: String::from("smart_contract"),
-            result_type: Type::I32,
+            result_type: Type::Int,
             argument_list: vec![
                 Arg {
                     ty: Type::Ptr(Box::new(pair.clone())),

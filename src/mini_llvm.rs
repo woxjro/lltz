@@ -1,6 +1,6 @@
-//! LLVM IRに出てくるもの（命令, 型定義, 関数...）を定義しているモジュール
+//! LLVM IR'に出てくるもの（命令, 型定義, 関数...）を定義しているモジュール
 
-///LLVMのレジスタ
+///LLVM IR'のレジスタ
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct Register {
     id: String,
@@ -22,15 +22,13 @@ impl Register {
     }
 }
 
-///LLVMに出てくるデータ型
+///LLVM IR'に出てくるデータ型
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub enum Type {
-    I1, // for michelson bool
-    // いずれは消す. or I{N}のNが偶数の時はint, 奇数はnatにするなど
-    I32,  // for michelson int
-    I64,  // for michelson mutez
-    I128, // for michelson int
-    I129, // for michelson nat
+    Bool,
+    Mutez,
+    Int,
+    Nat,
     Struct { id: String, fields: Vec<Type> },
     Ptr(Box<Type>),
 }
@@ -66,11 +64,10 @@ pub fn reserved_type2michelson_pair(ty: Type) -> String {
 impl Type {
     pub fn to_llvm_ty_string(ty: &Type) -> String {
         match ty {
-            Type::I1 => "i1".to_string(),
-            Type::I32 => "i32".to_string(),
-            Type::I64 => "i64".to_string(),
-            Type::I128 => "i128".to_string(),
-            Type::I129 => "i129".to_string(),
+            Type::Bool => "i1 for bool".to_string(),
+            Type::Mutez => "(i64 for mutez)".to_string(),
+            Type::Int => "(i64 for int)".to_string(),
+            Type::Nat => "(i64 for nat)".to_string(),
             Type::Struct { id, fields: _ } => format!("%struct.{id}"),
             Type::Ptr(ty) => {
                 let inner = Type::to_llvm_ty_string(&*ty);
@@ -81,11 +78,10 @@ impl Type {
 
     pub fn to_michelson_ty_string(ty: &Type) -> String {
         let res = match ty {
-            Type::I1 => String::from("bool"),
-            Type::I32 => String::from("int"),
-            Type::I64 => String::from("mutez"),
-            Type::I128 => String::from("int"),
-            Type::I129 => String::from("nat"),
+            Type::Bool => String::from("bool"),
+            Type::Mutez => String::from("mutez"),
+            Type::Int => String::from("int"),
+            Type::Nat => String::from("nat"),
             Type::Struct { .. } => {
                 String::from("(map int int)")
                 //map (struct.index, ptr)
@@ -97,11 +93,10 @@ impl Type {
 
     pub fn default_value(ty: &Type) -> String {
         let res = match ty {
-            Type::I1 => String::from("False"),
-            Type::I32 => String::from("0"),
-            Type::I64 => String::from("0"),
-            Type::I128 => String::from("0"),
-            Type::I129 => String::from("0"),
+            Type::Bool => String::from("False"),
+            Type::Mutez => String::from("0"),
+            Type::Int => String::from("0"),
+            Type::Nat => String::from("0"),
             Type::Struct { .. } => {
                 panic!("Struct型にはDefaultの値はありません.")
             }

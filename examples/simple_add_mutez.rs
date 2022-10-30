@@ -24,76 +24,76 @@ fn main() {
     //  %struct.Parameter* byval(%struct.Parameter) align 8 %parameter,
     //  %struct.Storage* byval(%struct.Storage) align 8 %storage
     //) #0 {
-    //  %1 = alloca i64, align 4
-    //  %2 = alloca i64, align 4
-    //  %3 = alloca i64, align 4
-    //  %4 = alloca i64, align 4
-    //  store i64 0, i64* %1, align 4
-    //  store i64 10, i64* %2, align 4
-    //  store i64 20, i64* %3, align 4
-    //  %5 = load i64, i64* %2, align 4
-    //  %6 = load i64, i64* %3, align 4
-    //  %7 = add nsw i64 %5, %6
-    //  store i64 %7, i64* %4, align 4
-    //  ret i64 0
+    //  %1 = alloca mutez, align 4
+    //  %2 = alloca mutez, align 4
+    //  %3 = alloca mutez, align 4
+    //  %4 = alloca mutez, align 4
+    //  store mutez 0, mutez* %1, align 4
+    //  store mutez 10, mutez* %2, align 4
+    //  store mutez 20, mutez* %3, align 4
+    //  %5 = load mutez, mutez* %2, align 4
+    //  %6 = load mutez, mutez* %3, align 4
+    //  %7 = add nsw mutez %5, %6
+    //  store mutez %7, mutez* %4, align 4
+    //  ret mutez 0
     //}
 
     let instructions = vec![
         Instruction::Alloca {
             ptr: Register::new("%1"),
-            ty: Type::I64,
+            ty: Type::Mutez,
         },
         Instruction::Alloca {
             ptr: Register::new("%2"),
-            ty: Type::I64,
+            ty: Type::Mutez,
         },
         Instruction::Alloca {
             ptr: Register::new("%3"),
-            ty: Type::I64,
+            ty: Type::Mutez,
         },
         Instruction::Alloca {
             ptr: Register::new("%4"),
-            ty: Type::I64,
+            ty: Type::Mutez,
         },
         Instruction::Store {
-            ty: Type::I64,
+            ty: Type::Mutez,
             value: Register::new("0"),
             ptr: Register::new("%1"),
         },
         Instruction::Store {
-            ty: Type::I64,
+            ty: Type::Mutez,
             value: Register::new("10"),
             ptr: Register::new("%2"),
         },
         Instruction::Store {
-            ty: Type::I64,
+            ty: Type::Mutez,
             value: Register::new("20"),
             ptr: Register::new("%3"),
         },
         Instruction::Load {
-            ty: Type::I64,
+            ty: Type::Mutez,
             result: Register::new("%5"),
             ptr: Register::new("%2"),
         },
         Instruction::Load {
-            ty: Type::I64,
+            ty: Type::Mutez,
             result: Register::new("%6"),
             ptr: Register::new("%3"),
         },
         Instruction::Op {
-            ty: Type::I64,
+            ty: Type::Mutez,
             opcode: Opcode::Add,
             result: Register::new("%7"),
             op1: Register::new("%5"),
             op2: Register::new("%6"),
         },
         Instruction::Store {
-            ty: Type::I64,
+            ty: Type::Mutez,
             value: Register::new("%7"),
             ptr: Register::new("%4"),
         },
         Instruction::Ret {
-            ty: Type::I64,
+            ty: Type::Mutez,
             value: Register::new("0"),
         },
     ];
@@ -130,7 +130,7 @@ fn main() {
         ],
         functions: vec![Function {
             function_name: String::from("smart_contract"),
-            result_type: Type::I64,
+            result_type: Type::Mutez,
             argument_list: vec![
                 Arg {
                     ty: Type::Ptr(Box::new(pair.clone())),

@@ -29,25 +29,25 @@ fn main() {
     //  %struct.Parameter* byval(%struct.Parameter) align 8 %parameter,
     //  %struct.Storage* byval(%struct.Storage) align 8 %storage
     //) #0 {
-    //   %1 = alloca i32, align 4
-    //   %2 = alloca i32, align 4
-    //   %3 = alloca i32, align 4
-    //   store i32 0, i32* %1, align 4
-    //   store i32 0, i32* %2, align 4
-    //   %4 = load i32, i32* %2, align 4
-    //   %5 = icmp eq i32 %4, 0
-    //   br i1 %5, label %6, label %7
+    //   %1 = alloca int, align 4
+    //   %2 = alloca int, align 4
+    //   %3 = alloca int, align 4
+    //   store int 0, int* %1, align 4
+    //   store int 0, int* %2, align 4
+    //   %4 = load int, int* %2, align 4
+    //   %5 = icmp eq int %4, 0
+    //   br bool %5, label %6, label %7
     //
     // 6:                                                ; preds = %0
-    //   store i32 777, i32* %3, align 4
+    //   store int 777, int* %3, align 4
     //   br label %8
     //
     // 7:                                                ; preds = %0
-    //   store i32 444, i32* %3, align 4
+    //   store int 444, int* %3, align 4
     //   br label %8
     //
     // 8:                                                ; preds = %7, %6
-    //   ret i32 0
+    //   ret int 0
     // }
 
     // mini LLVM IR
@@ -56,70 +56,70 @@ fn main() {
     //  %struct.Parameter* byval(%struct.Parameter) align 8 %parameter,
     //  %struct.Storage* byval(%struct.Storage) align 8 %storage
     //) #0 {
-    //   %1 = alloca i32, align 4
-    //   %2 = alloca i32, align 4
-    //   %3 = alloca i32, align 4
-    //   store i32 0, i32* %1, align 4
-    //   store i32 0, i32* %2, align 4
-    //   %4 = load i32, i32* %2, align 4
-    //   %5 = icmp eq i32 %4, 0
+    //   %1 = alloca int, align 4
+    //   %2 = alloca int, align 4
+    //   %3 = alloca int, align 4
+    //   store int 0, int* %1, align 4
+    //   store int 0, int* %2, align 4
+    //   %4 = load int, int* %2, align 4
+    //   %5 = icmp eq int %4, 0
     //
-    //   if i1 %5, {
-    //      store i32 444, i32* %3, align 4
+    //   if bool %5, {
+    //      store int 444, int* %3, align 4
     //   } {
-    //      store i32 777, i32* %3, align 4
+    //      store int 777, int* %3, align 4
     //   }
     //
     //  FIXME: return void
-    //   ret i32 0
+    //   ret int 0
     // }
 
     let instructions = vec![
         //{{
-        //   %1 = alloca i32, align 4
-        //   %2 = alloca i32, align 4
-        //   %3 = alloca i32, align 4
+        //   %1 = alloca int, align 4
+        //   %2 = alloca int, align 4
+        //   %3 = alloca int, align 4
         Instruction::Alloca {
             ptr: Register::new("%1"),
-            ty: Type::I32,
+            ty: Type::Int,
         },
         Instruction::Alloca {
             ptr: Register::new("%2"),
-            ty: Type::I32,
+            ty: Type::Int,
         },
         Instruction::Alloca {
             ptr: Register::new("%3"),
-            ty: Type::I32,
+            ty: Type::Int,
         },
-        //   store i32 0, i32* %1, align 4
-        //   store i32 0, i32* %2, align 4
-        //   %4 = load i32, i32* %2, align 4
+        //   store int 0, int* %1, align 4
+        //   store int 0, int* %2, align 4
+        //   %4 = load int, int* %2, align 4
         Instruction::Store {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("0"),
             ptr: Register::new("%1"),
         },
         Instruction::Store {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("0"),
             ptr: Register::new("%2"),
         },
         Instruction::Load {
-            ty: Type::I32,
+            ty: Type::Int,
             result: Register::new("%4"),
             ptr: Register::new("%2"),
         },
-        //   %5 = icmp eq i32 %4, 0
+        //   %5 = icmp eq int %4, 0
         //
-        //   if i1 %5, {
-        //      store i32 777, i32* %3, align 4
+        //   if bool %5, {
+        //      store int 777, int* %3, align 4
         //      br label %8
         //   } {
-        //      store i32 444, i32* %3, align 4
+        //      store int 444, int* %3, align 4
         //      br label %8
         //   }
         Instruction::Icmp {
-            ty: Type::I32,
+            ty: Type::Int,
             cond: Condition::Eq,
             result: Register::new("%5"),
             op1: Register::new("%4"),
@@ -128,17 +128,17 @@ fn main() {
         Instruction::If {
             reg: Register::new("%5"),
             code_block_t: vec![Instruction::Store {
-                ty: Type::I32,
+                ty: Type::Int,
                 value: Register::new("777"),
                 ptr: Register::new("%3"),
             }],
             code_block_f: vec![Instruction::Store {
-                ty: Type::I32,
+                ty: Type::Int,
                 value: Register::new("444"),
                 ptr: Register::new("%3"),
             }],
         },
-        //   ret i32 0
+        //   ret int 0
         //}}
     ];
 
@@ -174,7 +174,7 @@ fn main() {
         ],
         functions: vec![Function {
             function_name: String::from("smart_contract"),
-            result_type: Type::I32,
+            result_type: Type::Int,
             argument_list: vec![
                 Arg {
                     ty: Type::Ptr(Box::new(pair.clone())),

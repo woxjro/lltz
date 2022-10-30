@@ -45,8 +45,8 @@ fn main() {
     //
 
     //
-    //%struct.Fish = type { i32, i32, i32, %struct.Prefecture }
-    //%struct.Prefecture = type { i32, i32 }
+    //%struct.Fish = type { Int, Int, Int, %struct.Prefecture }
+    //%struct.Prefecture = type { Int, Int }
     //%struct.Parameter = type {}
     //%struct.Storage   = type {}
     //%struct.Operation = type {}
@@ -57,158 +57,158 @@ fn main() {
     //  %struct.Parameter* byval(%struct.Parameter) align 8 %parameter,
     //  %struct.Storage* byval(%struct.Storage) align 8 %storage
     //) #0 {
-    //  %1 = alloca i32, align 4
+    //  %1 = alloca Int, align 4
     //  %2 = alloca %struct.Fish, align 4
-    //  store i32 0, i32* %1, align 4
-    //  %3 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 0
-    //  store i32 1, i32* %3, align 4
-    //  %4 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 1
-    //  store i32 30, i32* %4, align 4
-    //  %5 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 2
-    //  store i32 800, i32* %5, align 4
-    //  %6 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 3
-    //  %7 = getelementptr inbounds %struct.Prefecture, %struct.Prefecture* %6, i32 0, i32 0
-    //  store i32 2, i32* %7, align 4
-    //  %8 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 3
-    //  %9 = getelementptr inbounds %struct.Prefecture, %struct.Prefecture* %8, i32 0, i32 1
-    //  store i32 8800000, i32* %9, align 4
+    //  store Int 0, Int* %1, align 4
+    //  %3 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 0
+    //  store Int 1, Int* %3, align 4
+    //  %4 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 1
+    //  store Int 30, Int* %4, align 4
+    //  %5 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 2
+    //  store Int 800, Int* %5, align 4
+    //  %6 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 3
+    //  %7 = getelementptr inbounds %struct.Prefecture, %struct.Prefecture* %6, Int 0, Int 0
+    //  store Int 2, Int* %7, align 4
+    //  %8 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 3
+    //  %9 = getelementptr inbounds %struct.Prefecture, %struct.Prefecture* %8, Int 0, Int 1
+    //  store Int 8800000, Int* %9, align 4
     //  FIXME: return void
-    //  ret i32 0
+    //  ret Int 0
     //}
 
     //{{
-    //%struct.Prefecture = type { i32, i32 }
+    //%struct.Prefecture = type { Int, Int }
     let struct_prefecture = Type::Struct {
         id: String::from("Prefecture"),
-        fields: vec![Type::I32, Type::I32],
+        fields: vec![Type::Int, Type::Int],
     };
 
-    //%struct.Fish = type { i32, i32, i32, %struct.Prefecture }
+    //%struct.Fish = type { Int, Int, Int, %struct.Prefecture }
     let struct_fish = Type::Struct {
         id: String::from("Fish"),
-        fields: vec![Type::I32, Type::I32, Type::I32, struct_prefecture.clone()],
+        fields: vec![Type::Int, Type::Int, Type::Int, struct_prefecture.clone()],
     };
 
     let instructions = vec![
-        //  %1 = alloca i32, align 4
+        //  %1 = alloca Int, align 4
         Instruction::Alloca {
             ptr: Register::new("%1"),
-            ty: Type::I32,
+            ty: Type::Int,
         },
         //  %2 = alloca %struct.Fish, align 4
         Instruction::Alloca {
             ptr: Register::new("%2"),
             ty: struct_fish.clone(),
         },
-        //  store i32 0, i32* %1, align 4
+        //  store Int 0, Int* %1, align 4
         Instruction::Store {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("0"),
             ptr: Register::new("%1"),
         },
-        //  %3 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 0
+        //  %3 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 0
         Instruction::GetElementPtr {
             result: Register::new("%3"),
             ty: struct_fish.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
-                (Type::I32, Register::new("0")),
-                (Type::I32, Register::new("0")),
+                (Type::Int, Register::new("0")),
+                (Type::Int, Register::new("0")),
             ],
         },
-        //  store i32 1, i32* %3, align 4
+        //  store Int 1, Int* %3, align 4
         Instruction::Store {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("1"),
             ptr: Register::new("%3"),
         },
-        //  %4 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 1
+        //  %4 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 1
         Instruction::GetElementPtr {
             result: Register::new("%4"),
             ty: struct_fish.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
-                (Type::I32, Register::new("0")),
-                (Type::I32, Register::new("1")),
+                (Type::Int, Register::new("0")),
+                (Type::Int, Register::new("1")),
             ],
         },
-        //  store i32 30, i32* %4, align 4
+        //  store Int 30, Int* %4, align 4
         Instruction::Store {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("30"),
             ptr: Register::new("%4"),
         },
-        //  %5 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 2
+        //  %5 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 2
         Instruction::GetElementPtr {
             result: Register::new("%5"),
             ty: struct_fish.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
-                (Type::I32, Register::new("0")),
-                (Type::I32, Register::new("2")),
+                (Type::Int, Register::new("0")),
+                (Type::Int, Register::new("2")),
             ],
         },
-        //  store i32 800, i32* %5, align 4
+        //  store Int 800, Int* %5, align 4
         Instruction::Store {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("800"),
             ptr: Register::new("%5"),
         },
-        //  %6 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 3
+        //  %6 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 3
         Instruction::GetElementPtr {
             result: Register::new("%6"),
             ty: struct_fish.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
-                (Type::I32, Register::new("0")),
-                (Type::I32, Register::new("3")),
+                (Type::Int, Register::new("0")),
+                (Type::Int, Register::new("3")),
             ],
         },
-        //  %7 = getelementptr inbounds %struct.Prefecture, %struct.Prefecture* %6, i32 0, i32 0
+        //  %7 = getelementptr inbounds %struct.Prefecture, %struct.Prefecture* %6, Int 0, Int 0
         Instruction::GetElementPtr {
             result: Register::new("%7"),
             ty: struct_prefecture.clone(),
             ptrval: Register::new("%6"),
             subsequent: vec![
-                (Type::I32, Register::new("0")),
-                (Type::I32, Register::new("0")),
+                (Type::Int, Register::new("0")),
+                (Type::Int, Register::new("0")),
             ],
         },
-        //  store i32 2, i32* %7, align 4
+        //  store Int 2, Int* %7, align 4
         Instruction::Store {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("2"),
             ptr: Register::new("%7"),
         },
-        //  %8 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, i32 0, i32 3
+        //  %8 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 3
         Instruction::GetElementPtr {
             result: Register::new("%8"),
             ty: struct_fish.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
-                (Type::I32, Register::new("0")),
-                (Type::I32, Register::new("3")),
+                (Type::Int, Register::new("0")),
+                (Type::Int, Register::new("3")),
             ],
         },
-        //  %9 = getelementptr inbounds %struct.Prefecture, %struct.Prefecture* %8, i32 0, i32 1
+        //  %9 = getelementptr inbounds %struct.Prefecture, %struct.Prefecture* %8, Int 0, Int 1
         Instruction::GetElementPtr {
             result: Register::new("%9"),
             ty: struct_prefecture.clone(),
             ptrval: Register::new("%8"),
             subsequent: vec![
-                (Type::I32, Register::new("0")),
-                (Type::I32, Register::new("1")),
+                (Type::Int, Register::new("0")),
+                (Type::Int, Register::new("1")),
             ],
         },
-        //  store i32 8800000, i32* %9, align 4
+        //  store Int 8800000, Int* %9, align 4
         Instruction::Store {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("8800000"),
             ptr: Register::new("%9"),
         },
-        //  ret i32 0
+        //  ret Int 0
         Instruction::Ret {
-            ty: Type::I32,
+            ty: Type::Int,
             value: Register::new("0"),
         },
     ];
@@ -249,7 +249,7 @@ fn main() {
         ],
         functions: vec![Function {
             function_name: String::from("smart_contract"),
-            result_type: Type::I32,
+            result_type: Type::Int,
             argument_list: vec![
                 Arg {
                     ty: Type::Ptr(Box::new(pair.clone())),

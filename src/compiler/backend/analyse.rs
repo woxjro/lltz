@@ -308,6 +308,45 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr
                 });
             }
+            Instruction::MichelsonGetAmount { result } => {
+                let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
+                    *stack_ptr += 1;
+                    *stack_ptr
+                });
+
+                register2ty.entry(result.clone()).or_insert(Type::Mutez);
+
+                let _ = memory_ty2stack_ptr.entry(Type::Mutez).or_insert_with(|| {
+                    *memory_ptr += 1;
+                    *memory_ptr
+                });
+            }
+            Instruction::MichelsonGetBalance { result } => {
+                let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
+                    *stack_ptr += 1;
+                    *stack_ptr
+                });
+
+                register2ty.entry(result.clone()).or_insert(Type::Mutez);
+
+                let _ = memory_ty2stack_ptr.entry(Type::Mutez).or_insert_with(|| {
+                    *memory_ptr += 1;
+                    *memory_ptr
+                });
+            }
+            Instruction::MichelsonGetTotalVotingPower { result } => {
+                let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
+                    *stack_ptr += 1;
+                    *stack_ptr
+                });
+
+                register2ty.entry(result.clone()).or_insert(Type::Nat);
+
+                let _ = memory_ty2stack_ptr.entry(Type::Nat).or_insert_with(|| {
+                    *memory_ptr += 1;
+                    *memory_ptr
+                });
+            }
         };
     }
 }

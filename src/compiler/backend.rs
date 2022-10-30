@@ -478,6 +478,48 @@ pub fn body(
                     utils::format(&michelson_instructions, tab, tab_depth)
                 );
             }
+            Instruction::MichelsonGetAmount { result } => {
+                let michelson_instructions = vec![
+                    format!("### {} = MichelsonGetAmount {{", result.get_id()),
+                    format!("AMOUNT;"),
+                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
+                    format!("DROP;"),
+                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
+                    format!("### }}"),
+                ];
+                michelson_code = format!(
+                    "{michelson_code}{}",
+                    utils::format(&michelson_instructions, tab, tab_depth)
+                );
+            }
+            Instruction::MichelsonGetBalance { result } => {
+                let michelson_instructions = vec![
+                    format!("### {} = MichelsonGetBalance {{", result.get_id()),
+                    format!("BALANCE;"),
+                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
+                    format!("DROP;"),
+                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
+                    format!("### }}"),
+                ];
+                michelson_code = format!(
+                    "{michelson_code}{}",
+                    utils::format(&michelson_instructions, tab, tab_depth)
+                );
+            }
+            Instruction::MichelsonGetTotalVotingPower { result } => {
+                let michelson_instructions = vec![
+                    format!("### {} = MichelsonGetTotalVotingPower {{", result.get_id()),
+                    format!("TOTAL_VOTING_POWER;"),
+                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
+                    format!("DROP;"),
+                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
+                    format!("### }}"),
+                ];
+                michelson_code = format!(
+                    "{michelson_code}{}",
+                    utils::format(&michelson_instructions, tab, tab_depth)
+                );
+            }
         };
     }
     michelson_code

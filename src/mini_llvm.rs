@@ -236,4 +236,19 @@ pub enum Instruction {
         ty: Type,
         value: Register,
     },
+    ///////////////////////////////////////
+    ////Michelson Blockcnain Operations////
+    ///////////////////////////////////////
+    //%n = call i64 @get_amount(), !dbg !43
+    //          ↓ + Metadata
+    //%n : Mutez = michelsonGetAmount
+    MichelsonGetAmount {
+        result: Register,
+    },
+    MichelsonGetBalance {
+        result: Register,
+    },
+    MichelsonGetTotalVotingPower {
+        result: Register,
+    },
 }

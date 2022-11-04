@@ -30,6 +30,8 @@ pub enum Type {
     Int,
     Mutez,
     Nat,
+    Contract(Box<Type>),
+    Operation,
     Option(Box<Type>),
     Ptr(Box<Type>),
     Struct { id: String, fields: Vec<Type> },
@@ -72,6 +74,11 @@ impl Type {
             Type::Int => "(i64 for int)".to_string(),
             Type::Nat => "(i64 for nat)".to_string(),
             Type::Struct { id, fields: _ } => format!("%struct.{id}"),
+            Type::Contract(ty) => {
+                let inner = Type::to_llvm_ty_string(&*ty);
+                format!("(%struct.contract {inner})")
+            }
+            Type::Operation => String::from("%struct.operation"),
             Type::Ptr(ty) => {
                 let inner = Type::to_llvm_ty_string(&*ty);
                 format!("{inner}*")
@@ -84,7 +91,7 @@ impl Type {
     }
 
     pub fn to_michelson_ty_string(ty: &Type) -> String {
-        let res = match ty {
+        match ty {
             Type::Address => String::from("address"),
             Type::Bool => String::from("bool"),
             Type::Mutez => String::from("mutez"),
@@ -94,13 +101,50 @@ impl Type {
                 String::from("(map int int)")
                 //map (struct.index, ptr)
             }
+            Type::Contract(ty) => {
+                let inner = Type::to_michelson_ty_string(&*ty);
+                format!("(contract {inner})")
+            }
+            Type::Operation => String::from("operation"),
             Type::Ptr(_) => String::from("int"),
             Type::Option(ty) => {
-                let inner = Type::to_llvm_ty_string(&*ty);
+                let inner = Type::to_michelson_ty_string(&*ty);
                 format!("(option {inner})")
             }
-        };
-        res
+        }
+    }
+
+    pub fn to_michelson_backend_ty_string(ty: &Type) -> String {
+        match ty {
+            Type::Operation => {
+                format!("(option {})", Type::to_michelson_ty_string2(&ty))
+            }
+            Type::Contract(_) => {
+                format!("(option {})", Type::to_michelson_ty_string2(&ty))
+            }
+            _ => Type::to_michelson_ty_string(&ty),
+        }
+    }
+
+    pub fn to_michelson_ty_string2(ty: &Type) -> String {
+        match ty {
+            Type::Address => String::from("address"),
+            Type::Bool => String::from("bool"),
+            Type::Mutez => String::from("mutez"),
+            Type::Int => String::from("int"),
+            Type::Nat => String::from("nat"),
+            Type::Struct { .. } => reserved_type2michelson_pair(ty.clone()),
+            Type::Contract(child_ty) => {
+                let inner = Type::to_michelson_ty_string2(&*child_ty.clone());
+                format!("(contract {inner})")
+            }
+            Type::Operation => String::from("operation"),
+            Type::Ptr(_) => String::from("int"),
+            Type::Option(child_ty) => {
+                let inner = Type::to_michelson_ty_string2(&*child_ty.clone());
+                format!("(option {inner})")
+            }
+        }
     }
 
     pub fn default_value(ty: &Type) -> String {
@@ -110,12 +154,21 @@ impl Type {
             Type::Mutez => String::from("0"),
             Type::Int => String::from("0"),
             Type::Nat => String::from("0"),
+            Type::Contract(ty) => {
+                let inner = Type::to_michelson_ty_string2(&*ty);
+                //NOTE: contractはbig_mapに入らないので、内部的にはoption型に包む
+                format!("NONE (contract {inner})")
+            }
+            Type::Operation => {
+                //NOTE: operationはbig_mapに入らないので、内部的にはoption型に包む
+                String::from("NONE operation")
+            }
             Type::Struct { .. } => {
                 panic!("Struct型にはDefaultの値はありません.")
             }
             Type::Ptr(_) => String::from("-1"),
             Type::Option(ty) => {
-                let inner = Type::to_llvm_ty_string(&*ty);
+                let inner = Type::to_michelson_backend_ty_string(&*ty);
                 format!("(None {inner})")
             }
         };
@@ -277,6 +330,9 @@ pub enum Instruction {
         result: Register,
     },
     MichelsonGetSelfAddress {
+        result: Register,
+    },
+    MichelsonGetSelf {
         result: Register,
     },
 }

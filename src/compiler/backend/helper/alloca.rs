@@ -38,11 +38,21 @@ pub fn exec_alloca(
                 format!("DUP;"),
                 format!("DIG 3;"),
                 format!("SWAP;"),
-                format!(
-                    "PUSH {} {}; # default value",
-                    Type::to_michelson_ty_string(&ty),
-                    Type::default_value(&ty)
-                ),
+                match ty {
+                    Type::Operation => {
+                        format!("{}; # default value", Type::default_value(&ty))
+                    }
+                    Type::Contract(_) => {
+                        format!("{}; # default value", Type::default_value(&ty))
+                    }
+                    _ => {
+                        format!(
+                            "PUSH {} {}; # default value",
+                            Type::to_michelson_backend_ty_string(&ty),
+                            Type::default_value(&ty)
+                        )
+                    }
+                },
                 format!("SOME;"),
                 format!("SWAP;"),
                 format!("UPDATE;"),

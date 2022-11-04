@@ -84,6 +84,7 @@ pub fn analyse_registers_and_memory(
     memory_ty2stack_ptr: &mut HashMap<Type, usize>,
     stack_ptr: &mut usize,
     memory_ptr: &mut usize,
+    structure_types: &Vec<Type>,
     instructions: &Vec<Instruction>,
 ) {
     for instruction in instructions {
@@ -203,6 +204,7 @@ pub fn analyse_registers_and_memory(
                     memory_ty2stack_ptr,
                     stack_ptr,
                     memory_ptr,
+                    structure_types,
                     code_block_t,
                 );
                 analyse_registers_and_memory(
@@ -211,6 +213,7 @@ pub fn analyse_registers_and_memory(
                     memory_ty2stack_ptr,
                     stack_ptr,
                     memory_ptr,
+                    structure_types,
                     code_block_f,
                 );
             }
@@ -225,6 +228,7 @@ pub fn analyse_registers_and_memory(
                     memory_ty2stack_ptr,
                     stack_ptr,
                     memory_ptr,
+                    structure_types,
                     cond_block,
                 );
                 analyse_registers_and_memory(
@@ -233,6 +237,7 @@ pub fn analyse_registers_and_memory(
                     memory_ty2stack_ptr,
                     stack_ptr,
                     memory_ptr,
+                    structure_types,
                     loop_block,
                 );
             }
@@ -398,6 +403,30 @@ pub fn analyse_registers_and_memory(
                     *memory_ptr += 1;
                     *memory_ptr
                 });
+            }
+            Instruction::MichelsonGetSelf { result } => {
+                let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
+                    *stack_ptr += 1;
+                    *stack_ptr
+                });
+
+                let parameter = structure_types
+                    .iter()
+                    .find(|ty| match ty {
+                        Type::Struct { id, fields: _ } => id == &String::from("Parameter"),
+                        _ => false,
+                    })
+                    .unwrap();
+                register2ty
+                    .entry(result.clone())
+                    .or_insert(Type::Contract(Box::new(parameter.clone())));
+
+                let _ = memory_ty2stack_ptr
+                    .entry(Type::Contract(Box::new(parameter.clone())))
+                    .or_insert_with(|| {
+                        *memory_ptr += 1;
+                        *memory_ptr
+                    });
             }
         };
     }

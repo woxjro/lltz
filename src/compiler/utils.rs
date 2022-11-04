@@ -48,7 +48,7 @@ pub fn print_michelson_initial_stack_status(
     let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr.iter().collect::<Vec<_>>();
     memory_ty2stack_ptr_sorted.sort_by(|a, b| (a.1).cmp(b.1));
     for (ty, _v) in memory_ty2stack_ptr_sorted.iter() {
-        let ty_string = Type::to_michelson_ty_string(&ty);
+        let ty_string = Type::to_michelson_backend_ty_string(&ty);
 
         let llvm_ty_string = Type::to_llvm_ty_string(ty);
         let comment = format!("memory for {llvm_ty_string}");

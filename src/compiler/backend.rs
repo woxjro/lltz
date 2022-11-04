@@ -32,6 +32,7 @@ pub fn analyse(
         memory_ty2stack_ptr,
         stack_ptr,
         memory_ptr,
+        &structure_types,
         &instructions,
     );
 }
@@ -91,7 +92,7 @@ pub fn prepare(
     let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr.iter().collect::<Vec<_>>();
     memory_ty2stack_ptr_sorted.sort_by(|a, b| (b.1).cmp(a.1));
     for (ty, _v) in memory_ty2stack_ptr_sorted.iter() {
-        let ty_str = Type::to_michelson_ty_string(&ty);
+        let ty_str = Type::to_michelson_backend_ty_string(&ty);
 
         let llvm_ty_string = Type::to_llvm_ty_string(ty);
         let comment = format!("memory for {llvm_ty_string}");
@@ -114,7 +115,7 @@ pub fn prepare(
         } else {
             Type::default_value(&ty)
         };
-        let michelson_ty = Type::to_michelson_ty_string(&ty);
+        let michelson_ty = Type::to_michelson_ty_string2(&ty);
         let llvm_ty_string = Type::to_llvm_ty_string(ty);
 
         let comment = if Register::is_const(reg) {
@@ -123,7 +124,11 @@ pub fn prepare(
             let id = reg.get_id();
             format!("for reg {id} : {llvm_ty_string}")
         };
-        michelson_instructions.push(format!("PUSH {michelson_ty} {val}; # {comment}"));
+        michelson_instructions.push(match ty {
+            Type::Operation => format!("{val}; # {comment}"),
+            Type::Contract(_) => format!("{val}; # {comment}"),
+            _ => format!("PUSH {michelson_ty} {val}; # {comment}"),
+        });
     }
     //(param, storage)を一番上に持ってくる
     michelson_instructions.push(format!(
@@ -168,6 +173,11 @@ pub fn body(
             Instruction::Store { ty, value, ptr } => {
                 let memory_ptr = memory_ty2stack_ptr.get(ty).unwrap();
 
+                let is_big_map_value = match ty {
+                    Type::Contract(_) => false,
+                    Type::Operation => false,
+                    _ => true,
+                };
                 let michelson_instructions = vec![
                     format!(
                         "### store {} {}, {}* {} {{",
@@ -178,6 +188,11 @@ pub fn body(
                     ),
                     format!("DUP {};", register2stack_ptr.get(&value).unwrap()),
                     format!("SOME;"),
+                    if !is_big_map_value {
+                        format!("SOME;")
+                    } else {
+                        format!("")
+                    },
                     format!("DIG {};", register2stack_ptr.len() + memory_ptr),
                     format!("UNPAIR;"),
                     format!("DIG 2;"),
@@ -186,7 +201,11 @@ pub fn body(
                     format!("PAIR;"),
                     format!("DUG {};", register2stack_ptr.len() + memory_ptr - 1),
                     format!("### }}"),
-                ];
+                ]
+                .iter()
+                .filter(|&e| e.len() > 0)
+                .map(|e| e.clone())
+                .collect::<Vec<String>>();
                 michelson_code = format!(
                     "{michelson_code}{}",
                     utils::format(&michelson_instructions, tab, tab_depth)
@@ -194,6 +213,12 @@ pub fn body(
             }
             Instruction::Load { result, ty, ptr } => {
                 let memory_ptr = memory_ty2stack_ptr.get(ty).unwrap();
+
+                let is_big_map_value = match ty {
+                    Type::Contract(_) => false,
+                    Type::Operation => false,
+                    _ => true,
+                };
 
                 let michelson_instructions = vec![
                     format!(
@@ -208,11 +233,21 @@ pub fn body(
                     format!("DUP {};", register2stack_ptr.get(&ptr).unwrap() + 1),
                     format!("GET;"),
                     format!("ASSERT_SOME;"),
+                    if !is_big_map_value {
+                        format!("ASSERT_SOME;")
+                    } else {
+                        format!("")
+                    },
                     format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
                     format!("DROP;"),
                     format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
                     format!("### }}"),
-                ];
+                ]
+                .iter()
+                .filter(|&e| e.len() > 0)
+                .map(|e| e.clone())
+                .collect::<Vec<String>>();
+
                 michelson_code = format!(
                     "{michelson_code}{}",
                     utils::format(&michelson_instructions, tab, tab_depth)
@@ -566,6 +601,20 @@ pub fn body(
                 let michelson_instructions = vec![
                     format!("### {} = MichelsonGetSelfAddress {{", result.get_id()),
                     format!("SELF_ADDRESS;"),
+                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
+                    format!("DROP;"),
+                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
+                    format!("### }}"),
+                ];
+                michelson_code = format!(
+                    "{michelson_code}{}",
+                    utils::format(&michelson_instructions, tab, tab_depth)
+                );
+            }
+            Instruction::MichelsonGetSelf { result } => {
+                let michelson_instructions = vec![
+                    format!("### {} = MichelsonGetSelfAddress {{", result.get_id()),
+                    format!("SELF;"),
                     format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
                     format!("DROP;"),
                     format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),

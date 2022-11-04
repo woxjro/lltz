@@ -347,6 +347,45 @@ pub fn analyse_registers_and_memory(
                     *memory_ptr
                 });
             }
+            Instruction::MichelsonGetSender { result } => {
+                let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
+                    *stack_ptr += 1;
+                    *stack_ptr
+                });
+
+                register2ty.entry(result.clone()).or_insert(Type::Address);
+
+                let _ = memory_ty2stack_ptr.entry(Type::Address).or_insert_with(|| {
+                    *memory_ptr += 1;
+                    *memory_ptr
+                });
+            }
+            Instruction::MichelsonGetSource { result } => {
+                let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
+                    *stack_ptr += 1;
+                    *stack_ptr
+                });
+
+                register2ty.entry(result.clone()).or_insert(Type::Address);
+
+                let _ = memory_ty2stack_ptr.entry(Type::Address).or_insert_with(|| {
+                    *memory_ptr += 1;
+                    *memory_ptr
+                });
+            }
+            Instruction::MichelsonGetSelfAddress { result } => {
+                let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
+                    *stack_ptr += 1;
+                    *stack_ptr
+                });
+
+                register2ty.entry(result.clone()).or_insert(Type::Address);
+
+                let _ = memory_ty2stack_ptr.entry(Type::Address).or_insert_with(|| {
+                    *memory_ptr += 1;
+                    *memory_ptr
+                });
+            }
         };
     }
 }

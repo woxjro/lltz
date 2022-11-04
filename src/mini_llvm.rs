@@ -25,12 +25,13 @@ impl Register {
 ///LLVM IR'に出てくるデータ型
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub enum Type {
+    Address,
     Bool,
-    Mutez,
     Int,
+    Mutez,
     Nat,
-    Struct { id: String, fields: Vec<Type> },
     Ptr(Box<Type>),
+    Struct { id: String, fields: Vec<Type> },
 }
 
 ///予約語Typeを受け取り, MichelsonのPairを返す.
@@ -64,6 +65,7 @@ pub fn reserved_type2michelson_pair(ty: Type) -> String {
 impl Type {
     pub fn to_llvm_ty_string(ty: &Type) -> String {
         match ty {
+            Type::Address => "address".to_string(),
             Type::Bool => "i1 for bool".to_string(),
             Type::Mutez => "(i64 for mutez)".to_string(),
             Type::Int => "(i64 for int)".to_string(),
@@ -78,6 +80,7 @@ impl Type {
 
     pub fn to_michelson_ty_string(ty: &Type) -> String {
         let res = match ty {
+            Type::Address => String::from("address"),
             Type::Bool => String::from("bool"),
             Type::Mutez => String::from("mutez"),
             Type::Int => String::from("int"),
@@ -93,6 +96,7 @@ impl Type {
 
     pub fn default_value(ty: &Type) -> String {
         let res = match ty {
+            Type::Address => String::from("\"KT1PGQFmnGyZMeuHzssNxqx9tYfDvX5JMN3W\""),
             Type::Bool => String::from("False"),
             Type::Mutez => String::from("0"),
             Type::Int => String::from("0"),
@@ -249,6 +253,15 @@ pub enum Instruction {
         result: Register,
     },
     MichelsonGetTotalVotingPower {
+        result: Register,
+    },
+    MichelsonGetSender {
+        result: Register,
+    },
+    MichelsonGetSource {
+        result: Register,
+    },
+    MichelsonGetSelfAddress {
         result: Register,
     },
 }

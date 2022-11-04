@@ -520,6 +520,20 @@ pub fn body(
                     utils::format(&michelson_instructions, tab, tab_depth)
                 );
             }
+            Instruction::MichelsonGetLevel { result } => {
+                let michelson_instructions = vec![
+                    format!("### {} = MichelsonGetLevel {{", result.get_id()),
+                    format!("LEVEL;"),
+                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
+                    format!("DROP;"),
+                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
+                    format!("### }}"),
+                ];
+                michelson_code = format!(
+                    "{michelson_code}{}",
+                    utils::format(&michelson_instructions, tab, tab_depth)
+                );
+            }
             Instruction::MichelsonGetSender { result } => {
                 let michelson_instructions = vec![
                     format!("### {} = MichelsonGetSender {{", result.get_id()),

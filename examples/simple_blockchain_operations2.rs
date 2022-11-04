@@ -38,6 +38,10 @@ fn main() {
     //    return DUMMY_TOTAL_VOTING_POWER;
     //}
     //
+    //Nat get_level() {
+    //    return DUMMY_LEVEL;
+    //}
+    //
     //Address get_self_address() {
     //    return DUMMY_ADDRESS;
     //}
@@ -158,6 +162,7 @@ fn main() {
         //  %4 = alloca i8*, align 8
         //  %5 = alloca i8*, align 8
         //  %6 = alloca i8*, align 8
+        //  %100 = alloca Nat;
         Instruction::Alloca {
             ptr: Register::new("%4"),
             ty: Type::Address,
@@ -169,6 +174,10 @@ fn main() {
         Instruction::Alloca {
             ptr: Register::new("%6"),
             ty: Type::Address,
+        },
+        Instruction::Alloca {
+            ptr: Register::new("%100"),
+            ty: Type::Nat,
         },
         //  %7 = call i8* @get_sender(), !dbg !62
         //  store i8* %7, i8** %4, align 8, !dbg !61
@@ -199,6 +208,16 @@ fn main() {
             ty: Type::Address,
             value: Register::new("%9"),
             ptr: Register::new("%6"),
+        },
+        //  %11 = call i64 @get_level(), !dbg !73
+        //  store i64 %11, i64* %7, align 8, !dbg !72
+        Instruction::MichelsonGetSelfAddress {
+            result: Register::new("%101"),
+        },
+        Instruction::Store {
+            ty: Type::Address,
+            value: Register::new("%101"),
+            ptr: Register::new("%100"),
         },
         //  ret void, !dbg !69
     ];

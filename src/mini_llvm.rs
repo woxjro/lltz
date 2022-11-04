@@ -30,6 +30,7 @@ pub enum Type {
     Int,
     Mutez,
     Nat,
+    Option(Box<Type>),
     Ptr(Box<Type>),
     Struct { id: String, fields: Vec<Type> },
 }
@@ -75,6 +76,10 @@ impl Type {
                 let inner = Type::to_llvm_ty_string(&*ty);
                 format!("{inner}*")
             }
+            Type::Option(ty) => {
+                let inner = Type::to_llvm_ty_string(&*ty);
+                format!("(option {inner})")
+            }
         }
     }
 
@@ -90,6 +95,10 @@ impl Type {
                 //map (struct.index, ptr)
             }
             Type::Ptr(_) => String::from("int"),
+            Type::Option(ty) => {
+                let inner = Type::to_llvm_ty_string(&*ty);
+                format!("(option {inner})")
+            }
         };
         res
     }
@@ -105,7 +114,10 @@ impl Type {
                 panic!("Struct型にはDefaultの値はありません.")
             }
             Type::Ptr(_) => String::from("-1"),
-            _ => String::from("0"),
+            Type::Option(ty) => {
+                let inner = Type::to_llvm_ty_string(&*ty);
+                format!("(None {inner})")
+            }
         };
         res
     }
@@ -253,6 +265,9 @@ pub enum Instruction {
         result: Register,
     },
     MichelsonGetTotalVotingPower {
+        result: Register,
+    },
+    MichelsonGetLevel {
         result: Register,
     },
     MichelsonGetSender {

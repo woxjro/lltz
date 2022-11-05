@@ -5,9 +5,7 @@ mod analyse;
 mod helper;
 mod prepare;
 use crate::compiler::utils;
-use crate::mini_llvm::{
-    reserved_type2michelson_pair, Arg, Condition, Function, Instruction, Opcode, Register, Type,
-};
+use crate::mini_llvm::{Arg, Condition, Function, Instruction, Opcode, Register, Type};
 use std::collections::HashMap;
 
 ///MiniLlvmの構造体宣言,引数リスト,命令列を受け取り,それらに現れるレジスタ、メモリや型
@@ -92,9 +90,9 @@ pub fn prepare(
     let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr.iter().collect::<Vec<_>>();
     memory_ty2stack_ptr_sorted.sort_by(|a, b| (b.1).cmp(a.1));
     for (ty, _v) in memory_ty2stack_ptr_sorted.iter() {
-        let ty_str = Type::to_michelson_backend_ty_string(&ty);
+        let ty_str = Type::to_michelson_backend_ty(&ty);
 
-        let llvm_ty_string = Type::to_llvm_ty_string(ty);
+        let llvm_ty_string = Type::to_llvm_ty(ty);
         let comment = format!("memory for {llvm_ty_string}");
 
         michelson_instructions.append(&mut vec![
@@ -115,8 +113,8 @@ pub fn prepare(
         } else {
             Type::default_value(&ty)
         };
-        let michelson_ty = Type::to_michelson_ty_string2(&ty);
-        let llvm_ty_string = Type::to_llvm_ty_string(ty);
+        let michelson_ty = Type::to_michelson_ty2(&ty);
+        let llvm_ty_string = Type::to_llvm_ty(ty);
 
         let comment = if Register::is_const(reg) {
             format!("for const {val} : {llvm_ty_string}")
@@ -181,9 +179,9 @@ pub fn body(
                 let michelson_instructions = vec![
                     format!(
                         "### store {} {}, {}* {} {{",
-                        Type::to_llvm_ty_string(ty),
+                        Type::to_llvm_ty(ty),
                         value.get_id(),
-                        Type::to_llvm_ty_string(ty),
+                        Type::to_llvm_ty(ty),
                         ptr.get_id()
                     ),
                     format!("DUP {};", register2stack_ptr.get(&value).unwrap()),
@@ -224,8 +222,8 @@ pub fn body(
                     format!(
                         "### {} = load {}, {}* {} {{",
                         result.get_id(),
-                        Type::to_llvm_ty_string(ty),
-                        Type::to_llvm_ty_string(ty),
+                        Type::to_llvm_ty(ty),
+                        Type::to_llvm_ty(ty),
                         ptr.get_id()
                     ),
                     format!("DUP {};", register2stack_ptr.len() + memory_ptr),
@@ -267,8 +265,8 @@ pub fn body(
                     format!(
                         "### {} = getElementPtr {}, {}*, {} {{",
                         result.get_id(),
-                        Type::to_llvm_ty_string(ty),
-                        Type::to_llvm_ty_string(ty),
+                        Type::to_llvm_ty(ty),
+                        Type::to_llvm_ty(ty),
                         ptrval.get_id()
                     ),
                     format!("DUP {};", register2stack_ptr.len() + memory_ptr),
@@ -749,7 +747,7 @@ fn retrieve_storage_field_from_memory(
                 format!(
                     "DUP {}; # memory: {}",
                     register2stack_ptr.len() + memory_ptr + path.iter().sum::<usize>() + 1,
-                    Type::to_llvm_ty_string(field)
+                    Type::to_llvm_ty(field)
                 ),
                 format!("CAR;"),
                 format!("SWAP;"),
@@ -789,7 +787,7 @@ fn retrieve_storage_field_from_memory(
                 format!(
                     "DUP {}; # memory: {}",
                     register2stack_ptr.len() + memory_ptr + path.iter().sum::<usize>() + 1,
-                    Type::to_llvm_ty_string(field)
+                    Type::to_llvm_ty(field)
                 ),
                 format!("CAR;"),
                 format!("SWAP;"),
@@ -832,7 +830,7 @@ pub fn exit(
     //TODO: operationがハードコードされている。ここを直したい
     new_michelson_code = format!("{new_michelson_code}{space}NIL operation; PAIR;");
 
-    let parameter_michelson_ty = reserved_type2michelson_pair(
+    let parameter_michelson_ty = Type::struct_type2michelson_pair(
         structure_types
             .iter()
             .find(|ty| match ty {
@@ -842,7 +840,7 @@ pub fn exit(
             .expect("Parameter型が宣言されていません.")
             .clone(),
     );
-    let storage_michelson_ty = reserved_type2michelson_pair(
+    let storage_michelson_ty = Type::struct_type2michelson_pair(
         structure_types
             .iter()
             .find(|ty| match ty {

@@ -23,8 +23,8 @@ pub fn exec_llvm_memcpy(
             if inner != &Box::new(ty.clone()) {
                 panic!(
                     "@llvm.memcpyでdestの指す先の型:{}がty:{}と一致していません.",
-                    Type::to_llvm_ty_string(inner),
-                    Type::to_llvm_ty_string(ty)
+                    Type::to_llvm_ty(inner),
+                    Type::to_llvm_ty(ty)
                 );
             }
         }
@@ -38,8 +38,8 @@ pub fn exec_llvm_memcpy(
             if inner != &Box::new(ty.clone()) {
                 panic!(
                     "@llvm.memcpyでsrcの指す先の型:{}がty:{}と一致していません.",
-                    Type::to_llvm_ty_string(inner),
-                    Type::to_llvm_ty_string(ty)
+                    Type::to_llvm_ty(inner),
+                    Type::to_llvm_ty(ty)
                 );
             }
         }

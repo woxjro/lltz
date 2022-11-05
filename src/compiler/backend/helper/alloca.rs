@@ -24,11 +24,7 @@ pub fn exec_alloca(
         }
         _ => {
             vec![
-                format!(
-                    "### {} = alloca {} {{",
-                    ptr.get_id(),
-                    Type::to_llvm_ty_string(ty),
-                ),
+                format!("### {} = alloca {} {{", ptr.get_id(), Type::to_llvm_ty(ty),),
                 format!("DIG {};", register2stack_ptr.len() + memory_ptr - 1),
                 format!("UNPAIR;"),
                 format!("SWAP;"),
@@ -48,7 +44,7 @@ pub fn exec_alloca(
                     _ => {
                         format!(
                             "PUSH {} {}; # default value",
-                            Type::to_michelson_backend_ty_string(&ty),
+                            Type::to_michelson_backend_ty(&ty),
                             Type::default_value(&ty)
                         )
                     }
@@ -91,7 +87,7 @@ pub fn exec_struct_alloca(
         format!(
             "### {} = alloca {} {{",
             ptr.get_id(),
-            Type::to_llvm_ty_string(&Type::Struct {
+            Type::to_llvm_ty(&Type::Struct {
                 id: id.to_string(),
                 fields: fields.clone()
             })
@@ -101,7 +97,7 @@ pub fn exec_struct_alloca(
     for (idx, field) in fields.iter().enumerate() {
         res.append(&mut vec![format!(
             "### alloca field idx={idx} : {} {{",
-            Type::to_llvm_ty_string(field)
+            Type::to_llvm_ty(field)
         )]);
         res.append(&mut exec_struct_field_alloca(
             idx,
@@ -220,11 +216,21 @@ fn exec_struct_field_alloca(
                 format!("DUP;"),   //ptr:ptr:ptr:bm:map
                 format!("DIG 3;"), //bm:ptr:ptr:ptr:map
                 format!("SWAP;"),  //ptr:bm:ptr:ptr:map
-                format!(
-                    "PUSH {} {}; # default value",
-                    Type::to_michelson_ty_string(&field),
-                    Type::default_value(&field)
-                ),
+                match field {
+                    Type::Operation => {
+                        format!("{}; # default value", Type::default_value(&field))
+                    }
+                    Type::Contract(_) => {
+                        format!("{}; # default value", Type::default_value(&field))
+                    }
+                    _ => {
+                        format!(
+                            "PUSH {} {}; # default value",
+                            Type::to_michelson_backend_ty(&field),
+                            Type::default_value(&field)
+                        )
+                    }
+                },
                 format!("SOME;"),
                 format!("SWAP;"),   //ptr:some(-1):bm:ptr:ptr:map
                 format!("UPDATE;"), //bm:ptr:ptr:map

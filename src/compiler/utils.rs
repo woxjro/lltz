@@ -33,8 +33,8 @@ pub fn print_michelson_initial_stack_status(
         } else {
             Type::default_value(&ty)
         };
-        let michelson_ty = Type::to_michelson_ty_string(&ty);
-        let llvm_ty_string = Type::to_llvm_ty_string(ty);
+        let michelson_ty = Type::to_michelson_ty2(&ty);
+        let llvm_ty_string = Type::to_llvm_ty(ty);
 
         let comment = if Register::is_const(reg) {
             format!("for const {val} : {llvm_ty_string}")
@@ -48,9 +48,9 @@ pub fn print_michelson_initial_stack_status(
     let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr.iter().collect::<Vec<_>>();
     memory_ty2stack_ptr_sorted.sort_by(|a, b| (a.1).cmp(b.1));
     for (ty, _v) in memory_ty2stack_ptr_sorted.iter() {
-        let ty_string = Type::to_michelson_backend_ty_string(&ty);
+        let ty_string = Type::to_michelson_backend_ty(&ty);
 
-        let llvm_ty_string = Type::to_llvm_ty_string(ty);
+        let llvm_ty_string = Type::to_llvm_ty(ty);
         let comment = format!("memory for {llvm_ty_string}");
 
         rows.push(format!("( (big_map int {ty_string}), 0 ) # {comment}"));

@@ -37,36 +37,55 @@ pub enum Type {
     Struct { id: String, fields: Vec<Type> },
 }
 
-///予約語Typeを受け取り, MichelsonのPairを返す.
-///Storage, Parameter, PairなどといったMichelsonコードの引数を生成するために使う
-pub fn reserved_type2michelson_pair(ty: Type) -> String {
-    match ty {
-        Type::Struct { id: _, fields } => {
-            let mut res = String::new();
-            if fields.len() >= 2 {
-                for (i, field) in fields.iter().enumerate() {
-                    if i == 0 {
-                        res = self::reserved_type2michelson_pair(field.clone())
-                    } else {
-                        res = format!(
-                            "{res} {}",
-                            self::reserved_type2michelson_pair(field.clone())
-                        );
-                    }
-                }
-                format!("(pair {res})")
-            } else if fields.len() == 1 {
-                self::reserved_type2michelson_pair(fields.iter().nth(0).unwrap().clone())
-            } else {
-                format!("unit")
-            }
-        }
-        _ => Type::to_michelson_ty_string(&ty),
-    }
-}
-
 impl Type {
-    pub fn to_llvm_ty_string(ty: &Type) -> String {
+    ///予約語Typeを受け取り, MichelsonのPairを返す.
+    ///Storage, Parameter, PairなどといったMichelsonコードの引数を生成するために使う
+    pub fn struct_type2michelson_pair(ty: Type) -> String {
+        match ty {
+            Type::Struct { id: _, fields } => {
+                let mut res = String::new();
+                if fields.len() >= 2 {
+                    for (i, field) in fields.iter().enumerate() {
+                        if i == 0 {
+                            res = Type::struct_type2michelson_pair(field.clone())
+                        } else {
+                            res = format!(
+                                "{res} {}",
+                                Type::struct_type2michelson_pair(field.clone())
+                            );
+                        }
+                    }
+                    format!("(pair {res})")
+                } else if fields.len() == 1 {
+                    Type::struct_type2michelson_pair(fields.iter().nth(0).unwrap().clone())
+                } else {
+                    format!("unit")
+                }
+            }
+            _ => match ty {
+                Type::Address => String::from("address"),
+                Type::Bool => String::from("bool"),
+                Type::Mutez => String::from("mutez"),
+                Type::Int => String::from("int"),
+                Type::Nat => String::from("nat"),
+                Type::Struct { .. } => {
+                    panic!() //never occur
+                }
+                Type::Contract(ty) => {
+                    let inner = Type::struct_type2michelson_pair(*ty);
+                    format!("(contract {inner})")
+                }
+                Type::Operation => String::from("operation"),
+                Type::Ptr(_) => String::from("int"),
+                Type::Option(ty) => {
+                    let inner = Type::struct_type2michelson_pair(*ty);
+                    format!("(option {inner})")
+                }
+            },
+        }
+    }
+
+    pub fn to_llvm_ty(ty: &Type) -> String {
         match ty {
             Type::Address => "address".to_string(),
             Type::Bool => "i1 for bool".to_string(),
@@ -75,22 +94,24 @@ impl Type {
             Type::Nat => "(i64 for nat)".to_string(),
             Type::Struct { id, fields: _ } => format!("%struct.{id}"),
             Type::Contract(ty) => {
-                let inner = Type::to_llvm_ty_string(&*ty);
+                let inner = Type::to_llvm_ty(&*ty);
                 format!("(%struct.contract {inner})")
             }
             Type::Operation => String::from("%struct.operation"),
             Type::Ptr(ty) => {
-                let inner = Type::to_llvm_ty_string(&*ty);
+                let inner = Type::to_llvm_ty(&*ty);
                 format!("{inner}*")
             }
             Type::Option(ty) => {
-                let inner = Type::to_llvm_ty_string(&*ty);
+                let inner = Type::to_llvm_ty(&*ty);
                 format!("(option {inner})")
             }
         }
     }
 
-    pub fn to_michelson_ty_string(ty: &Type) -> String {
+    //FIXME: 多分どこかバグっている {{
+    //       (フロントで)option operationをしようと思うとバグる気がする
+    fn to_michelson_ty(ty: &Type) -> String {
         match ty {
             Type::Address => String::from("address"),
             Type::Bool => String::from("bool"),
@@ -101,47 +122,44 @@ impl Type {
                 String::from("(map int int)")
                 //map (struct.index, ptr)
             }
-            Type::Contract(ty) => {
-                let inner = Type::to_michelson_ty_string(&*ty);
-                format!("(contract {inner})")
-            }
-            Type::Operation => String::from("operation"),
+            Type::Contract(_) => panic!(),
+            Type::Operation => panic!(),
             Type::Ptr(_) => String::from("int"),
             Type::Option(ty) => {
-                let inner = Type::to_michelson_ty_string(&*ty);
+                let inner = Type::to_michelson_ty(&*ty);
                 format!("(option {inner})")
             }
         }
     }
 
-    pub fn to_michelson_backend_ty_string(ty: &Type) -> String {
+    pub fn to_michelson_backend_ty(ty: &Type) -> String {
         match ty {
             Type::Operation => {
-                format!("(option {})", Type::to_michelson_ty_string2(&ty))
+                format!("(option {})", Type::to_michelson_ty2(&ty))
             }
             Type::Contract(_) => {
-                format!("(option {})", Type::to_michelson_ty_string2(&ty))
+                format!("(option {})", Type::to_michelson_ty2(&ty))
             }
-            _ => Type::to_michelson_ty_string(&ty),
+            _ => Type::to_michelson_ty(&ty),
         }
     }
 
-    pub fn to_michelson_ty_string2(ty: &Type) -> String {
+    pub fn to_michelson_ty2(ty: &Type) -> String {
         match ty {
             Type::Address => String::from("address"),
             Type::Bool => String::from("bool"),
             Type::Mutez => String::from("mutez"),
             Type::Int => String::from("int"),
             Type::Nat => String::from("nat"),
-            Type::Struct { .. } => reserved_type2michelson_pair(ty.clone()),
+            Type::Struct { .. } => Type::struct_type2michelson_pair(ty.clone()),
             Type::Contract(child_ty) => {
-                let inner = Type::to_michelson_ty_string2(&*child_ty.clone());
+                let inner = Type::to_michelson_ty2(&*child_ty);
                 format!("(contract {inner})")
             }
             Type::Operation => String::from("operation"),
             Type::Ptr(_) => String::from("int"),
             Type::Option(child_ty) => {
-                let inner = Type::to_michelson_ty_string2(&*child_ty.clone());
+                let inner = Type::to_michelson_ty2(&*child_ty);
                 format!("(option {inner})")
             }
         }
@@ -155,7 +173,7 @@ impl Type {
             Type::Int => String::from("0"),
             Type::Nat => String::from("0"),
             Type::Contract(ty) => {
-                let inner = Type::to_michelson_ty_string2(&*ty);
+                let inner = Type::to_michelson_ty2(&*ty);
                 //NOTE: contractはbig_mapに入らないので、内部的にはoption型に包む
                 format!("NONE (contract {inner})")
             }
@@ -168,12 +186,13 @@ impl Type {
             }
             Type::Ptr(_) => String::from("-1"),
             Type::Option(ty) => {
-                let inner = Type::to_michelson_backend_ty_string(&*ty);
+                let inner = Type::to_michelson_backend_ty(&*ty);
                 format!("(None {inner})")
             }
         };
         res
     }
+    // }}
 
     pub fn deref(ty: &Type) -> Type {
         match ty {

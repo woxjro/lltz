@@ -1,20 +1,19 @@
-use mini_llvm_michelson_compiler::mini_llvm::{reserved_type2michelson_pair, Type};
+use mini_llvm_michelson_compiler::mini_llvm::Type;
 
 #[test]
 fn mini_llvm_test() {
-    let res = reserved_type2michelson_pair(Type::Int);
+    let res = Type::struct_type2michelson_pair(Type::Int);
     assert_eq!(res, String::from("int"));
 
-    let res = reserved_type2michelson_pair(Type::Bool);
+    let res = Type::struct_type2michelson_pair(Type::Bool);
     assert_eq!(res, String::from("bool"));
-
-    let res = reserved_type2michelson_pair(Type::Struct {
+    let res = Type::struct_type2michelson_pair(Type::Struct {
         id: String::from("Storage"),
         fields: vec![Type::Int, Type::Int, Type::Int],
     });
     assert_eq!(res, String::from("(pair int int int)"));
 
-    let res = reserved_type2michelson_pair(Type::Struct {
+    let res = Type::struct_type2michelson_pair(Type::Struct {
         id: String::from("Storage"),
         fields: vec![Type::Int, Type::Bool, Type::Bool, Type::Int],
     });
@@ -31,16 +30,16 @@ fn mini_llvm_test() {
         fields: vec![Type::Int, Type::Int, Type::Int, struct_prefecture.clone()],
     };
 
-    let res = reserved_type2michelson_pair(struct_fish);
+    let res = Type::struct_type2michelson_pair(struct_fish);
     assert_eq!(res, String::from("(pair int int int (pair int int))"));
 
-    let res = reserved_type2michelson_pair(Type::Struct {
+    let res = Type::struct_type2michelson_pair(Type::Struct {
         id: String::from("Storage"),
         fields: vec![],
     });
     assert_eq!(res, String::from("unit"));
 
-    let res = reserved_type2michelson_pair(Type::Struct {
+    let res = Type::struct_type2michelson_pair(Type::Struct {
         id: String::from("aaa"),
         fields: vec![
             Type::Struct {

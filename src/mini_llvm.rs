@@ -202,6 +202,152 @@ impl Type {
     }
 }
 
+///MichelsonのRegister, Memoryモデルで出てくるデータ型
+///contract ty, operation型がoptionに包まれているのが特徴
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
+pub enum BackendType {
+    Address,
+    Bool,
+    Int,
+    Mutez,
+    Nat,
+    Contract(Box<BackendType>),
+    Operation,
+    Option(Box<BackendType>),
+    Ptr(Box<BackendType>),
+    Struct {
+        id: String,
+        fields: Vec<BackendType>,
+    },
+}
+
+impl BackendType {
+    pub fn from(ty: Type) -> BackendType {
+        match ty {
+            Type::Address => BackendType::Address,
+            Type::Bool => BackendType::Bool,
+            Type::Int => BackendType::Int,
+            Type::Mutez => BackendType::Mutez,
+            Type::Nat => BackendType::Nat,
+            Type::Ptr(inner) => BackendType::Ptr(Box::new(BackendType::from(*inner.clone()))),
+            Type::Struct { id, fields } => BackendType::Struct {
+                id: id.clone(),
+                fields: fields
+                    .iter()
+                    .map(|field| BackendType::from(field.clone()))
+                    .collect::<Vec<BackendType>>(),
+            },
+            Type::Operation => BackendType::Option(Box::new(BackendType::Operation)),
+            Type::Contract(child_ty) => BackendType::Option(Box::new(BackendType::Contract(
+                Box::new(BackendType::from(*child_ty.clone())),
+            ))), //child_tyはStruct型
+            Type::Option(child_ty) => {
+                BackendType::Option(Box::new(BackendType::from(*child_ty.clone())))
+            }
+        }
+    }
+
+    pub fn to_string(self) -> String {
+        match self {
+            BackendType::Address => String::from("address"),
+            BackendType::Bool => String::from("bool"),
+            BackendType::Mutez => String::from("mutez"),
+            BackendType::Int => String::from("int"),
+            BackendType::Nat => String::from("nat"),
+            BackendType::Struct { .. } => BackendType::struct_type2michelson_pair(self),
+            BackendType::Contract(child_ty) => {
+                let inner = BackendType::struct_type2michelson_pair(*child_ty.clone());
+                format!("(contract {inner})")
+            }
+            BackendType::Operation => String::from("operation"),
+            BackendType::Ptr(_) => String::from("int"),
+            BackendType::Option(child_ty) => {
+                let inner = child_ty.to_string();
+                format!("(option {inner})")
+            }
+        }
+    }
+
+    ///予約語Typeを受け取り, MichelsonのPairを返す.
+    ///Storage, Parameter, PairなどといったMichelsonコードの引数を生成するために使う
+    pub fn struct_type2michelson_pair(ty: BackendType) -> String {
+        match ty {
+            BackendType::Struct { id: _, fields } => {
+                let mut res = String::new();
+                if fields.len() >= 2 {
+                    for (i, field) in fields.iter().enumerate() {
+                        if i == 0 {
+                            res = BackendType::struct_type2michelson_pair(field.clone())
+                        } else {
+                            res = format!(
+                                "{res} {}",
+                                BackendType::struct_type2michelson_pair(field.clone())
+                            );
+                        }
+                    }
+                    format!("(pair {res})")
+                } else if fields.len() == 1 {
+                    BackendType::struct_type2michelson_pair(fields.iter().nth(0).unwrap().clone())
+                } else {
+                    format!("unit")
+                }
+            }
+            _ => match ty {
+                BackendType::Address => String::from("address"),
+                BackendType::Bool => String::from("bool"),
+                BackendType::Mutez => String::from("mutez"),
+                BackendType::Int => String::from("int"),
+                BackendType::Nat => String::from("nat"),
+                BackendType::Struct { .. } => {
+                    panic!() //never occur
+                }
+                BackendType::Contract(ty) => {
+                    let inner = BackendType::struct_type2michelson_pair(*ty);
+                    format!("(contract {inner})")
+                }
+                BackendType::Operation => String::from("operation"),
+                BackendType::Ptr(_) => String::from("int"),
+                BackendType::Option(ty) => {
+                    let inner = BackendType::struct_type2michelson_pair(*ty);
+                    format!("(option {inner})")
+                }
+            },
+        }
+    }
+
+    pub fn default_value(ty: &BackendType) -> String {
+        let res = match ty {
+            BackendType::Address => String::from("\"KT1PGQFmnGyZMeuHzssNxqx9tYfDvX5JMN3W\""),
+            BackendType::Bool => String::from("False"),
+            BackendType::Mutez => String::from("0"),
+            BackendType::Int => String::from("0"),
+            BackendType::Nat => String::from("0"),
+            BackendType::Contract(_) => {
+                panic!("BackendType::Contractのdefault_valueはありません.")
+            }
+            BackendType::Operation => {
+                panic!("BackendType::Operationのdefault_valueはありません.")
+            }
+            BackendType::Struct { .. } => {
+                panic!("BackendType::Structのdefault_valueはありません.")
+            }
+            BackendType::Ptr(_) => String::from("-1"),
+            BackendType::Option(child_ty) => {
+                let inner = child_ty.clone().to_string();
+                format!("NONE {inner}")
+            }
+        };
+        res
+    }
+
+    pub fn deref(ty: &BackendType) -> BackendType {
+        match ty {
+            BackendType::Ptr(inner) => *(inner.clone()),
+            _ => panic!(),
+        }
+    }
+}
+
 pub enum Opcode {
     Add,
     Sub,

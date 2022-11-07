@@ -1,5 +1,5 @@
 use crate::compiler::utils;
-use crate::mini_llvm::{Arg, Register, Type};
+use crate::mini_llvm::{Arg, BackendType, Register, Type};
 use std::collections::HashMap;
 
 ///parameterをMichelsonのPairからLLVMのレジスタ・メモリモデルへとデコードする関数
@@ -12,7 +12,7 @@ pub fn alloca_parameter_by_value(
     tab: &str,
     tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> String {
     let Arg { reg, ty } = parameter_arg;
     let mut michelson_instructions = vec![];
@@ -67,7 +67,7 @@ fn decode_parameter_from_input(
     ptr: &Register,
     ty: &Type,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> Vec<String> {
     let mut michelson_instructions = vec![
         format!("DUP;"),
@@ -123,7 +123,7 @@ fn decode_parameter_field_from_input(
     is_last_field: bool,
     path: Vec<(usize, Type)>,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> Vec<String> {
     let mut michelson_instructions = vec![
         format!("DUP;"),
@@ -168,7 +168,9 @@ fn decode_parameter_field_from_input(
                 format!("SOME;"),
             ]);
             for (i, (child_idx, child_ty)) in path.iter().enumerate() {
-                let memory_ptr = memory_ty2stack_ptr.get(child_ty).unwrap();
+                let memory_ptr = memory_ty2stack_ptr
+                    .get(&BackendType::from(child_ty.clone()))
+                    .unwrap();
 
                 if i == 0 {
                     /* 最初はptrを使う */
@@ -205,7 +207,9 @@ fn decode_parameter_field_from_input(
                 }
             }
 
-            let memory_ptr = memory_ty2stack_ptr.get(ty).unwrap();
+            let memory_ptr = memory_ty2stack_ptr
+                .get(&BackendType::from(ty.clone()))
+                .unwrap();
             michelson_instructions.append(&mut vec![
                 format!(
                     "DIG {};",

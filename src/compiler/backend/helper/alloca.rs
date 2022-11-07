@@ -1,5 +1,5 @@
 use crate::compiler::utils;
-use crate::mini_llvm::{Register, Type};
+use crate::mini_llvm::{BackendType, Register, Type};
 use std::collections::HashMap;
 
 ///allocaをMichelsonへとコンパイルする関数
@@ -14,9 +14,11 @@ pub fn exec_alloca(
     tab: &str,
     tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> String {
-    let memory_ptr = memory_ty2stack_ptr.get(ty).unwrap();
+    let memory_ptr = memory_ty2stack_ptr
+        .get(&BackendType::from(ty.clone()))
+        .unwrap();
 
     let michelson_instructions = match ty {
         Type::Struct { id, fields } => {
@@ -34,18 +36,20 @@ pub fn exec_alloca(
                 format!("DUP;"),
                 format!("DIG 3;"),
                 format!("SWAP;"),
-                match ty {
-                    Type::Operation => {
-                        format!("{}; # default value", Type::default_value(&ty))
+                match BackendType::from(ty.clone()) {
+                    BackendType::Option(_) => {
+                        format!(
+                            "{}; # default value",
+                            BackendType::default_value(&BackendType::from(ty.clone()))
+                        )
                     }
-                    Type::Contract(_) => {
-                        format!("{}; # default value", Type::default_value(&ty))
-                    }
+                    BackendType::Contract(_) => panic!(),
+                    BackendType::Operation => panic!(),
                     _ => {
                         format!(
                             "PUSH {} {}; # default value",
-                            Type::to_michelson_backend_ty(&ty),
-                            Type::default_value(&ty)
+                            BackendType::from(ty.clone()).to_string(),
+                            BackendType::default_value(&BackendType::from(ty.clone()))
                         )
                     }
                 },
@@ -74,14 +78,14 @@ pub fn exec_struct_alloca(
     fields: &Vec<Type>,
     ptr: &Register,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> Vec<String> {
     //Struct { id, fields }型のメモリ領域のスタック上の相対ポインタ
     let memory_ptr = memory_ty2stack_ptr
-        .get(&Type::Struct {
+        .get(&BackendType::from(Type::Struct {
             id: id.to_string(),
             fields: fields.clone(),
-        })
+        }))
         .unwrap();
     let mut res = vec![
         format!(
@@ -147,9 +151,11 @@ fn exec_struct_field_alloca(
     depth: usize,
     memory_ptr: &usize,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> Vec<String> {
-    let field_memory_ptr = memory_ty2stack_ptr.get(field).unwrap();
+    let field_memory_ptr = memory_ty2stack_ptr
+        .get(&BackendType::from(field.clone()))
+        .unwrap();
     match field {
         Type::Struct { id: _, fields } => {
             let mut res = vec![format!("EMPTY_MAP int int;")];
@@ -216,18 +222,20 @@ fn exec_struct_field_alloca(
                 format!("DUP;"),   //ptr:ptr:ptr:bm:map
                 format!("DIG 3;"), //bm:ptr:ptr:ptr:map
                 format!("SWAP;"),  //ptr:bm:ptr:ptr:map
-                match field {
-                    Type::Operation => {
-                        format!("{}; # default value", Type::default_value(&field))
+                match BackendType::from(field.clone()) {
+                    BackendType::Option(_) => {
+                        format!(
+                            "{}; # default value",
+                            BackendType::default_value(&BackendType::from(field.clone()))
+                        )
                     }
-                    Type::Contract(_) => {
-                        format!("{}; # default value", Type::default_value(&field))
-                    }
+                    BackendType::Contract(_) => panic!(),
+                    BackendType::Operation => panic!(),
                     _ => {
                         format!(
                             "PUSH {} {}; # default value",
-                            Type::to_michelson_backend_ty(&field),
-                            Type::default_value(&field)
+                            BackendType::from(field.clone()).to_string(),
+                            BackendType::default_value(&BackendType::from(field.clone()))
                         )
                     }
                 },

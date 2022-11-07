@@ -5,7 +5,9 @@ mod analyse;
 mod helper;
 mod prepare;
 use crate::compiler::utils;
-use crate::mini_llvm::{Arg, Condition, Function, Instruction, Opcode, Register, Type};
+use crate::mini_llvm::{
+    Arg, BackendType, Condition, Function, Instruction, Opcode, Register, Type,
+};
 use std::collections::HashMap;
 
 ///MiniLlvmの構造体宣言,引数リスト,命令列を受け取り,それらに現れるレジスタ、メモリや型
@@ -17,8 +19,8 @@ pub fn analyse(
     stack_ptr: &mut usize,
     register2stack_ptr: &mut HashMap<Register, usize>,
     memory_ptr: &mut usize,
-    memory_ty2stack_ptr: &mut HashMap<Type, usize>,
-    register2ty: &mut HashMap<Register, Type>,
+    memory_ty2stack_ptr: &mut HashMap<BackendType, usize>,
+    register2ty: &mut HashMap<Register, BackendType>,
 ) {
     analyse::analyse_structure_types(memory_ty2stack_ptr, memory_ptr, &structure_types);
 
@@ -43,7 +45,7 @@ pub fn prepare_from_argument_list(
     tab: &str,
     tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> String {
     let mut michelson_code = michelson_code;
     michelson_code = prepare::prepare_storage(
@@ -83,16 +85,20 @@ pub fn prepare(
     michelson_code: String,
     tab: &str,
     register2stack_ptr: &HashMap<Register, usize>,
-    register2ty: &HashMap<Register, Type>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
+    register2ty: &HashMap<Register, BackendType>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> String {
     let mut michelson_instructions = vec![];
-    let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr.iter().collect::<Vec<_>>();
-    memory_ty2stack_ptr_sorted.sort_by(|a, b| (b.1).cmp(a.1));
-    for (ty, _v) in memory_ty2stack_ptr_sorted.iter() {
-        let ty_str = Type::to_michelson_backend_ty(&ty);
+    let memory_ty2stack_ptr = memory_ty2stack_ptr.clone();
+    let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr
+        .iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect::<Vec<_>>();
+    memory_ty2stack_ptr_sorted.sort_by(|a, b| (a.1).cmp(&b.1));
+    for (ty, _v) in memory_ty2stack_ptr_sorted.iter().rev() {
+        let ty_str = ty.clone().to_memory_string();
 
-        let llvm_ty_string = Type::to_llvm_ty(ty);
+        let llvm_ty_string = BackendType::to_llvm_ty(ty);
         let comment = format!("memory for {llvm_ty_string}");
 
         michelson_instructions.append(&mut vec![
@@ -111,10 +117,10 @@ pub fn prepare(
             //reg.parse::<i32>().unwrap()
             reg.get_id()
         } else {
-            Type::default_value(&ty)
+            BackendType::default_value(&ty)
         };
-        let michelson_ty = Type::to_michelson_ty2(&ty);
-        let llvm_ty_string = Type::to_llvm_ty(ty);
+        let michelson_ty = ty.clone().to_memory_string();
+        let llvm_ty_string = BackendType::to_llvm_ty(ty);
 
         let comment = if Register::is_const(reg) {
             format!("for const {val} : {llvm_ty_string}")
@@ -123,8 +129,9 @@ pub fn prepare(
             format!("for reg {id} : {llvm_ty_string}")
         };
         michelson_instructions.push(match ty {
-            Type::Operation => format!("{val}; # {comment}"),
-            Type::Contract(_) => format!("{val}; # {comment}"),
+            BackendType::Operation => format!("{val}; # {comment}"),
+            BackendType::Contract(_) => format!("{val}; # {comment}"),
+            BackendType::Option(_) => format!("{val}; # {comment}"),
             _ => format!("PUSH {michelson_ty} {val}; # {comment}"),
         });
     }
@@ -148,8 +155,8 @@ pub fn body(
     tab: &str,
     tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
-    register2ty: &HashMap<Register, Type>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
+    register2ty: &HashMap<Register, BackendType>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
     instructions: &Vec<Instruction>,
 ) -> String {
     let mut michelson_code = michelson_code;
@@ -169,13 +176,10 @@ pub fn body(
                 );
             }
             Instruction::Store { ty, value, ptr } => {
-                let memory_ptr = memory_ty2stack_ptr.get(ty).unwrap();
+                let memory_ptr = memory_ty2stack_ptr
+                    .get(&BackendType::from(ty.clone()))
+                    .unwrap();
 
-                let is_big_map_value = match ty {
-                    Type::Contract(_) => false,
-                    Type::Operation => false,
-                    _ => true,
-                };
                 let michelson_instructions = vec![
                     format!(
                         "### store {} {}, {}* {} {{",
@@ -186,11 +190,6 @@ pub fn body(
                     ),
                     format!("DUP {};", register2stack_ptr.get(&value).unwrap()),
                     format!("SOME;"),
-                    if !is_big_map_value {
-                        format!("SOME;")
-                    } else {
-                        format!("")
-                    },
                     format!("DIG {};", register2stack_ptr.len() + memory_ptr),
                     format!("UNPAIR;"),
                     format!("DIG 2;"),
@@ -210,13 +209,9 @@ pub fn body(
                 );
             }
             Instruction::Load { result, ty, ptr } => {
-                let memory_ptr = memory_ty2stack_ptr.get(ty).unwrap();
-
-                let is_big_map_value = match ty {
-                    Type::Contract(_) => false,
-                    Type::Operation => false,
-                    _ => true,
-                };
+                let memory_ptr = memory_ty2stack_ptr
+                    .get(&BackendType::from(ty.clone()))
+                    .unwrap();
 
                 let michelson_instructions = vec![
                     format!(
@@ -231,11 +226,6 @@ pub fn body(
                     format!("DUP {};", register2stack_ptr.get(&ptr).unwrap() + 1),
                     format!("GET;"),
                     format!("ASSERT_SOME;"),
-                    if !is_big_map_value {
-                        format!("ASSERT_SOME;")
-                    } else {
-                        format!("")
-                    },
                     format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
                     format!("DROP;"),
                     format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
@@ -257,7 +247,10 @@ pub fn body(
                 ptrval,
                 subsequent,
             } => {
-                let memory_ptr = memory_ty2stack_ptr.get(ty).unwrap();
+                let memory_ptr = memory_ty2stack_ptr
+                    .get(&BackendType::from(ty.clone()))
+                    .unwrap();
+
                 // FIXME TODO: subsequent[1]で決め打ちで取得しているので直したい.
                 //              (...が, これ以外無い気がする)
                 let (_, reg) = &subsequent[1];
@@ -611,8 +604,9 @@ pub fn body(
             }
             Instruction::MichelsonGetSelf { result } => {
                 let michelson_instructions = vec![
-                    format!("### {} = MichelsonGetSelfAddress {{", result.get_id()),
+                    format!("### {} = MichelsonGetSelf {{", result.get_id()),
                     format!("SELF;"),
+                    format!("SOME; # to (option contract ty)"),
                     format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
                     format!("DROP;"),
                     format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
@@ -639,7 +633,7 @@ pub fn retrieve_storage_from_memory(
     tab: &str,
     tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> String {
     let Arg {
         reg,
@@ -666,8 +660,12 @@ pub fn retrieve_storage_from_memory(
         .unwrap();
 
     let storage_ty = Type::deref(storage_ty_ptr);
-    let storage_memory_ptr = memory_ty2stack_ptr.get(&storage_ty).unwrap();
-    let pair_memory_ptr = memory_ty2stack_ptr.get(&Type::deref(pair_ty_ptr)).unwrap();
+    let storage_memory_ptr = memory_ty2stack_ptr
+        .get(&BackendType::from(storage_ty.clone()))
+        .unwrap();
+    let pair_memory_ptr = memory_ty2stack_ptr
+        .get(&BackendType::deref(&BackendType::from(pair_ty_ptr.clone())))
+        .unwrap();
     let mut michelson_instructions = vec![];
     michelson_instructions.append(&mut vec![
         format!("### encode Storage {{"),
@@ -729,9 +727,11 @@ fn retrieve_storage_field_from_memory(
     field: &Type,
     path: Vec<usize>,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> Vec<String> {
-    let memory_ptr = memory_ty2stack_ptr.get(&field).unwrap();
+    let memory_ptr = memory_ty2stack_ptr
+        .get(&BackendType::from(field.clone()))
+        .unwrap();
     match field {
         Type::Struct {
             id: child_id,
@@ -806,7 +806,7 @@ pub fn exit(
     michelson_code: String,
     space: &str,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
     structure_types: &Vec<Type>,
 ) -> String {
     let mut new_michelson_code = michelson_code;

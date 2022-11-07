@@ -1,17 +1,17 @@
 //! MiniLlvmの中をコンパイル前に事前に走査し, 出てきうるレジスタ, メモリの数や型などを
 //! 洗い出しておくといった事前分析を担当するモジュール
 use super::helper;
-use crate::mini_llvm::{Arg, Instruction, Register, Type};
+use crate::mini_llvm::{Arg, BackendType, Instruction, Register, Type};
 use std::collections::HashMap;
 
 /// 構造体宣言を事前に走査し, 必要なメモリの型を洗い出しておく関数
 pub fn analyse_structure_types(
-    memory_ty2stack_ptr: &mut HashMap<Type, usize>,
+    memory_ty2stack_ptr: &mut HashMap<BackendType, usize>,
     memory_ptr: &mut usize,
     structure_types: &Vec<Type>,
 ) {
     for structure_type in structure_types {
-        match memory_ty2stack_ptr.get(&structure_type) {
+        match memory_ty2stack_ptr.get(&BackendType::from(structure_type.clone())) {
             //既にtyが登録されていたらexit
             Some(_) => {}
             _ => {
@@ -26,7 +26,7 @@ pub fn analyse_structure_types(
                         }
                         //登録する
                         let _ = memory_ty2stack_ptr
-                            .entry(structure_type.clone())
+                            .entry(BackendType::from(structure_type.clone()))
                             .or_insert_with(|| {
                                 *memory_ptr += 1;
                                 *memory_ptr
@@ -45,7 +45,7 @@ pub fn analyse_structure_types(
 /// レジスタなどを洗い出しておく関数
 pub fn analyse_argument_list(
     register2stack_ptr: &mut HashMap<Register, usize>,
-    register2ty: &mut HashMap<Register, Type>,
+    register2ty: &mut HashMap<Register, BackendType>,
     stack_ptr: &mut usize,
     argument_list: &Vec<Arg>,
 ) {
@@ -69,7 +69,9 @@ pub fn analyse_argument_list(
             *stack_ptr
         });
 
-        register2ty.entry(reg.clone()).or_insert(ty.clone());
+        register2ty
+            .entry(reg.clone())
+            .or_insert(BackendType::from(ty.clone()));
     }
 }
 
@@ -80,8 +82,8 @@ pub fn analyse_argument_list(
 ///メモリ型環境（memory_ty2stack_ptr）の可変参照を受け取っておき、これらを構築する
 pub fn analyse_registers_and_memory(
     register2stack_ptr: &mut HashMap<Register, usize>,
-    register2ty: &mut HashMap<Register, Type>,
-    memory_ty2stack_ptr: &mut HashMap<Type, usize>,
+    register2ty: &mut HashMap<Register, BackendType>,
+    memory_ty2stack_ptr: &mut HashMap<BackendType, usize>,
     stack_ptr: &mut usize,
     memory_ptr: &mut usize,
     structure_types: &Vec<Type>,
@@ -98,7 +100,7 @@ pub fn analyse_registers_and_memory(
                 //NOTE: ptrはType::Ptr(ty)のポインタ型であることに注意
                 register2ty
                     .entry(ptr.clone())
-                    .or_insert(Type::Ptr(Box::new(ty.clone())));
+                    .or_insert(BackendType::from(Type::Ptr(Box::new(ty.clone()))));
 
                 //（レジスタは上記で良いんだけど、）Struct型の場合は内部にも, メモリの型を
                 // 保持している（ケースがほとんどである）ので再帰的に調べる必要がある
@@ -114,10 +116,12 @@ pub fn analyse_registers_and_memory(
                 //NOTE: ptrはType::Ptr(ty)のポインタ型であることに注意
                 register2ty
                     .entry(ptr.clone())
-                    .or_insert(Type::Ptr(Box::new(ty.clone())));
+                    .or_insert(BackendType::from(Type::Ptr(Box::new(ty.clone()))));
 
                 //即値を仮想レジスタとして扱うのでこの処理は（少なくとも今は）必要
-                register2ty.entry(value.clone()).or_insert(ty.clone());
+                register2ty
+                    .entry(value.clone())
+                    .or_insert(BackendType::from(ty.clone()));
                 let _ = register2stack_ptr.entry(ptr.clone()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
@@ -132,9 +136,11 @@ pub fn analyse_registers_and_memory(
                 //NOTE: ptrはType::Ptr(ty)のポインタ型であることに注意
                 register2ty
                     .entry(ptr.clone())
-                    .or_insert(Type::Ptr(Box::new(ty.clone())));
+                    .or_insert(BackendType::from(Type::Ptr(Box::new(ty.clone()))));
 
-                register2ty.entry(result.clone()).or_insert(ty.clone());
+                register2ty
+                    .entry(result.clone())
+                    .or_insert(BackendType::from(ty.clone()));
 
                 let _ = register2stack_ptr.entry(ptr.clone()).or_insert_with(|| {
                     *stack_ptr += 1;
@@ -162,7 +168,7 @@ pub fn analyse_registers_and_memory(
                 //NOTE: ptrはType::Ptr(ty)のポインタ型であることに注意
                 register2ty
                     .entry(ptrval.clone())
-                    .or_insert(Type::Ptr(Box::new(ty.clone())));
+                    .or_insert(BackendType::from(Type::Ptr(Box::new(ty.clone()))));
 
                 // FIXME: elementに対するpointer型であって, Struct*ではない...
                 // しかしそれを知るすべがない. constをregisterに入れてしまっているため...
@@ -173,7 +179,7 @@ pub fn analyse_registers_and_memory(
                         let t = fields.iter().nth(idx).unwrap();
                         register2ty
                             .entry(result.clone())
-                            .or_insert(Type::Ptr(Box::new(t.clone())));
+                            .or_insert(BackendType::from(Type::Ptr(Box::new(t.clone()))));
                     }
                     _ => {
                         panic!("Primitive型に対してGetElementPtrは使えません.")
@@ -185,7 +191,9 @@ pub fn analyse_registers_and_memory(
                         *stack_ptr += 1;
                         *stack_ptr
                     });
-                    register2ty.entry(reg.clone()).or_insert(ty.clone());
+                    register2ty
+                        .entry(reg.clone())
+                        .or_insert(BackendType::from(ty.clone()));
                 }
             }
             Instruction::If {
@@ -197,7 +205,7 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr += 1;
                     *stack_ptr
                 });
-                register2ty.entry(reg.clone()).or_insert(Type::Bool);
+                register2ty.entry(reg.clone()).or_insert(BackendType::Bool);
                 analyse_registers_and_memory(
                     register2stack_ptr,
                     register2ty,
@@ -263,9 +271,15 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr += 1;
                     *stack_ptr
                 });
-                register2ty.entry(op1.clone()).or_insert(ty.clone());
-                register2ty.entry(op2.clone()).or_insert(ty.clone());
-                register2ty.entry(result.clone()).or_insert(ty.clone());
+                register2ty
+                    .entry(op1.clone())
+                    .or_insert(BackendType::from(ty.clone()));
+                register2ty
+                    .entry(op2.clone())
+                    .or_insert(BackendType::from(ty.clone()));
+                register2ty
+                    .entry(result.clone())
+                    .or_insert(BackendType::from(ty.clone()));
             }
             Instruction::LlvmMemcpy {
                 dest: _,
@@ -290,7 +304,9 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr += 1;
                     *stack_ptr
                 });
-                register2ty.entry(value.clone()).or_insert(ty.clone());
+                register2ty
+                    .entry(value.clone())
+                    .or_insert(BackendType::from(ty.clone()));
             }
             Instruction::Icmp {
                 result,
@@ -303,7 +319,9 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr += 1;
                     *stack_ptr
                 });
-                register2ty.entry(result.clone()).or_insert(ty.clone());
+                register2ty
+                    .entry(result.clone())
+                    .or_insert(BackendType::from(ty.clone()));
                 let _ = register2stack_ptr.entry(op1.clone()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
@@ -319,12 +337,16 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr
                 });
 
-                register2ty.entry(result.clone()).or_insert(Type::Mutez);
+                register2ty
+                    .entry(result.clone())
+                    .or_insert(BackendType::Mutez);
 
-                let _ = memory_ty2stack_ptr.entry(Type::Mutez).or_insert_with(|| {
-                    *memory_ptr += 1;
-                    *memory_ptr
-                });
+                let _ = memory_ty2stack_ptr
+                    .entry(BackendType::Mutez)
+                    .or_insert_with(|| {
+                        *memory_ptr += 1;
+                        *memory_ptr
+                    });
             }
             Instruction::MichelsonGetBalance { result } => {
                 let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
@@ -332,12 +354,16 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr
                 });
 
-                register2ty.entry(result.clone()).or_insert(Type::Mutez);
+                register2ty
+                    .entry(result.clone())
+                    .or_insert(BackendType::Mutez);
 
-                let _ = memory_ty2stack_ptr.entry(Type::Mutez).or_insert_with(|| {
-                    *memory_ptr += 1;
-                    *memory_ptr
-                });
+                let _ = memory_ty2stack_ptr
+                    .entry(BackendType::Mutez)
+                    .or_insert_with(|| {
+                        *memory_ptr += 1;
+                        *memory_ptr
+                    });
             }
             Instruction::MichelsonGetTotalVotingPower { result } => {
                 let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
@@ -345,12 +371,16 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr
                 });
 
-                register2ty.entry(result.clone()).or_insert(Type::Nat);
+                register2ty
+                    .entry(result.clone())
+                    .or_insert(BackendType::Nat);
 
-                let _ = memory_ty2stack_ptr.entry(Type::Nat).or_insert_with(|| {
-                    *memory_ptr += 1;
-                    *memory_ptr
-                });
+                let _ = memory_ty2stack_ptr
+                    .entry(BackendType::Nat)
+                    .or_insert_with(|| {
+                        *memory_ptr += 1;
+                        *memory_ptr
+                    });
             }
             Instruction::MichelsonGetLevel { result } => {
                 let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
@@ -358,12 +388,16 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr
                 });
 
-                register2ty.entry(result.clone()).or_insert(Type::Nat);
+                register2ty
+                    .entry(result.clone())
+                    .or_insert(BackendType::Nat);
 
-                let _ = memory_ty2stack_ptr.entry(Type::Nat).or_insert_with(|| {
-                    *memory_ptr += 1;
-                    *memory_ptr
-                });
+                let _ = memory_ty2stack_ptr
+                    .entry(BackendType::Nat)
+                    .or_insert_with(|| {
+                        *memory_ptr += 1;
+                        *memory_ptr
+                    });
             }
             Instruction::MichelsonGetSender { result } => {
                 let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
@@ -371,12 +405,16 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr
                 });
 
-                register2ty.entry(result.clone()).or_insert(Type::Address);
+                register2ty
+                    .entry(result.clone())
+                    .or_insert(BackendType::Address);
 
-                let _ = memory_ty2stack_ptr.entry(Type::Address).or_insert_with(|| {
-                    *memory_ptr += 1;
-                    *memory_ptr
-                });
+                let _ = memory_ty2stack_ptr
+                    .entry(BackendType::Address)
+                    .or_insert_with(|| {
+                        *memory_ptr += 1;
+                        *memory_ptr
+                    });
             }
             Instruction::MichelsonGetSource { result } => {
                 let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
@@ -384,12 +422,16 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr
                 });
 
-                register2ty.entry(result.clone()).or_insert(Type::Address);
+                register2ty
+                    .entry(result.clone())
+                    .or_insert(BackendType::Address);
 
-                let _ = memory_ty2stack_ptr.entry(Type::Address).or_insert_with(|| {
-                    *memory_ptr += 1;
-                    *memory_ptr
-                });
+                let _ = memory_ty2stack_ptr
+                    .entry(BackendType::Address)
+                    .or_insert_with(|| {
+                        *memory_ptr += 1;
+                        *memory_ptr
+                    });
             }
             Instruction::MichelsonGetSelfAddress { result } => {
                 let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
@@ -397,12 +439,16 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr
                 });
 
-                register2ty.entry(result.clone()).or_insert(Type::Address);
+                register2ty
+                    .entry(result.clone())
+                    .or_insert(BackendType::Address);
 
-                let _ = memory_ty2stack_ptr.entry(Type::Address).or_insert_with(|| {
-                    *memory_ptr += 1;
-                    *memory_ptr
-                });
+                let _ = memory_ty2stack_ptr
+                    .entry(BackendType::Address)
+                    .or_insert_with(|| {
+                        *memory_ptr += 1;
+                        *memory_ptr
+                    });
             }
             Instruction::MichelsonGetSelf { result } => {
                 let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
@@ -419,10 +465,14 @@ pub fn analyse_registers_and_memory(
                     .unwrap();
                 register2ty
                     .entry(result.clone())
-                    .or_insert(Type::Contract(Box::new(parameter.clone())));
+                    .or_insert(BackendType::from(Type::Contract(Box::new(
+                        parameter.clone(),
+                    ))));
 
                 let _ = memory_ty2stack_ptr
-                    .entry(Type::Contract(Box::new(parameter.clone())))
+                    .entry(BackendType::from(Type::Contract(Box::new(
+                        parameter.clone(),
+                    ))))
                     .or_insert_with(|| {
                         *memory_ptr += 1;
                         *memory_ptr

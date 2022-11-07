@@ -1,5 +1,6 @@
 //! LLVMからMichelsonへのコンパイルを担当するTOPレベルのモジュール
 use super::mini_llvm::MiniLlvm;
+use super::mini_llvm::{BackendType, Register};
 use std::collections::HashMap;
 mod backend;
 mod utils;
@@ -15,13 +16,13 @@ pub fn compile(mini_llvm: MiniLlvm) -> String {
     /*
      * RegisterをKeyとして,そのRegisterのLLVMの型を返すHashMap
      */
-    let mut register2ty = HashMap::new();
+    let mut register2ty: HashMap<Register, BackendType> = HashMap::new();
 
     /*
      * tyをKeyとして,そのtyの(MichelsonのStackにおける)メモリ領域内の相対位置を返すHashMap
      * 1-indexであることに注意
      */
-    let mut memory_ty2stack_ptr = HashMap::new();
+    let mut memory_ty2stack_ptr: HashMap<BackendType, usize> = HashMap::new();
 
     /*
      * Michelsonのスタック領域におけるレジスタ領域でのレジスタ確保において

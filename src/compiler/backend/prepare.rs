@@ -1,5 +1,5 @@
 use super::helper;
-use crate::mini_llvm::{Arg, Function, Register, Type};
+use crate::mini_llvm::{Arg, BackendType, Function, Register, Type};
 use std::collections::HashMap;
 
 ///ここが終わった段階ではMichelson StackのTopに(Parameter, Storage)が乗っている
@@ -9,7 +9,7 @@ pub fn prepare_storage(
     tab: &str,
     tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> String {
     let storage_arg = smart_contract_function
         .argument_list
@@ -38,7 +38,7 @@ pub fn prepare_parameter(
     tab: &str,
     tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> String {
     let parameter_arg = smart_contract_function
         .argument_list
@@ -68,7 +68,7 @@ pub fn prepare_pair(
     tab: &str,
     tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> String {
     let pair_arg = smart_contract_function
         .argument_list

@@ -1,5 +1,5 @@
 //! コンパイルには本質的には関係無いが, Debugなどに便利なものをまとめたモジュール
-use crate::mini_llvm::{Register, Type};
+use crate::mini_llvm::{BackendType, Register, Type};
 use std::collections::HashMap;
 
 ///Michelson Codeのformatter
@@ -18,23 +18,28 @@ pub fn format(michelson_instructions: &Vec<String>, tab: &str, tab_depth: usize)
 /// デバッグ用にMichelsonのスタックの初期状態を出力する
 pub fn print_michelson_initial_stack_status(
     register2stack_ptr: &HashMap<Register, usize>,
-    register2ty: &HashMap<Register, Type>,
-    memory_ty2stack_ptr: &HashMap<Type, usize>,
+    register2ty: &HashMap<Register, BackendType>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> String {
     let mut rows = vec![];
-    let mut register2stack_ptr_sorted = register2stack_ptr.iter().collect::<Vec<_>>();
-    register2stack_ptr_sorted.sort_by(|a, b| (a.1).cmp(b.1));
 
-    for (reg, _ptr) in register2stack_ptr_sorted {
+    let register2stack_ptr = register2stack_ptr.clone();
+    let mut register2stack_ptr_sorted = register2stack_ptr
+        .iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect::<Vec<_>>();
+    register2stack_ptr_sorted.sort_by(|a, b| (a.1).cmp(&b.1));
+
+    for (reg, _ptr) in register2stack_ptr_sorted.iter() {
         let ty = register2ty.get(reg).unwrap();
         let val = if Register::is_const(reg) {
             //reg.parse::<i32>().unwrap()
             reg.get_id()
         } else {
-            Type::default_value(&ty)
+            BackendType::default_value(&ty)
         };
-        let michelson_ty = Type::to_michelson_ty2(&ty);
-        let llvm_ty_string = Type::to_llvm_ty(ty);
+        let michelson_ty = ty.clone().to_string();
+        let llvm_ty_string = BackendType::to_llvm_ty(ty);
 
         let comment = if Register::is_const(reg) {
             format!("for const {val} : {llvm_ty_string}")
@@ -45,12 +50,16 @@ pub fn print_michelson_initial_stack_status(
         rows.push(format!("{michelson_ty} {val} # {comment}"));
     }
 
-    let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr.iter().collect::<Vec<_>>();
-    memory_ty2stack_ptr_sorted.sort_by(|a, b| (a.1).cmp(b.1));
+    let memory_ty2stack_ptr = memory_ty2stack_ptr.clone();
+    let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr
+        .iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect::<Vec<_>>();
+    memory_ty2stack_ptr_sorted.sort_by(|a, b| (a.1).cmp(&b.1));
     for (ty, _v) in memory_ty2stack_ptr_sorted.iter() {
-        let ty_string = Type::to_michelson_backend_ty(&ty);
+        let ty_string = ty.clone().to_memory_string();
 
-        let llvm_ty_string = Type::to_llvm_ty(ty);
+        let llvm_ty_string = BackendType::to_llvm_ty(&ty.clone());
         let comment = format!("memory for {llvm_ty_string}");
 
         rows.push(format!("( (big_map int {ty_string}), 0 ) # {comment}"));

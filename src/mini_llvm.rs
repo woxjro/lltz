@@ -450,4 +450,14 @@ pub enum Instruction {
     MichelsonGetSelf {
         result: Register,
     },
+    MichelsonContract {
+        result: Register,
+        ty: Type,
+        address: Register,
+    },
+    MichelsonAssertSome {
+        result: Register,
+        ty: Type,
+        value: Register,
+    },
 }

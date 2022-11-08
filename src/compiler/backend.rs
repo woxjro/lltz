@@ -617,6 +617,50 @@ pub fn body(
                     utils::format(&michelson_instructions, tab, tab_depth)
                 );
             }
+            Instruction::MichelsonContract {
+                result,
+                ty,
+                address,
+            } => {
+                let michelson_instructions = vec![
+                    format!(
+                        "### {} = MichelsonContract {} {{",
+                        result.get_id(),
+                        address.get_id()
+                    ),
+                    format!("DUP {};", register2stack_ptr.get(&address).unwrap()),
+                    format!("CONTRACT {};", Type::struct_type2michelson_pair(ty.clone())),
+                    format!("SOME; {}", "# to option (option (contract ty))"), // registerもoptionで包む
+                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
+                    format!("DROP;"),
+                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
+                    format!("### }}"),
+                ];
+                michelson_code = format!(
+                    "{michelson_code}{}",
+                    utils::format(&michelson_instructions, tab, tab_depth)
+                );
+            }
+            Instruction::MichelsonAssertSome { result, ty, value } => {
+                let michelson_instructions = vec![
+                    format!(
+                        "### {} = MichelsonAssertSome {} {} {{",
+                        result.get_id(),
+                        BackendType::from(ty.clone()).to_string(), //FIXME: Type::to_stringが欲しい
+                        value.get_id()
+                    ),
+                    format!("DUP {};", register2stack_ptr.get(&value).unwrap()),
+                    format!("ASSERT_SOME;"),
+                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
+                    format!("DROP;"),
+                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
+                    format!("### }}"),
+                ];
+                michelson_code = format!(
+                    "{michelson_code}{}",
+                    utils::format(&michelson_instructions, tab, tab_depth)
+                );
+            }
         };
     }
     michelson_code

@@ -57,6 +57,69 @@ fn main() {
             value: Register::new("%3"),
             ptr: Register::new("%2"),
         },
+        //%4 = alloca contract unit
+        Instruction::Alloca {
+            ptr: Register::new("%4"),
+            ty: Type::Contract(Box::new(Type::Struct {
+                id: String::from("unit"),
+                fields: vec![],
+            })),
+        },
+        Instruction::Alloca {
+            ptr: Register::new("%5"),
+            ty: Type::Address,
+        },
+        Instruction::Store {
+            ty: Type::Address,
+            value: Register::new("\"tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv\""),
+            ptr: Register::new("%5"),
+        },
+        Instruction::Load {
+            result: Register::new("%6"),
+            ty: Type::Address,
+            ptr: Register::new("%5"),
+        },
+        Instruction::MichelsonContract {
+            result: Register::new("%7"),
+            ty: Type::Struct {
+                id: String::from("unit"),
+                fields: vec![],
+            },
+            address: Register::new("%6"),
+        },
+        Instruction::Alloca {
+            ptr: Register::new("%8"),
+            ty: Type::Option(Box::new(Type::Contract(Box::new(Type::Struct {
+                id: String::from("unit"),
+                fields: vec![],
+            })))),
+        },
+        Instruction::Store {
+            ty: Type::Option(Box::new(Type::Contract(Box::new(Type::Struct {
+                id: String::from("unit"),
+                fields: vec![],
+            })))),
+            value: Register::new("%7"),
+            ptr: Register::new("%8"),
+        },
+        Instruction::Load {
+            result: Register::new("%9"),
+            ty: Type::Option(Box::new(Type::Contract(Box::new(Type::Struct {
+                id: String::from("unit"),
+                fields: vec![],
+            })))),
+            ptr: Register::new("%8"),
+        },
+        //store option contract unit %7
+        //%8 = load option contract unit
+        Instruction::MichelsonAssertSome {
+            result: Register::new("%10"),
+            ty: Type::Option(Box::new(Type::Contract(Box::new(Type::Struct {
+                id: String::from("unit"),
+                fields: vec![],
+            })))),
+            value: Register::new("%9"),
+        },
     ];
 
     //%struct.Pair = type { [0 x %struct.Operation], %struct.Storage }

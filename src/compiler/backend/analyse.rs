@@ -478,6 +478,55 @@ pub fn analyse_registers_and_memory(
                         *memory_ptr
                     });
             }
+            Instruction::MichelsonContract {
+                result,
+                ty,
+                address,
+            } => {
+                let _ = register2stack_ptr
+                    .entry(address.clone())
+                    .or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+
+                register2ty
+                    .entry(address.clone())
+                    .or_insert(BackendType::Address);
+
+                let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
+                    *stack_ptr += 1;
+                    *stack_ptr
+                });
+
+                register2ty
+                    .entry(result.clone())
+                    .or_insert(BackendType::from(Type::Option(Box::new(Type::Contract(
+                        Box::new(ty.clone()),
+                    )))));
+            }
+            Instruction::MichelsonAssertSome { result, ty, value } => match ty {
+                Type::Option(child_ty) => {
+                    let _ = register2stack_ptr.entry(value.clone()).or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+
+                    register2ty
+                        .entry(value.clone())
+                        .or_insert(BackendType::from(ty.clone()));
+
+                    let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
+                        *stack_ptr += 1;
+                        *stack_ptr
+                    });
+
+                    register2ty
+                        .entry(result.clone())
+                        .or_insert(BackendType::from(*child_ty.clone()));
+                }
+                _ => panic!("Option型以外にはASSERT_SOMEは使えません"),
+            },
         };
     }
 }

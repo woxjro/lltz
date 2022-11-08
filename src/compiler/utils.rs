@@ -1,5 +1,5 @@
 //! コンパイルには本質的には関係無いが, Debugなどに便利なものをまとめたモジュール
-use crate::mini_llvm::{BackendType, Register, Type};
+use crate::mini_llvm::{BackendType, Register};
 use std::collections::HashMap;
 
 ///Michelson Codeのformatter

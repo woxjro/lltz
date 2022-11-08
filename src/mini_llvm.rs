@@ -460,4 +460,10 @@ pub enum Instruction {
         ty: Type,
         value: Register,
     },
+    MichelsonTransferTokens {
+        result: Register,
+        init: Register,
+        tokens: Register,
+        contract: Register,
+    },
 }

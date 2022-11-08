@@ -120,6 +120,12 @@ fn main() {
             })))),
             value: Register::new("%9"),
         },
+        Instruction::MichelsonTransferTokens {
+            result: Register::new("%11"),
+            init: Register::new("FIXME"),
+            tokens: Register::new("100"),
+            contract: Register::new("%10"),
+        },
     ];
 
     //%struct.Pair = type { [0 x %struct.Operation], %struct.Storage }

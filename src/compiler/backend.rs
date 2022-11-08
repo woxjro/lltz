@@ -661,6 +661,44 @@ pub fn body(
                     utils::format(&michelson_instructions, tab, tab_depth)
                 );
             }
+            Instruction::MichelsonTransferTokens {
+                result,
+                init,
+                tokens,
+                contract,
+            } => {
+                let michelson_instructions = vec![
+                    format!(
+                        "### {} = MichelsonTransferTokens {} {} {} {{",
+                        result.get_id(),
+                        init.get_id(),
+                        tokens.get_id(),
+                        contract.get_id()
+                    ),
+                    format!(
+                        "DUP {}; {}",
+                        register2stack_ptr.get(&contract).unwrap(),
+                        "# option contract"
+                    ),
+                    format!("ASSERT_SOME; {}", "# to contract"),
+                    format!(
+                        "DUP {}; {}",
+                        register2stack_ptr.get(&tokens).unwrap() + 1,
+                        "# tokens"
+                    ),
+                    format!("UNIT; # FIXME,TODO: retrieive_struct_from_memory"),
+                    format!("TRANSFER_TOKENS;"),
+                    format!("SOME; {}", "# to option operation"),
+                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
+                    format!("DROP;"),
+                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
+                    format!("### }}"),
+                ];
+                michelson_code = format!(
+                    "{michelson_code}{}",
+                    utils::format(&michelson_instructions, tab, tab_depth)
+                );
+            }
         };
     }
     michelson_code

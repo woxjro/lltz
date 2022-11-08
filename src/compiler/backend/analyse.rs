@@ -527,6 +527,30 @@ pub fn analyse_registers_and_memory(
                 }
                 _ => panic!("Option型以外にはASSERT_SOMEは使えません"),
             },
+            Instruction::MichelsonTransferTokens {
+                result,
+                init: _,
+                tokens,
+                contract: _,
+            } => {
+                let _ = register2stack_ptr.entry(tokens.clone()).or_insert_with(|| {
+                    *stack_ptr += 1;
+                    *stack_ptr
+                });
+
+                register2ty
+                    .entry(tokens.clone())
+                    .or_insert(BackendType::from(Type::Mutez));
+
+                let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
+                    *stack_ptr += 1;
+                    *stack_ptr
+                });
+
+                register2ty
+                    .entry(result.clone())
+                    .or_insert(BackendType::from(Type::Operation));
+            }
         };
     }
 }

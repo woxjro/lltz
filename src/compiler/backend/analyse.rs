@@ -181,6 +181,20 @@ pub fn analyse_registers_and_memory(
                             .entry(result.clone())
                             .or_insert(BackendType::from(Type::Ptr(Box::new(t.clone()))));
                     }
+                    Type::Array {
+                        size: _,
+                        elementtype,
+                    } => {
+                        register2ty
+                            .entry(result.clone())
+                            .or_insert(BackendType::from(Type::Ptr(elementtype.clone())));
+                        let _ = memory_ty2stack_ptr
+                            .entry(BackendType::from(*elementtype.clone()))
+                            .or_insert_with(|| {
+                                *memory_ptr += 1;
+                                *memory_ptr
+                            });
+                    }
                     _ => {
                         panic!("Primitive型に対してGetElementPtrは使えません.")
                     }

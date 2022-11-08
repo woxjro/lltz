@@ -25,10 +25,9 @@ pub fn alloca_storage_by_value(
     ));
     //Step 1.普通のallocaをする（Storageの場所を確保するため）
     match Type::deref(ty) {
-        Type::Struct { id, fields } => {
-            michelson_instructions.append(&mut super::alloca::exec_struct_alloca(
-                &id,
-                &fields,
+        Type::Struct { .. } => {
+            michelson_instructions.append(&mut super::alloca::exec_aggregate_type_alloca(
+                &Type::deref(ty),
                 reg,
                 register2stack_ptr,
                 memory_ty2stack_ptr,

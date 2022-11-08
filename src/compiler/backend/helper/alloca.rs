@@ -21,8 +21,15 @@ pub fn exec_alloca(
         .unwrap();
 
     let michelson_instructions = match ty {
-        Type::Struct { id, fields } => {
-            exec_struct_alloca(id, fields, ptr, register2stack_ptr, memory_ty2stack_ptr)
+        Type::Struct { .. } => {
+            exec_aggregate_type_alloca(ty, ptr, register2stack_ptr, memory_ty2stack_ptr)
+        }
+        Type::Array { size, elementtype } => {
+            let mut fields = vec![];
+            for _ in 0..*size {
+                fields.push(*elementtype.clone());
+            }
+            exec_aggregate_type_alloca(ty, ptr, register2stack_ptr, memory_ty2stack_ptr)
         }
         _ => {
             vec![
@@ -73,31 +80,38 @@ pub fn exec_alloca(
 ///```llvm
 ///%ptr = alloca Struct { id, fields };
 ///```
-pub fn exec_struct_alloca(
-    id: &str,
-    fields: &Vec<Type>,
+pub fn exec_aggregate_type_alloca(
+    aggregate_ty: &Type,
     ptr: &Register,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> Vec<String> {
     //Struct { id, fields }型のメモリ領域のスタック上の相対ポインタ
+
     let memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::from(Type::Struct {
-            id: id.to_string(),
-            fields: fields.clone(),
-        }))
+        .get(&BackendType::from(aggregate_ty.clone()))
         .unwrap();
     let mut res = vec![
         format!(
             "### {} = alloca {} {{",
             ptr.get_id(),
-            Type::to_llvm_ty(&Type::Struct {
-                id: id.to_string(),
-                fields: fields.clone()
-            })
+            Type::to_llvm_ty(&aggregate_ty)
         ),
         format!("EMPTY_MAP int int;"),
     ];
+
+    let fields = match aggregate_ty {
+        Type::Struct { id: _, fields } => fields.clone(),
+        Type::Array { size, elementtype } => {
+            let mut fields = vec![];
+            for _ in 0..*size {
+                fields.push(*elementtype.clone());
+            }
+            fields
+        }
+        _ => panic!(),
+    };
+
     for (idx, field) in fields.iter().enumerate() {
         res.append(&mut vec![format!(
             "### alloca field idx={idx} : {} {{",
@@ -158,6 +172,60 @@ fn exec_struct_field_alloca(
         .unwrap();
     match field {
         Type::Struct { id: _, fields } => {
+            let mut res = vec![format!("EMPTY_MAP int int;")];
+            for (child_field_idx, child_field) in fields.iter().enumerate() {
+                res.append(&mut vec![format!(
+                    "### alloca for field No.{child_field_idx} {{"
+                )]);
+                res.append(&mut self::exec_struct_field_alloca(
+                    child_field_idx,
+                    child_field,
+                    depth + 1,
+                    memory_ptr,
+                    register2stack_ptr,
+                    memory_ty2stack_ptr,
+                ));
+                res.append(&mut vec![format!("### }}")]);
+            }
+            //TODO: MAP int int をUPDATEでどっかに入れる必要がある
+            //child_map:parent_map
+            //があったとして、child_mapをchild_mapのbig_mapにいれて返ってきた
+            //ptrをparent_mapにkey:idx, value:ptrとして入れる
+            res.append(&mut vec![
+                format!("SOME;"), //some(map)
+                format!(
+                    "DIG {};",
+                    register2stack_ptr.len() + field_memory_ptr + depth
+                ),
+                format!("UNPAIR;"), //bm:ptr:child_map
+                format!("SWAP;"),
+                format!("PUSH int 1;"),
+                format!("ADD;"),
+                format!("DUP;"),    //ptr:ptr:bm:some(child_map)
+                format!("DUP;"),    //ptr:ptr:ptr:bm:some(child_map)
+                format!("DIG 3;"),  //bm:ptr:ptr:ptr:some(child_map)
+                format!("SWAP;"),   //ptr:bm:ptr:ptr:some(child_map)
+                format!("DIG 4;"),  //some(child_map):ptr:bm:ptr:ptr
+                format!("SWAP;"),   //ptr:some(child_map):bm:ptr:ptr
+                format!("UPDATE;"), //bm:ptr:ptr:parent_map
+                format!("PAIR;"),   //(bm,ptr):ptr:parent_map
+                format!(
+                    "DUG {};",
+                    register2stack_ptr.len() + field_memory_ptr + depth
+                ), //ptr:parent_map
+                format!("SOME;"),
+                format!("PUSH int {idx};"),
+                format!("UPDATE;"),
+            ]);
+            res
+        }
+        Type::Array { size, elementtype } => {
+            let mut fields = vec![];
+            for _ in 0..*size {
+                fields.push(*elementtype.clone());
+            }
+            let fields = fields;
+
             let mut res = vec![format!("EMPTY_MAP int int;")];
             for (child_field_idx, child_field) in fields.iter().enumerate() {
                 res.append(&mut vec![format!(

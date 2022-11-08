@@ -35,6 +35,7 @@ pub enum Type {
     Option(Box<Type>),
     Ptr(Box<Type>),
     Struct { id: String, fields: Vec<Type> },
+    Array { size: u32, elementtype: Box<Type> },
 }
 
 impl Type {
@@ -62,6 +63,10 @@ impl Type {
                     format!("unit")
                 }
             }
+            Type::Array {
+                size: _,
+                elementtype: _,
+            } => todo!(),
             _ => match ty {
                 Type::Address => String::from("address"),
                 Type::Bool => String::from("bool"),
@@ -69,6 +74,9 @@ impl Type {
                 Type::Int => String::from("int"),
                 Type::Nat => String::from("nat"),
                 Type::Struct { .. } => {
+                    panic!() //never occur
+                }
+                Type::Array { .. } => {
                     panic!() //never occur
                 }
                 Type::Contract(ty) => {
@@ -93,6 +101,9 @@ impl Type {
             Type::Int => "(i64 for int)".to_string(),
             Type::Nat => "(i64 for nat)".to_string(),
             Type::Struct { id, fields: _ } => format!("%struct.{id}"),
+            Type::Array { size, elementtype } => {
+                format!("[{} x {}]", size, Type::to_llvm_ty(&**elementtype))
+            }
             Type::Contract(ty) => {
                 let inner = Type::to_llvm_ty(&*ty);
                 format!("(%struct.contract {inner})")
@@ -134,6 +145,10 @@ pub enum BackendType {
         id: String,
         fields: Vec<BackendType>,
     },
+    Array {
+        size: u32,
+        elementtype: Box<BackendType>,
+    },
 }
 
 impl BackendType {
@@ -159,6 +174,10 @@ impl BackendType {
             Type::Option(child_ty) => {
                 BackendType::Option(Box::new(BackendType::from(*child_ty.clone())))
             }
+            Type::Array { size, elementtype } => BackendType::Array {
+                size,
+                elementtype: Box::new(BackendType::from(*elementtype.clone())),
+            },
         }
     }
 
@@ -180,12 +199,14 @@ impl BackendType {
                 let inner = child_ty.to_string();
                 format!("(option {inner})")
             }
+            BackendType::Array { .. } => panic!(),
         }
     }
 
     pub fn to_memory_string(self) -> String {
         match self {
             BackendType::Struct { .. } => String::from("(map int int)"),
+            BackendType::Array { .. } => String::from("(map int int)"),
             _ => self.to_string(),
         }
     }
@@ -214,8 +235,15 @@ impl BackendType {
                     format!("unit")
                 }
             }
+            BackendType::Array {
+                size: _,
+                elementtype: _,
+            } => {
+                panic!()
+            }
             _ => match ty {
                 BackendType::Address => String::from("address"),
+                BackendType::Array { .. } => panic!(),
                 BackendType::Bool => String::from("bool"),
                 BackendType::Mutez => String::from("mutez"),
                 BackendType::Int => String::from("int"),
@@ -240,6 +268,12 @@ impl BackendType {
     pub fn default_value(ty: &BackendType) -> String {
         let res = match ty {
             BackendType::Address => String::from("\"KT1PGQFmnGyZMeuHzssNxqx9tYfDvX5JMN3W\""),
+            BackendType::Array {
+                size: _,
+                elementtype: _,
+            } => {
+                panic!()
+            }
             BackendType::Bool => String::from("False"),
             BackendType::Mutez => String::from("0"),
             BackendType::Int => String::from("0"),
@@ -265,6 +299,9 @@ impl BackendType {
     pub fn to_llvm_ty(ty: &BackendType) -> String {
         match ty {
             BackendType::Address => "address".to_string(),
+            BackendType::Array { size, elementtype } => {
+                format!("[{} x {}]", size, BackendType::to_llvm_ty(&**elementtype))
+            }
             BackendType::Bool => "i1".to_string(),
             BackendType::Mutez => "mutez".to_string(),
             BackendType::Int => "int".to_string(),

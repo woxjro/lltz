@@ -131,9 +131,13 @@ fn main() {
     //%struct.Pair = type { [0 x %struct.Operation], %struct.Storage }
     let pair = Type::Struct {
         id: String::from("Pair"),
-        // FIXME: [0 x %struct.Operation]にしたい.
-        //        配列をサポートしていない
-        fields: vec![operation.clone(), storage.clone()],
+        fields: vec![
+            Type::Array {
+                size: 0,
+                elementtype: Box::new(operation.clone()),
+            },
+            storage.clone(),
+        ],
     };
 
     let mini_llvm = MiniLlvm {

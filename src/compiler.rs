@@ -110,7 +110,15 @@ pub fn compile(mini_llvm: MiniLlvm) -> String {
         &memory_ty2stack_ptr,
     );
 
-    //TODO: LLVMモデルからMichelsonの([Operation], Storage)へとEncodeをする
+    michelson_code = backend::retrieve_operations_from_memory(
+        smart_contract_function,
+        michelson_code,
+        tab,
+        tab_depth,
+        &register2stack_ptr,
+        &memory_ty2stack_ptr,
+    );
+
     //後処理:レジスタ領域・メモリ領域をDROPする
     michelson_code = backend::exit(
         michelson_code,

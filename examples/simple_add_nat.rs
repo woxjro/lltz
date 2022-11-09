@@ -108,26 +108,20 @@ fn main() {
         fields: vec![],
     };
 
-    let operation = Type::Struct {
-        id: String::from("Operation"),
-        fields: vec![],
-    };
-
     //%struct.Pair = type { [0 x %struct.Operation], %struct.Storage }
     let pair = Type::Struct {
         id: String::from("Pair"),
-        // FIXME: [0 x %struct.Operation]にしたい.
-        //        配列をサポートしていない
-        fields: vec![operation.clone(), storage.clone()],
+        fields: vec![
+            Type::Array {
+                size: 0,
+                elementtype: Box::new(Type::Operation),
+            },
+            storage.clone(),
+        ],
     };
 
     let mini_llvm = MiniLlvm {
-        structure_types: vec![
-            parameter.clone(),
-            storage.clone(),
-            operation.clone(),
-            pair.clone(),
-        ],
+        structure_types: vec![parameter.clone(), storage.clone(), pair.clone()],
         functions: vec![Function {
             function_name: String::from("smart_contract"),
             result_type: Type::Nat,

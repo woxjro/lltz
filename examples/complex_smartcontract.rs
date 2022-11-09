@@ -152,18 +152,16 @@ fn main() {
         fields: vec![Type::Int, Type::Int, Type::Int, Type::Int, fish.clone()],
     };
 
-    //%struct.Operation = type {}
-    let operation = Type::Struct {
-        id: String::from("Operation"),
-        fields: vec![],
-    };
-
     //%struct.Pair = type { [0 x %struct.Operation], %struct.Storage }
     let pair = Type::Struct {
         id: String::from("Pair"),
-        // FIXME: [0 x %struct.Operation]にしたい.
-        //        配列をサポートしていない
-        fields: vec![operation.clone(), storage.clone()],
+        fields: vec![
+            Type::Array {
+                size: 3,
+                elementtype: Box::new(Type::Operation),
+            },
+            storage.clone(),
+        ],
     };
 
     //; Function Attrs: noinline nounwind optnone uwtable
@@ -568,7 +566,6 @@ fn main() {
     let mini_llvm = MiniLlvm {
         structure_types: vec![
             fish.clone(),
-            operation.clone(),
             storage.clone(),
             parameter.clone(),
             pair.clone(),

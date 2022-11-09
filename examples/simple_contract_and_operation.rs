@@ -1,30 +1,48 @@
 use mini_llvm_michelson_compiler::compiler::compile;
 use mini_llvm_michelson_compiler::mini_llvm::{
-    Arg, Function, Instruction, MiniLlvm, Opcode, Register, Type,
+    Arg, Function, Instruction, MiniLlvm, Register, Type,
 };
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
     //
-    //struct Pair main(struct Parameter p, struct Storage s) {
-    //}
     //
-    //%struct.Parameter = type {}
-    //%struct.Storage   = type {}
-    //%struct.Operation = type {}
-    //%struct.Pair = type { [0 x %struct.Operation], %struct.Storage }
+    //struct Pair smart_contract(struct Parameter param, struct Storage storage) {
+    //    struct Pair p;
+    //    Address addr = "tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv";
+    //    Contract contract = get_contract(addr);
+    //    struct Parameter param2;
+    //    struct Operation op = transfer_tokens(param2, 100, contract);
+    //    p.ops[1] = op;
+    //    return p;
+    //};
+    //
     //
     //define dso_local void @smart_contract(
-    //  %struct.Pair* noalias sret %pair,
-    //  %struct.Parameter* byval(%struct.Parameter) align 8 %parameter,
-    //  %struct.Storage* byval(%struct.Storage) align 8 %storage
-    //) #0 {
-    //  %1 = alloca operation
-    //  %2 = alloca contract unit // for michelson::SELF
-    //  %3 = get_self();
-    //  store contract unit %3, %2;
-    //  ret int 0
+    //      %struct.Pair* noalias sret %0,
+    //      %struct.Storage* byval(%struct.Storage) align 8 %1
+    //      %struct.Parameter* byval(%struct.Parameter) align 8 %2
+    //) #0 !dbg !57 {
+    //
+    //  %4 = alloca Address, align 8
+    //  %5 = alloca Contract, align 4
+    //  %7 = alloca Operation, align 4
+    //  store Address "tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv", Address* %4, align 8, !dbg !77
+    //  %8 = load Address, Address* %4, align 8, !dbg !80
+    //  %9 = call Contract @get_contract(i8* %8), !dbg !81
+    //  store Contract %9, Contract* %5, align 4, !dbg !79
+    //  %10 = load Contract, Contract* %5, align 4, !dbg !86
+    //  %11 = call Operation @transfer_tokens(Mutez 100, Contract %10), !dbg !87
+    //  store Operation %11, Operation* %7, align 4, !dbg !85
+    //  %12 = load Operation, Operation* %7, align 4, !dbg !88
+    //  %13 = getelementptr inbounds %struct.Pair, %struct.Pair* %0, i32 0, i32 0, !dbg !89
+    //  %14 = getelementptr inbounds [3 x Operation], [3 x Operation]* %13, i64 0, i64 1, !dbg !90
+    //  store Operation %12, Operation* %14, align 4, !dbg !91
+    //  ret void, !dbg !92
+    //
     //}
+    //
+
     let parameter = Type::Struct {
         id: String::from("Parameter"),
         fields: vec![],
@@ -34,134 +52,151 @@ fn main() {
         id: String::from("Storage"),
         fields: vec![],
     };
-
-    let operation = Type::Struct {
-        id: String::from("Operation"),
-        fields: vec![],
+    //%struct.Pair = type { [0 x %struct.Operation], %struct.Storage }
+    let pair = Type::Struct {
+        id: String::from("Pair"),
+        fields: vec![
+            Type::Array {
+                size: 3,
+                elementtype: Box::new(Type::Operation),
+            },
+            storage.clone(),
+        ],
     };
 
     let instructions = vec![
-        Instruction::Alloca {
-            ptr: Register::new("%1"),
-            ty: Type::Operation,
-        },
-        Instruction::Alloca {
-            ptr: Register::new("%2"),
-            ty: Type::Contract(Box::new(parameter.clone())),
-        },
-        Instruction::MichelsonGetSelf {
-            result: Register::new("%3"),
-        },
-        Instruction::Store {
-            ty: Type::Contract(Box::new(parameter.clone())),
-            value: Register::new("%3"),
-            ptr: Register::new("%2"),
-        },
-        //%4 = alloca contract unit
+        //  %4 = alloca Address, align 8
+        //  %5 = alloca Contract, align 4
+        //  %7 = alloca Operation, align 4
         Instruction::Alloca {
             ptr: Register::new("%4"),
+            ty: Type::Address,
+        },
+        Instruction::Alloca {
+            ptr: Register::new("%5"),
             ty: Type::Contract(Box::new(Type::Struct {
                 id: String::from("unit"),
                 fields: vec![],
             })),
         },
         Instruction::Alloca {
-            ptr: Register::new("%5"),
-            ty: Type::Address,
+            ptr: Register::new("%7"),
+            ty: Type::Operation,
         },
+        //  store Address "tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv", Address* %4, align 8, !dbg !77
+        //  %8 = load Address, Address* %4, align 8, !dbg !80
         Instruction::Store {
             ty: Type::Address,
             value: Register::new("\"tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv\""),
-            ptr: Register::new("%5"),
+            ptr: Register::new("%4"),
         },
         Instruction::Load {
-            result: Register::new("%6"),
+            result: Register::new("%8"),
             ty: Type::Address,
-            ptr: Register::new("%5"),
+            ptr: Register::new("%4"),
         },
+        //  %9 = call Contract @get_contract(i8* %8), !dbg !81
+        //  store Contract %9, Contract* %5, align 4, !dbg !79
         Instruction::MichelsonContract {
-            result: Register::new("%7"),
+            result: Register::new("%9"),
             ty: Type::Struct {
                 id: String::from("unit"),
                 fields: vec![],
             },
-            address: Register::new("%6"),
+            address: Register::new("%8"),
         },
-        Instruction::Alloca {
-            ptr: Register::new("%8"),
-            ty: Type::Option(Box::new(Type::Contract(Box::new(Type::Struct {
-                id: String::from("unit"),
-                fields: vec![],
-            })))),
-        },
-        Instruction::Store {
-            ty: Type::Option(Box::new(Type::Contract(Box::new(Type::Struct {
-                id: String::from("unit"),
-                fields: vec![],
-            })))),
-            value: Register::new("%7"),
-            ptr: Register::new("%8"),
-        },
-        Instruction::Load {
-            result: Register::new("%9"),
-            ty: Type::Option(Box::new(Type::Contract(Box::new(Type::Struct {
-                id: String::from("unit"),
-                fields: vec![],
-            })))),
-            ptr: Register::new("%8"),
-        },
-        //store option contract unit %7
-        //%8 = load option contract unit
         Instruction::MichelsonAssertSome {
-            result: Register::new("%10"),
+            result: Register::new("%200"),
             ty: Type::Option(Box::new(Type::Contract(Box::new(Type::Struct {
                 id: String::from("unit"),
                 fields: vec![],
             })))),
             value: Register::new("%9"),
         },
+        Instruction::Store {
+            ty: Type::Contract(Box::new(Type::Struct {
+                id: String::from("unit"),
+                fields: vec![],
+            })),
+            value: Register::new("%200"),
+            ptr: Register::new("%5"),
+        },
+        //  %10 = load Contract, Contract* %5, align 4, !dbg !86
+        //  %11 = call Operation @transfer_tokens(Mutez 100, Contract %10), !dbg !87
+        //  store Operation %11, Operation* %7, align 4, !dbg !85
+        Instruction::Load {
+            result: Register::new("%10"),
+            ty: Type::Contract(Box::new(Type::Struct {
+                id: String::from("unit"),
+                fields: vec![],
+            })),
+            ptr: Register::new("%5"),
+        },
         Instruction::MichelsonTransferTokens {
             result: Register::new("%11"),
-            init: Register::new("FIXME"),
+            init: Register::new("%100"), //FIXME, TODO とりあえずいまは動く
             tokens: Register::new("100"),
             contract: Register::new("%10"),
         },
+        Instruction::Store {
+            ty: Type::Operation,
+            value: Register::new("%11"),
+            ptr: Register::new("%7"),
+        },
+        //  %12 = load Operation, Operation* %7, align 4, !dbg !88
+        Instruction::Load {
+            result: Register::new("%12"),
+            ty: Type::Operation,
+            ptr: Register::new("%7"),
+        },
+        //  %13 = getelementptr inbounds %struct.Pair, %struct.Pair* %0, i32 0, i32 0, !dbg !89
+        Instruction::GetElementPtr {
+            result: Register::new("%13"),
+            ty: pair.clone(),
+            ptrval: Register::new("%0"),
+            subsequent: vec![
+                (Type::Int, Register::new("0")),
+                (Type::Int, Register::new("0")),
+            ],
+        },
+        //  %14 = getelementptr inbounds [3 x Operation], [3 x Operation]* %13, i64 0, i64 1, !dbg !90
+        Instruction::GetElementPtr {
+            result: Register::new("%14"),
+            ty: Type::Array {
+                size: 3,
+                elementtype: Box::new(Type::Operation),
+            },
+            ptrval: Register::new("%13"),
+            subsequent: vec![
+                (Type::Int, Register::new("0")),
+                (Type::Int, Register::new("1")),
+            ],
+        },
+        //  store Operation %12, Operation* %14, align 4, !dbg !91
+        Instruction::Store {
+            ty: Type::Operation,
+            value: Register::new("%12"),
+            ptr: Register::new("%14"),
+        },
     ];
 
-    //%struct.Pair = type { [0 x %struct.Operation], %struct.Storage }
-    let pair = Type::Struct {
-        id: String::from("Pair"),
-        fields: vec![
-            Type::Array {
-                size: 0,
-                elementtype: Box::new(operation.clone()),
-            },
-            storage.clone(),
-        ],
-    };
-
     let mini_llvm = MiniLlvm {
-        structure_types: vec![
-            parameter.clone(),
-            storage.clone(),
-            operation.clone(),
-            pair.clone(),
-        ],
+        structure_types: vec![parameter.clone(), storage.clone(), pair.clone()],
         functions: vec![Function {
             function_name: String::from("smart_contract"),
             result_type: Type::Int,
             argument_list: vec![
                 Arg {
                     ty: Type::Ptr(Box::new(pair.clone())),
-                    reg: Register::new("%pair"),
-                },
-                Arg {
-                    ty: Type::Ptr(Box::new(parameter.clone())),
-                    reg: Register::new("%parameter"),
+                    reg: Register::new("%0"),
                 },
                 Arg {
                     ty: Type::Ptr(Box::new(storage.clone())),
-                    reg: Register::new("%storage"),
+                    reg: Register::new("%1"),
+                },
+                Arg {
+                    ty: Type::Ptr(Box::new(parameter.clone())),
+                    reg: Register::new("%2"),
                 },
             ],
             instructions,

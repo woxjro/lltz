@@ -27,6 +27,18 @@ pub fn analyse_memory4alloca(
                     *memory_ptr
                 });
         }
+        Type::Array {
+            size: _,
+            elementtype,
+        } => {
+            self::analyse_memory4alloca(*elementtype.clone(), memory_ty2stack_ptr, memory_ptr);
+            let _ = memory_ty2stack_ptr
+                .entry(BackendType::from(ty.clone()))
+                .or_insert_with(|| {
+                    *memory_ptr += 1;
+                    *memory_ptr
+                });
+        }
         _ => {
             let _ = memory_ty2stack_ptr
                 .entry(BackendType::from(ty.clone()))

@@ -318,7 +318,7 @@ impl BackendType {
                     let inner = BackendType::to_llvm_ty(&*child_ty);
                     format!("(%struct.contract {inner})")
                 }
-                BackendType::Operation => "%struct.operation".to_string(),
+                BackendType::Operation => "operation".to_string(),
                 _ => {
                     let inner = BackendType::to_llvm_ty(&*ty);
                     format!("(option {inner})")

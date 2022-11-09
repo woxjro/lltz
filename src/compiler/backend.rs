@@ -881,6 +881,112 @@ fn retrieve_storage_field_from_memory(
     }
 }
 
+/// input:                     encoded_storage :[register]:[memory]
+///output:  ([list operation], encoded_storage):[register]:[memory]
+pub fn retrieve_operations_from_memory(
+    smart_contract_function: &Function,
+    michelson_code: String,
+    tab: &str,
+    tab_depth: usize,
+    register2stack_ptr: &HashMap<Register, usize>,
+    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+) -> String {
+    let Arg {
+        reg,
+        ty: pair_ty_ptr,
+    } = smart_contract_function
+        .argument_list
+        .iter()
+        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+            Type::Struct { id, fields: _ } => id == String::from("Pair"),
+            _ => false,
+        })
+        .unwrap();
+
+    let pair_memory_ptr = memory_ty2stack_ptr
+        .get(&BackendType::from(Type::deref(&pair_ty_ptr.clone())))
+        .unwrap();
+
+    let _pair_fields = match Type::deref(&pair_ty_ptr.clone()) {
+        Type::Struct { id: _, fields } => fields,
+        _ => panic!(),
+    };
+    let operation_arr_ty = _pair_fields
+        .iter()
+        .find(|&field| match field {
+            Type::Array { .. } => true,
+            _ => false,
+        })
+        .unwrap();
+
+    let operation_arr_memory_ptr = memory_ty2stack_ptr
+        .get(&BackendType::from(operation_arr_ty.clone()))
+        .unwrap();
+
+    let mut michelson_instructions = vec![
+        format!("### retrieve operations from memory {{"),
+        format!("NIL operation;"), //(nil operation) : storage : ...
+        format!("DUP {};", register2stack_ptr.len() + pair_memory_ptr + 2), // pair_memory : (nil operation) : storage : ...
+        format!("CAR;"),
+        format!("DUP {};", register2stack_ptr.get(reg).unwrap() + 3),
+        format!("GET;"),
+        format!("ASSERT_SOME;"), // pair_map_instance : (nil operation) : storage : ...
+        format!("PUSH int 0;"),  //FIXME: '0'番目に[size x operation]が入っている事を決め打ち
+        format!("GET;"),
+        format!("ASSERT_SOME;"), // [size x operation]* : (nil operation) : storage : ...
+        format!(
+            "DUP {};",
+            register2stack_ptr.len() + operation_arr_memory_ptr + 3
+        ),
+        format!("CAR;"),
+        format!("SWAP;"),
+        format!("GET;"),
+        format!("ASSERT_SOME;"), // ([size x operation] MAP instance) : (nil operation) : storage : ...
+    ];
+
+    let size = *match operation_arr_ty {
+        Type::Array {
+            size,
+            elementtype: _,
+        } => size,
+        _ => panic!(),
+    };
+
+    let operation_memory_ptr = memory_ty2stack_ptr
+        .get(&BackendType::from(Type::Operation))
+        .unwrap();
+
+    // input: ([size x operation] MAP instance) : (list operation) : encoded_storage :[register]:[memory]
+    //output: ([size x operation] MAP instance) : (list operation) : encoded_storage :[register]:[memory]
+    for idx in 0..size {
+        michelson_instructions.append(&mut vec![
+            format!("DUP;"),
+            format!("PUSH int {idx};"),
+            format!("GET;"),
+            format!("ASSERT_SOME;"), // ptr : map-instance
+            format!(
+                "DUP {};",
+                register2stack_ptr.len() + operation_memory_ptr + 4
+            ),
+            format!("CAR;"), // operation_memory : ptr : map-instance
+            format!("SWAP;"),
+            format!("GET;"),
+            format!("ASSERT_SOME;"), // option operation : map-instance
+            format!("IF_NONE {{ }} {{ DIG 2; SWAP; CONS; DUG 1; }};"),
+        ]);
+    }
+
+    michelson_instructions.append(&mut vec![
+        format!("DROP;"),
+        format!("PAIR;"),
+        format!("### }}"),
+    ]);
+    format!(
+        "{michelson_code}{}",
+        utils::format(&michelson_instructions, tab, tab_depth)
+    )
+}
+
 ///(将来的にはこの関数はなくなるかもしれない)
 ///レジスタ型環境（register2ty（これは今回は無し）, register2stack_ptr）と
 ///メモリ型環境（memory_ty2stack_ptr）に相当するMichelsonスタックをDROPする
@@ -895,7 +1001,7 @@ pub fn exit(
     new_michelson_code = format!(
         "{new_michelson_code}{space}DUG {}; # {}\n",
         register2stack_ptr.len() + memory_ty2stack_ptr.len(),
-        "move a storage to the stack bottom"
+        "move a (list operation, storage) to the stack bottom"
     );
     //後処理:レジスタ領域・メモリ領域をDROPする
     for i in 0..(register2stack_ptr.iter().len() + memory_ty2stack_ptr.iter().len()) {
@@ -907,10 +1013,6 @@ pub fn exit(
             new_michelson_code = format!("{new_michelson_code}DROP;");
         }
     }
-    new_michelson_code = format!("{new_michelson_code}\n");
-
-    //TODO: operationがハードコードされている。ここを直したい
-    new_michelson_code = format!("{new_michelson_code}{space}NIL operation; PAIR;");
 
     let parameter_michelson_ty = Type::struct_type2michelson_pair(
         structure_types
@@ -933,5 +1035,13 @@ pub fn exit(
             .clone(),
     );
 
-    format!("parameter {parameter_michelson_ty};\nstorage {storage_michelson_ty};\ncode {{\n{new_michelson_code} }}")
+    format!(
+        "
+parameter {parameter_michelson_ty};
+storage {storage_michelson_ty};
+code {{
+{new_michelson_code}
+     }}
+"
+    )
 }

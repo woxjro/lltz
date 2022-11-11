@@ -2,7 +2,7 @@ use std::process::Command;
 
 //examples/* のサンプルコードが実行可能かをテストする
 #[test]
-fn executabl_test() {
+fn executable_test() {
     let file_names = [
         "simple_add",
         "simple_add_nat",
@@ -14,6 +14,9 @@ fn executabl_test() {
         "simple_struct2",
         "simple_llvm_memcpy",
         "simple_smartcontract",
+        "simple_blockchain_operations",
+        "simple_blockchain_operations2",
+        "simple_contract_and_operation",
         "complex_smartcontract",
     ];
 
@@ -44,7 +47,8 @@ fn executabl_test() {
             .expect("faled to execute process");
 
         let result = String::from_utf8(output.stdout).unwrap();
-        let has_error = result.contains("error");
-        assert_eq!(has_error, false);
+        println!("result: {}", &result);
+        let executable = result.contains("emitted operations");
+        assert_eq!(executable, true);
     }
 }

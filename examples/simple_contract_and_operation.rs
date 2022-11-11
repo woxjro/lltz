@@ -87,6 +87,7 @@ fn main() {
         //  %8 = load Address, Address* %4, align 8, !dbg !80
         Instruction::Store {
             ty: Type::Address,
+            //value: Register::new("\"KT1Vh2yUNseYabMc1c9EKiBbtQxbyoRWAFDv\""),
             value: Register::new("\"tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv\""),
             ptr: Register::new("%4"),
         },

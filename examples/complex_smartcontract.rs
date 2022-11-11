@@ -157,7 +157,7 @@ fn main() {
         id: String::from("Pair"),
         fields: vec![
             Type::Array {
-                size: 3,
+                size: 0,
                 elementtype: Box::new(Type::Operation),
             },
             storage.clone(),

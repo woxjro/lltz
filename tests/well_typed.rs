@@ -14,6 +14,9 @@ fn well_typed_test() {
         "simple_struct2",
         "simple_llvm_memcpy",
         "simple_smartcontract",
+        "simple_blockchain_operations",
+        "simple_blockchain_operations2",
+        "simple_contract_and_operation",
         "complex_smartcontract",
     ];
 
@@ -44,6 +47,7 @@ fn well_typed_test() {
             .expect("faled to execute process");
 
         let result = String::from_utf8(output.stdout).unwrap();
+        println!("{}", &result);
         let well_typed = result.contains("Well typed");
         assert_eq!(well_typed, true);
     }

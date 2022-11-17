@@ -198,11 +198,7 @@ pub fn body(
                     format!("PAIR;"),
                     format!("DUG {};", register2stack_ptr.len() + memory_ptr - 1),
                     format!("### }}"),
-                ]
-                .iter()
-                .filter(|&e| e.len() > 0)
-                .map(|e| e.clone())
-                .collect::<Vec<String>>();
+                ];
                 michelson_code = format!(
                     "{michelson_code}{}",
                     utils::format(&michelson_instructions, tab, tab_depth)
@@ -230,11 +226,7 @@ pub fn body(
                     format!("DROP;"),
                     format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
                     format!("### }}"),
-                ]
-                .iter()
-                .filter(|&e| e.len() > 0)
-                .map(|e| e.clone())
-                .collect::<Vec<String>>();
+                ];
 
                 michelson_code = format!(
                     "{michelson_code}{}",

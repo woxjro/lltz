@@ -62,7 +62,7 @@ pub fn print_michelson_initial_stack_status(
         let llvm_ty_string = BackendType::to_llvm_ty(&ty.clone());
         let comment = format!("memory for {llvm_ty_string}");
 
-        rows.push(format!("( (big_map int {ty_string}), 0 ) # {comment}"));
+        rows.push(format!("( (map int {ty_string}), 0 ) # {comment}"));
     }
 
     let mut res = vec![];

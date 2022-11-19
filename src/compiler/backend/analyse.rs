@@ -421,10 +421,10 @@ pub fn analyse_registers_and_memory(
 
                 register2ty
                     .entry(result.clone())
-                    .or_insert(BackendType::Address);
+                    .or_insert(BackendType::from(Type::Address));
 
                 let _ = memory_ty2stack_ptr
-                    .entry(BackendType::Address)
+                    .entry(BackendType::from(Type::Address))
                     .or_insert_with(|| {
                         *memory_ptr += 1;
                         *memory_ptr
@@ -438,10 +438,10 @@ pub fn analyse_registers_and_memory(
 
                 register2ty
                     .entry(result.clone())
-                    .or_insert(BackendType::Address);
+                    .or_insert(BackendType::from(Type::Address));
 
                 let _ = memory_ty2stack_ptr
-                    .entry(BackendType::Address)
+                    .entry(BackendType::from(Type::Address))
                     .or_insert_with(|| {
                         *memory_ptr += 1;
                         *memory_ptr
@@ -455,10 +455,10 @@ pub fn analyse_registers_and_memory(
 
                 register2ty
                     .entry(result.clone())
-                    .or_insert(BackendType::Address);
+                    .or_insert(BackendType::from(Type::Address));
 
                 let _ = memory_ty2stack_ptr
-                    .entry(BackendType::Address)
+                    .entry(BackendType::from(Type::Address))
                     .or_insert_with(|| {
                         *memory_ptr += 1;
                         *memory_ptr

@@ -123,6 +123,12 @@ pub fn prepare(
         let llvm_ty_string = BackendType::to_llvm_ty(ty);
 
         let comment = if Register::is_const(reg) {
+            let val = if val.len() >= 6 {
+                let sval = &val[1..5];
+                format!("{sval}..")
+            } else {
+                val.clone()
+            };
             format!("for const {val} : {llvm_ty_string}")
         } else {
             let id = reg.get_id();
@@ -131,7 +137,14 @@ pub fn prepare(
         michelson_instructions.push(match ty {
             BackendType::Operation => format!("{val}; # {comment}"),
             BackendType::Contract(_) => format!("{val}; # {comment}"),
-            BackendType::Option(_) => format!("{val}; # {comment}"),
+            BackendType::Option(inner) => {
+                if Register::is_const(reg) {
+                    let michelson_ty = inner.clone().to_memory_string();
+                    format!("PUSH {michelson_ty} {val}; SOME; # {comment}")
+                } else {
+                    format!("{val}; # {comment}")
+                }
+            }
             _ => format!("PUSH {michelson_ty} {val}; # {comment}"),
         });
     }
@@ -556,6 +569,7 @@ pub fn body(
                 let michelson_instructions = vec![
                     format!("### {} = MichelsonGetSender {{", result.get_id()),
                     format!("SENDER;"),
+                    format!("SOME; # to (option address)"),
                     format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
                     format!("DROP;"),
                     format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
@@ -570,6 +584,7 @@ pub fn body(
                 let michelson_instructions = vec![
                     format!("### {} = MichelsonGetSource {{", result.get_id()),
                     format!("SOURCE;"),
+                    format!("SOME; # to (option address)"),
                     format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
                     format!("DROP;"),
                     format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
@@ -584,6 +599,7 @@ pub fn body(
                 let michelson_instructions = vec![
                     format!("### {} = MichelsonGetSelfAddress {{", result.get_id()),
                     format!("SELF_ADDRESS;"),
+                    format!("SOME; # to (option address)"),
                     format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
                     format!("DROP;"),
                     format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
@@ -621,6 +637,7 @@ pub fn body(
                         address.get_id()
                     ),
                     format!("DUP {};", register2stack_ptr.get(&address).unwrap()),
+                    format!("ASSERT_SOME; # unwrap (option address)"),
                     format!("CONTRACT {};", Type::struct_type2michelson_pair(ty.clone())),
                     format!("SOME; {}", "# to option (option (contract ty))"), // registerもoptionで包む
                     format!("DIG {};", register2stack_ptr.get(&result).unwrap()),

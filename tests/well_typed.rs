@@ -32,6 +32,8 @@ fn well_typed_test() {
         let build_result = String::from_utf8(build_output.stdout).unwrap();
         if build_result.len() == 0 {
             panic!("failed to bulid {}.rs", file_name);
+        } else {
+            println!("====Build Completed===");
         }
 
         //tezos-client --mode mockup typecheck script ./examples/out/simple_add.tz

@@ -154,7 +154,7 @@ pub enum BackendType {
 impl BackendType {
     pub fn from(ty: Type) -> BackendType {
         match ty {
-            Type::Address => BackendType::Address,
+            Type::Address => BackendType::Option(Box::new(BackendType::Address)),
             Type::Bool => BackendType::Bool,
             Type::Int => BackendType::Int,
             Type::Mutez => BackendType::Mutez,
@@ -267,7 +267,7 @@ impl BackendType {
 
     pub fn default_value(ty: &BackendType) -> String {
         let res = match ty {
-            BackendType::Address => String::from("\"KT1PGQFmnGyZMeuHzssNxqx9tYfDvX5JMN3W\""),
+            BackendType::Address => String::from("NONE address"),
             BackendType::Array {
                 size: _,
                 elementtype: _,
@@ -314,11 +314,14 @@ impl BackendType {
                 format!("{inner}*")
             }
             BackendType::Option(ty) => match *ty.clone() {
+                BackendType::Address => {
+                    format!("address")
+                }
                 BackendType::Contract(child_ty) => {
                     let inner = BackendType::to_llvm_ty(&*child_ty);
                     format!("(%struct.contract {inner})")
                 }
-                BackendType::Operation => "operation".to_string(),
+                BackendType::Operation => format!("operation"),
                 _ => {
                     let inner = BackendType::to_llvm_ty(&*ty);
                     format!("(option {inner})")

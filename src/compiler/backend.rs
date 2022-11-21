@@ -96,9 +96,9 @@ pub fn prepare(
         .collect::<Vec<_>>();
     memory_ty2stack_ptr_sorted.sort_by(|a, b| (a.1).cmp(&b.1));
     for (ty, _v) in memory_ty2stack_ptr_sorted.iter().rev() {
-        let ty_str = ty.clone().to_memory_string();
+        let ty_str = ty.to_memory_string();
 
-        let llvm_ty_string = BackendType::to_llvm_ty(ty);
+        let llvm_ty_string = ty.to_llvm_ty();
         let comment = format!("memory for {llvm_ty_string}");
 
         michelson_instructions.append(&mut vec![
@@ -119,8 +119,8 @@ pub fn prepare(
         } else {
             BackendType::default_value(&ty)
         };
-        let michelson_ty = ty.clone().to_memory_string();
-        let llvm_ty_string = BackendType::to_llvm_ty(ty);
+        let michelson_ty = ty.to_memory_string();
+        let llvm_ty_string = ty.to_llvm_ty();
 
         let comment = if Register::is_const(reg) {
             let val = if val.len() >= 6 {
@@ -139,7 +139,7 @@ pub fn prepare(
             BackendType::Contract(_) => format!("{val}; # {comment}"),
             BackendType::Option(inner) => {
                 if Register::is_const(reg) {
-                    let michelson_ty = inner.clone().to_memory_string();
+                    let michelson_ty = inner.to_memory_string();
                     format!("PUSH {michelson_ty} {val}; SOME; # {comment}")
                 } else {
                     format!("{val}; # {comment}")
@@ -189,9 +189,7 @@ pub fn body(
                 );
             }
             Instruction::Store { ty, value, ptr } => {
-                let memory_ptr = memory_ty2stack_ptr
-                    .get(&BackendType::from(ty.clone()))
-                    .unwrap();
+                let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
 
                 let michelson_instructions = vec![
                     format!(
@@ -218,9 +216,7 @@ pub fn body(
                 );
             }
             Instruction::Load { result, ty, ptr } => {
-                let memory_ptr = memory_ty2stack_ptr
-                    .get(&BackendType::from(ty.clone()))
-                    .unwrap();
+                let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
 
                 let michelson_instructions = vec![
                     format!(
@@ -252,9 +248,7 @@ pub fn body(
                 ptrval,
                 subsequent,
             } => {
-                let memory_ptr = memory_ty2stack_ptr
-                    .get(&BackendType::from(ty.clone()))
-                    .unwrap();
+                let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
 
                 // FIXME TODO: subsequent[1]で決め打ちで取得しているので直したい.
                 //              (...が, これ以外無い気がする)
@@ -655,7 +649,7 @@ pub fn body(
                     format!(
                         "### {} = MichelsonAssertSome {} {} {{",
                         result.get_id(),
-                        BackendType::from(ty.clone()).to_string(), //FIXME: Type::to_stringが欲しい
+                        BackendType::from(ty).to_string(),
                         value.get_id()
                     ),
                     format!("DUP {};", register2stack_ptr.get(&value).unwrap()),
@@ -752,10 +746,10 @@ pub fn retrieve_storage_from_memory(
 
     let storage_ty = Type::deref(storage_ty_ptr);
     let storage_memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::from(storage_ty.clone()))
+        .get(&BackendType::from(&storage_ty))
         .unwrap();
     let pair_memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::deref(&BackendType::from(pair_ty_ptr.clone())))
+        .get(&BackendType::deref(&BackendType::from(pair_ty_ptr)))
         .unwrap();
     let mut michelson_instructions = vec![];
     michelson_instructions.append(&mut vec![
@@ -820,9 +814,7 @@ fn retrieve_storage_field_from_memory(
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> Vec<String> {
-    let memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::from(field.clone()))
-        .unwrap();
+    let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(field)).unwrap();
     match field {
         Type::Struct {
             id: child_id,
@@ -913,10 +905,10 @@ pub fn retrieve_operations_from_memory(
         .unwrap();
 
     let pair_memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::from(Type::deref(&pair_ty_ptr.clone())))
+        .get(&BackendType::from(&Type::deref(&pair_ty_ptr)))
         .unwrap();
 
-    let _pair_fields = match Type::deref(&pair_ty_ptr.clone()) {
+    let _pair_fields = match Type::deref(&pair_ty_ptr) {
         Type::Struct { id: _, fields } => fields,
         _ => panic!(),
     };
@@ -929,7 +921,7 @@ pub fn retrieve_operations_from_memory(
         .unwrap();
 
     let operation_arr_memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::from(operation_arr_ty.clone()))
+        .get(&BackendType::from(operation_arr_ty))
         .unwrap();
 
     let mut michelson_instructions = vec![
@@ -962,7 +954,7 @@ pub fn retrieve_operations_from_memory(
     };
 
     let operation_memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::from(Type::Operation))
+        .get(&BackendType::from(&Type::Operation))
         .unwrap();
 
     // input: ([size x operation] MAP instance) : (list operation) : encoded_storage :[register]:[memory]

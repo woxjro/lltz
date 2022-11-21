@@ -19,11 +19,11 @@ pub fn exec_llvm_memcpy(
     //validation
     match register2ty.get(&dest).unwrap() {
         BackendType::Ptr(inner) => {
-            if **inner != BackendType::from(ty.clone()) {
+            if **inner != BackendType::from(ty) {
                 panic!(
                     "@llvm.memcpyでdestの指す先の型:{}がty:{}と一致していません.",
-                    BackendType::to_llvm_ty(inner),
-                    BackendType::to_llvm_ty(&BackendType::from(ty.clone()))
+                    inner.to_llvm_ty(),
+                    BackendType::from(ty).to_llvm_ty()
                 );
             }
         }
@@ -34,11 +34,11 @@ pub fn exec_llvm_memcpy(
 
     match register2ty.get(&src).unwrap() {
         BackendType::Ptr(inner) => {
-            if **inner != BackendType::from(ty.clone()) {
+            if **inner != BackendType::from(ty) {
                 panic!(
                     "@llvm.memcpyでsrcの指す先の型:{}がty:{}と一致していません.",
-                    BackendType::to_llvm_ty(inner),
-                    BackendType::to_llvm_ty(&BackendType::from(ty.clone()))
+                    inner.to_llvm_ty(),
+                    BackendType::from(ty).to_llvm_ty()
                 );
             }
         }
@@ -51,9 +51,7 @@ pub fn exec_llvm_memcpy(
     match ty {
         Type::Struct { id: _, fields } => {
             let depth = 1;
-            let memory_ptr = memory_ty2stack_ptr
-                .get(&BackendType::from(ty.clone()))
-                .unwrap();
+            let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
             michelson_instructions.append(&mut vec![
                 format!("DUP {};", register2stack_ptr.len() + memory_ptr),
                 format!("CAR;"),
@@ -64,9 +62,7 @@ pub fn exec_llvm_memcpy(
 
             for (idx, field) in fields.iter().enumerate() {
                 //DUP big_map struct { id, fields }
-                let field_memory_ptr = memory_ty2stack_ptr
-                    .get(&BackendType::from(field.clone()))
-                    .unwrap();
+                let field_memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(field)).unwrap();
                 michelson_instructions.append(&mut vec![
                     format!("### llvm.memcpy GET idx={idx} {{"),
                     format!("DUP;"),
@@ -125,9 +121,7 @@ fn get_field_element(
     match field {
         Type::Struct { id: _, fields } => {
             for (child_idx, child_field) in fields.iter().enumerate() {
-                let memory_ptr = memory_ty2stack_ptr
-                    .get(&BackendType::from(field.clone()))
-                    .unwrap();
+                let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(field)).unwrap();
                 res.append(&mut vec![
                     format!("DUP;"),                  //bm:bm:rest
                     format!("PUSH int {child_idx};"), //idx:bm:bm:rest
@@ -188,7 +182,7 @@ fn put_field_element(
     let mut res = vec![format!("SOME;")];
     for (i, (child_idx, child_ty)) in path.iter().enumerate() {
         let memory_ptr = memory_ty2stack_ptr
-            .get(&BackendType::from(child_ty.clone()))
+            .get(&BackendType::from(child_ty))
             .unwrap();
 
         if i == 0 {
@@ -218,7 +212,7 @@ fn put_field_element(
     }
 
     let memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::from(primitive_ty.clone()))
+        .get(&BackendType::from(primitive_ty))
         .unwrap();
     res.append(&mut vec![
         format!("DIG {};", register2stack_ptr.len() + memory_ptr + depth),

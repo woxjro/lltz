@@ -165,7 +165,7 @@ fn decode_storage_field_from_input(
             ]);
             for (i, (child_idx, child_ty)) in path.iter().enumerate() {
                 let memory_ptr = memory_ty2stack_ptr
-                    .get(&BackendType::from(child_ty.clone()))
+                    .get(&BackendType::from(child_ty))
                     .unwrap();
 
                 if i == 0 {
@@ -203,9 +203,7 @@ fn decode_storage_field_from_input(
                 }
             }
 
-            let memory_ptr = memory_ty2stack_ptr
-                .get(&BackendType::from(ty.clone()))
-                .unwrap();
+            let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
             michelson_instructions.append(&mut vec![
                 format!(
                     "DIG {};",

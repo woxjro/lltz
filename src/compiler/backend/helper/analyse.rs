@@ -9,7 +9,7 @@ pub fn analyse_memory4alloca(
     memory_ptr: &mut usize,
 ) {
     //既にtyが登録されていたらexit
-    match memory_ty2stack_ptr.get(&BackendType::from(ty.clone())) {
+    match memory_ty2stack_ptr.get(&BackendType::from(&ty)) {
         Some(_) => return,
         _ => {}
     };
@@ -21,7 +21,7 @@ pub fn analyse_memory4alloca(
                 self::analyse_memory4alloca(field, memory_ty2stack_ptr, memory_ptr);
             }
             let _ = memory_ty2stack_ptr
-                .entry(BackendType::from(ty.clone()))
+                .entry(BackendType::from(&ty))
                 .or_insert_with(|| {
                     *memory_ptr += 1;
                     *memory_ptr
@@ -33,7 +33,7 @@ pub fn analyse_memory4alloca(
         } => {
             self::analyse_memory4alloca(*elementtype.clone(), memory_ty2stack_ptr, memory_ptr);
             let _ = memory_ty2stack_ptr
-                .entry(BackendType::from(ty.clone()))
+                .entry(BackendType::from(&ty))
                 .or_insert_with(|| {
                     *memory_ptr += 1;
                     *memory_ptr
@@ -41,7 +41,7 @@ pub fn analyse_memory4alloca(
         }
         _ => {
             let _ = memory_ty2stack_ptr
-                .entry(BackendType::from(ty.clone()))
+                .entry(BackendType::from(&ty))
                 .or_insert_with(|| {
                     *memory_ptr += 1;
                     *memory_ptr

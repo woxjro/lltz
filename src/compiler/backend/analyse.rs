@@ -11,7 +11,7 @@ pub fn analyse_structure_types(
     structure_types: &Vec<Type>,
 ) {
     for structure_type in structure_types {
-        match memory_ty2stack_ptr.get(&BackendType::from(structure_type.clone())) {
+        match memory_ty2stack_ptr.get(&BackendType::from(structure_type)) {
             //既にtyが登録されていたらexit
             Some(_) => {}
             _ => {
@@ -26,7 +26,7 @@ pub fn analyse_structure_types(
                         }
                         //登録する
                         let _ = memory_ty2stack_ptr
-                            .entry(BackendType::from(structure_type.clone()))
+                            .entry(BackendType::from(structure_type))
                             .or_insert_with(|| {
                                 *memory_ptr += 1;
                                 *memory_ptr
@@ -71,7 +71,7 @@ pub fn analyse_argument_list(
 
         register2ty
             .entry(reg.clone())
-            .or_insert(BackendType::from(ty.clone()));
+            .or_insert(BackendType::from(ty));
     }
 }
 
@@ -100,7 +100,7 @@ pub fn analyse_registers_and_memory(
                 //NOTE: ptrはType::Ptr(ty)のポインタ型であることに注意
                 register2ty
                     .entry(ptr.clone())
-                    .or_insert(BackendType::from(Type::Ptr(Box::new(ty.clone()))));
+                    .or_insert(BackendType::from(&Type::Ptr(Box::new(ty.clone()))));
 
                 //（レジスタは上記で良いんだけど、）Struct型の場合は内部にも, メモリの型を
                 // 保持している（ケースがほとんどである）ので再帰的に調べる必要がある
@@ -116,12 +116,12 @@ pub fn analyse_registers_and_memory(
                 //NOTE: ptrはType::Ptr(ty)のポインタ型であることに注意
                 register2ty
                     .entry(ptr.clone())
-                    .or_insert(BackendType::from(Type::Ptr(Box::new(ty.clone()))));
+                    .or_insert(BackendType::from(&Type::Ptr(Box::new(ty.clone()))));
 
                 //即値を仮想レジスタとして扱うのでこの処理は（少なくとも今は）必要
                 register2ty
                     .entry(value.clone())
-                    .or_insert(BackendType::from(ty.clone()));
+                    .or_insert(BackendType::from(ty));
                 let _ = register2stack_ptr.entry(ptr.clone()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
@@ -136,11 +136,11 @@ pub fn analyse_registers_and_memory(
                 //NOTE: ptrはType::Ptr(ty)のポインタ型であることに注意
                 register2ty
                     .entry(ptr.clone())
-                    .or_insert(BackendType::from(Type::Ptr(Box::new(ty.clone()))));
+                    .or_insert(BackendType::from(&Type::Ptr(Box::new(ty.clone()))));
 
                 register2ty
                     .entry(result.clone())
-                    .or_insert(BackendType::from(ty.clone()));
+                    .or_insert(BackendType::from(ty));
 
                 let _ = register2stack_ptr.entry(ptr.clone()).or_insert_with(|| {
                     *stack_ptr += 1;
@@ -168,7 +168,7 @@ pub fn analyse_registers_and_memory(
                 //NOTE: ptrはType::Ptr(ty)のポインタ型であることに注意
                 register2ty
                     .entry(ptrval.clone())
-                    .or_insert(BackendType::from(Type::Ptr(Box::new(ty.clone()))));
+                    .or_insert(BackendType::from(&Type::Ptr(Box::new(ty.clone()))));
 
                 // FIXME: elementに対するpointer型であって, Struct*ではない...
                 // しかしそれを知るすべがない. constをregisterに入れてしまっているため...
@@ -179,7 +179,7 @@ pub fn analyse_registers_and_memory(
                         let t = fields.iter().nth(idx).unwrap();
                         register2ty
                             .entry(result.clone())
-                            .or_insert(BackendType::from(Type::Ptr(Box::new(t.clone()))));
+                            .or_insert(BackendType::from(&Type::Ptr(Box::new(t.clone()))));
                     }
                     Type::Array {
                         size: _,
@@ -187,9 +187,9 @@ pub fn analyse_registers_and_memory(
                     } => {
                         register2ty
                             .entry(result.clone())
-                            .or_insert(BackendType::from(Type::Ptr(elementtype.clone())));
+                            .or_insert(BackendType::from(&Type::Ptr(elementtype.clone())));
                         let _ = memory_ty2stack_ptr
-                            .entry(BackendType::from(*elementtype.clone()))
+                            .entry(BackendType::from(elementtype))
                             .or_insert_with(|| {
                                 *memory_ptr += 1;
                                 *memory_ptr
@@ -207,7 +207,7 @@ pub fn analyse_registers_and_memory(
                     });
                     register2ty
                         .entry(reg.clone())
-                        .or_insert(BackendType::from(ty.clone()));
+                        .or_insert(BackendType::from(ty));
                 }
             }
             Instruction::If {
@@ -287,13 +287,13 @@ pub fn analyse_registers_and_memory(
                 });
                 register2ty
                     .entry(op1.clone())
-                    .or_insert(BackendType::from(ty.clone()));
+                    .or_insert(BackendType::from(ty));
                 register2ty
                     .entry(op2.clone())
-                    .or_insert(BackendType::from(ty.clone()));
+                    .or_insert(BackendType::from(ty));
                 register2ty
                     .entry(result.clone())
-                    .or_insert(BackendType::from(ty.clone()));
+                    .or_insert(BackendType::from(ty));
             }
             Instruction::LlvmMemcpy {
                 dest: _,
@@ -320,7 +320,7 @@ pub fn analyse_registers_and_memory(
                 });
                 register2ty
                     .entry(value.clone())
-                    .or_insert(BackendType::from(ty.clone()));
+                    .or_insert(BackendType::from(ty));
             }
             Instruction::Icmp {
                 result,
@@ -335,7 +335,7 @@ pub fn analyse_registers_and_memory(
                 });
                 register2ty
                     .entry(result.clone())
-                    .or_insert(BackendType::from(ty.clone()));
+                    .or_insert(BackendType::from(ty));
                 let _ = register2stack_ptr.entry(op1.clone()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
@@ -421,10 +421,10 @@ pub fn analyse_registers_and_memory(
 
                 register2ty
                     .entry(result.clone())
-                    .or_insert(BackendType::from(Type::Address));
+                    .or_insert(BackendType::from(&Type::Address));
 
                 let _ = memory_ty2stack_ptr
-                    .entry(BackendType::from(Type::Address))
+                    .entry(BackendType::from(&Type::Address))
                     .or_insert_with(|| {
                         *memory_ptr += 1;
                         *memory_ptr
@@ -438,10 +438,10 @@ pub fn analyse_registers_and_memory(
 
                 register2ty
                     .entry(result.clone())
-                    .or_insert(BackendType::from(Type::Address));
+                    .or_insert(BackendType::from(&Type::Address));
 
                 let _ = memory_ty2stack_ptr
-                    .entry(BackendType::from(Type::Address))
+                    .entry(BackendType::from(&Type::Address))
                     .or_insert_with(|| {
                         *memory_ptr += 1;
                         *memory_ptr
@@ -455,10 +455,10 @@ pub fn analyse_registers_and_memory(
 
                 register2ty
                     .entry(result.clone())
-                    .or_insert(BackendType::from(Type::Address));
+                    .or_insert(BackendType::from(&Type::Address));
 
                 let _ = memory_ty2stack_ptr
-                    .entry(BackendType::from(Type::Address))
+                    .entry(BackendType::from(&Type::Address))
                     .or_insert_with(|| {
                         *memory_ptr += 1;
                         *memory_ptr
@@ -479,12 +479,12 @@ pub fn analyse_registers_and_memory(
                     .unwrap();
                 register2ty
                     .entry(result.clone())
-                    .or_insert(BackendType::from(Type::Contract(Box::new(
+                    .or_insert(BackendType::from(&Type::Contract(Box::new(
                         parameter.clone(),
                     ))));
 
                 let _ = memory_ty2stack_ptr
-                    .entry(BackendType::from(Type::Contract(Box::new(
+                    .entry(BackendType::from(&Type::Contract(Box::new(
                         parameter.clone(),
                     ))))
                     .or_insert_with(|| {
@@ -515,7 +515,7 @@ pub fn analyse_registers_and_memory(
 
                 register2ty
                     .entry(result.clone())
-                    .or_insert(BackendType::from(Type::Option(Box::new(Type::Contract(
+                    .or_insert(BackendType::from(&Type::Option(Box::new(Type::Contract(
                         Box::new(ty.clone()),
                     )))));
             }
@@ -528,7 +528,7 @@ pub fn analyse_registers_and_memory(
 
                     register2ty
                         .entry(value.clone())
-                        .or_insert(BackendType::from(ty.clone()));
+                        .or_insert(BackendType::from(ty));
 
                     let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
                         *stack_ptr += 1;
@@ -537,7 +537,7 @@ pub fn analyse_registers_and_memory(
 
                     register2ty
                         .entry(result.clone())
-                        .or_insert(BackendType::from(*child_ty.clone()));
+                        .or_insert(BackendType::from(child_ty));
                 }
                 _ => panic!("Option型以外にはASSERT_SOMEは使えません"),
             },
@@ -554,7 +554,7 @@ pub fn analyse_registers_and_memory(
 
                 register2ty
                     .entry(tokens.clone())
-                    .or_insert(BackendType::from(Type::Mutez));
+                    .or_insert(BackendType::from(&Type::Mutez));
 
                 let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
                     *stack_ptr += 1;
@@ -563,7 +563,7 @@ pub fn analyse_registers_and_memory(
 
                 register2ty
                     .entry(result.clone())
-                    .or_insert(BackendType::from(Type::Operation));
+                    .or_insert(BackendType::from(&Type::Operation));
             }
         };
     }

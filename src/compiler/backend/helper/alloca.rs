@@ -16,9 +16,7 @@ pub fn exec_alloca(
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> String {
-    let memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::from(ty.clone()))
-        .unwrap();
+    let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
 
     let michelson_instructions = match ty {
         Type::Struct { .. } => {
@@ -27,7 +25,7 @@ pub fn exec_alloca(
         Type::Array { size, elementtype } => {
             let mut fields = vec![];
             for _ in 0..*size {
-                fields.push(*elementtype.clone());
+                fields.push(elementtype);
             }
             exec_aggregate_type_alloca(ty, ptr, register2stack_ptr, memory_ty2stack_ptr)
         }
@@ -43,11 +41,11 @@ pub fn exec_alloca(
                 format!("DUP;"),
                 format!("DIG 3;"),
                 format!("SWAP;"),
-                match BackendType::from(ty.clone()) {
+                match BackendType::from(ty) {
                     BackendType::Option(_) => {
                         format!(
                             "{}; # default value",
-                            BackendType::default_value(&BackendType::from(ty.clone()))
+                            BackendType::default_value(&BackendType::from(ty))
                         )
                     }
                     BackendType::Contract(_) => panic!(),
@@ -55,8 +53,8 @@ pub fn exec_alloca(
                     _ => {
                         format!(
                             "PUSH {} {}; # default value",
-                            BackendType::from(ty.clone()).to_string(),
-                            BackendType::default_value(&BackendType::from(ty.clone()))
+                            BackendType::from(ty).to_string(),
+                            BackendType::default_value(&BackendType::from(ty))
                         )
                     }
                 },
@@ -89,7 +87,7 @@ pub fn exec_aggregate_type_alloca(
     //Struct { id, fields }型のメモリ領域のスタック上の相対ポインタ
 
     let memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::from(aggregate_ty.clone()))
+        .get(&BackendType::from(aggregate_ty))
         .unwrap();
     let mut res = vec![
         format!(
@@ -167,9 +165,7 @@ fn exec_struct_field_alloca(
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> Vec<String> {
-    let field_memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::from(field.clone()))
-        .unwrap();
+    let field_memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(field)).unwrap();
     match field {
         Type::Struct { id: _, fields } => {
             let mut res = vec![format!("EMPTY_MAP int int;")];
@@ -290,11 +286,11 @@ fn exec_struct_field_alloca(
                 format!("DUP;"),   //ptr:ptr:ptr:bm:map
                 format!("DIG 3;"), //bm:ptr:ptr:ptr:map
                 format!("SWAP;"),  //ptr:bm:ptr:ptr:map
-                match BackendType::from(field.clone()) {
+                match BackendType::from(field) {
                     BackendType::Option(_) => {
                         format!(
                             "{}; # default value",
-                            BackendType::default_value(&BackendType::from(field.clone()))
+                            BackendType::default_value(&BackendType::from(field))
                         )
                     }
                     BackendType::Contract(_) => panic!(),
@@ -302,8 +298,8 @@ fn exec_struct_field_alloca(
                     _ => {
                         format!(
                             "PUSH {} {}; # default value",
-                            BackendType::from(field.clone()).to_string(),
-                            BackendType::default_value(&BackendType::from(field.clone()))
+                            BackendType::from(field).to_string(),
+                            BackendType::default_value(&BackendType::from(field))
                         )
                     }
                 },

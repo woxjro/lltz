@@ -152,36 +152,34 @@ pub enum BackendType {
 }
 
 impl BackendType {
-    pub fn from(ty: Type) -> BackendType {
+    pub fn from(ty: &Type) -> BackendType {
         match ty {
             Type::Address => BackendType::Option(Box::new(BackendType::Address)),
             Type::Bool => BackendType::Bool,
             Type::Int => BackendType::Int,
             Type::Mutez => BackendType::Mutez,
             Type::Nat => BackendType::Nat,
-            Type::Ptr(inner) => BackendType::Ptr(Box::new(BackendType::from(*inner.clone()))),
+            Type::Ptr(inner) => BackendType::Ptr(Box::new(BackendType::from(inner))),
             Type::Struct { id, fields } => BackendType::Struct {
                 id: id.clone(),
                 fields: fields
                     .iter()
-                    .map(|field| BackendType::from(field.clone()))
+                    .map(|field| BackendType::from(field))
                     .collect::<Vec<BackendType>>(),
             },
             Type::Operation => BackendType::Option(Box::new(BackendType::Operation)),
             Type::Contract(child_ty) => BackendType::Option(Box::new(BackendType::Contract(
-                Box::new(BackendType::from(*child_ty.clone())),
+                Box::new(BackendType::from(child_ty)),
             ))), //child_tyはStruct型
-            Type::Option(child_ty) => {
-                BackendType::Option(Box::new(BackendType::from(*child_ty.clone())))
-            }
+            Type::Option(child_ty) => BackendType::Option(Box::new(BackendType::from(child_ty))),
             Type::Array { size, elementtype } => BackendType::Array {
-                size,
-                elementtype: Box::new(BackendType::from(*elementtype.clone())),
+                size: *size,
+                elementtype: Box::new(BackendType::from(elementtype)),
             },
         }
     }
 
-    pub fn to_string(self) -> String {
+    pub fn to_string(&self) -> String {
         match self {
             BackendType::Address => String::from("address"),
             BackendType::Bool => String::from("bool"),
@@ -190,7 +188,7 @@ impl BackendType {
             BackendType::Nat => String::from("nat"),
             BackendType::Struct { .. } => BackendType::struct_type2michelson_pair(self),
             BackendType::Contract(child_ty) => {
-                let inner = BackendType::struct_type2michelson_pair(*child_ty.clone());
+                let inner = BackendType::struct_type2michelson_pair(&**child_ty);
                 format!("(contract {inner})")
             }
             BackendType::Operation => String::from("operation"),
@@ -203,7 +201,7 @@ impl BackendType {
         }
     }
 
-    pub fn to_memory_string(self) -> String {
+    pub fn to_memory_string(&self) -> String {
         match self {
             BackendType::Struct { .. } => String::from("(map int int)"),
             BackendType::Array { .. } => String::from("(map int int)"),
@@ -213,24 +211,24 @@ impl BackendType {
 
     ///予約語Typeを受け取り, MichelsonのPairを返す.
     ///Storage, Parameter, PairなどといったMichelsonコードの引数を生成するために使う
-    pub fn struct_type2michelson_pair(ty: BackendType) -> String {
-        match ty {
+    pub fn struct_type2michelson_pair(&self) -> String {
+        match self {
             BackendType::Struct { id: _, fields } => {
                 let mut res = String::new();
                 if fields.len() >= 2 {
                     for (i, field) in fields.iter().enumerate() {
                         if i == 0 {
-                            res = BackendType::struct_type2michelson_pair(field.clone())
+                            res = BackendType::struct_type2michelson_pair(&field)
                         } else {
                             res = format!(
                                 "{res} {}",
-                                BackendType::struct_type2michelson_pair(field.clone())
+                                BackendType::struct_type2michelson_pair(&field)
                             );
                         }
                     }
                     format!("(pair {res})")
                 } else if fields.len() == 1 {
-                    BackendType::struct_type2michelson_pair(fields.iter().nth(0).unwrap().clone())
+                    BackendType::struct_type2michelson_pair(&fields.iter().nth(0).unwrap())
                 } else {
                     format!("unit")
                 }
@@ -241,7 +239,7 @@ impl BackendType {
             } => {
                 panic!()
             }
-            _ => match ty {
+            _ => match self {
                 BackendType::Address => String::from("address"),
                 BackendType::Array { .. } => panic!(),
                 BackendType::Bool => String::from("bool"),
@@ -252,13 +250,13 @@ impl BackendType {
                     panic!() //never occur
                 }
                 BackendType::Contract(ty) => {
-                    let inner = BackendType::struct_type2michelson_pair(*ty);
+                    let inner = BackendType::struct_type2michelson_pair(&ty);
                     format!("(contract {inner})")
                 }
                 BackendType::Operation => String::from("operation"),
                 BackendType::Ptr(_) => String::from("int"),
                 BackendType::Option(ty) => {
-                    let inner = BackendType::struct_type2michelson_pair(*ty);
+                    let inner = BackendType::struct_type2michelson_pair(&ty);
                     format!("(option {inner})")
                 }
             },
@@ -296,11 +294,11 @@ impl BackendType {
         res
     }
 
-    pub fn to_llvm_ty(ty: &BackendType) -> String {
-        match ty {
+    pub fn to_llvm_ty(&self) -> String {
+        match self {
             BackendType::Address => "address".to_string(),
             BackendType::Array { size, elementtype } => {
-                format!("[{} x {}]", size, BackendType::to_llvm_ty(&**elementtype))
+                format!("[{} x {}]", size, elementtype.to_llvm_ty())
             }
             BackendType::Bool => "i1".to_string(),
             BackendType::Mutez => "mutez".to_string(),
@@ -310,20 +308,20 @@ impl BackendType {
             BackendType::Contract(_) => panic!(),
             BackendType::Operation => panic!(),
             BackendType::Ptr(ty) => {
-                let inner = BackendType::to_llvm_ty(&*ty);
+                let inner = ty.to_llvm_ty();
                 format!("{inner}*")
             }
-            BackendType::Option(ty) => match *ty.clone() {
+            BackendType::Option(ty) => match &**ty {
                 BackendType::Address => {
                     format!("address")
                 }
                 BackendType::Contract(child_ty) => {
-                    let inner = BackendType::to_llvm_ty(&*child_ty);
+                    let inner = child_ty.to_llvm_ty();
                     format!("(%struct.contract {inner})")
                 }
                 BackendType::Operation => format!("operation"),
                 _ => {
-                    let inner = BackendType::to_llvm_ty(&*ty);
+                    let inner = ty.to_llvm_ty();
                     format!("(option {inner})")
                 }
             },

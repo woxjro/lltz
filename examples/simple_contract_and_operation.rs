@@ -6,6 +6,16 @@ use std::fs::File;
 use std::io::prelude::*;
 fn main() {
     //
+    //typedef char* Address;
+    //struct Parameter {}
+    //struct Storage {}
+    //struct Pair {
+    //  Operation ops[3]
+    //}
+
+    //Operation transfer_tokens(struct Parameter param, Mutez tokens, Contract contract) {
+    //  return DUMMY_OPERATION;
+    //}
     //
     //struct Pair smart_contract(struct Parameter param, struct Storage storage) {
     //    struct Pair p;
@@ -20,26 +30,24 @@ fn main() {
     //
     //define dso_local void @smart_contract(
     //      %struct.Pair* noalias sret %0,
-    //      %struct.Storage* byval(%struct.Storage) align 8 %1
-    //      %struct.Parameter* byval(%struct.Parameter) align 8 %2
-    //) #0 !dbg !57 {
-    //
-    //  %4 = alloca Address, align 8
-    //  %5 = alloca Contract, align 4
-    //  %7 = alloca Operation, align 4
-    //  store Address "tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv", Address* %4, align 8, !dbg !77
-    //  %8 = load Address, Address* %4, align 8, !dbg !80
-    //  %9 = call Contract @get_contract(i8* %8), !dbg !81
-    //  store Contract %9, Contract* %5, align 4, !dbg !79
-    //  %10 = load Contract, Contract* %5, align 4, !dbg !86
-    //  %11 = call Operation @transfer_tokens(Mutez 100, Contract %10), !dbg !87
-    //  store Operation %11, Operation* %7, align 4, !dbg !85
-    //  %12 = load Operation, Operation* %7, align 4, !dbg !88
-    //  %13 = getelementptr inbounds %struct.Pair, %struct.Pair* %0, i32 0, i32 0, !dbg !89
-    //  %14 = getelementptr inbounds [3 x Operation], [3 x Operation]* %13, i64 0, i64 1, !dbg !90
-    //  store Operation %12, Operation* %14, align 4, !dbg !91
-    //  ret void, !dbg !92
-    //
+    //      %struct.Storage* byval(%struct.Storage) %1
+    //      %struct.Parameter* byval(%struct.Parameter) %2
+    //) #0 {
+    //  %4 = alloca Address
+    //  %5 = alloca Contract
+    //  %7 = alloca Operation
+    //  store Address "tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv", Address* %4
+    //  %8 = load Address, Address* %4
+    //  %9 = call Contract @get_contract(i8* %8)
+    //  store Contract %9, Contract* %5
+    //  %10 = load Contract, Contract* %5
+    //  %11 = call Operation @transfer_tokens(Mutez 100, Contract %10)
+    //  store Operation %11, Operation* %7
+    //  %12 = load Operation, Operation* %7
+    //  %13 = getelementptr inbounds %struct.Pair, %struct.Pair* %0, i32 0, i32 0
+    //  %14 = getelementptr inbounds [3 x Operation], [3 x Operation]* %13, i64 0, i64 1
+    //  store Operation %12, Operation* %14
+    //  ret void
     //}
     //
 

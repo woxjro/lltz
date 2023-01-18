@@ -1,4 +1,4 @@
-# mini_llvm_michelson_compiler
+# lltz
 
 プロトタイプ兼動作確認用
 

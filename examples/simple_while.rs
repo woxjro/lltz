@@ -1,7 +1,5 @@
-use mini_llvm_michelson_compiler::compiler::compile;
-use mini_llvm_michelson_compiler::mini_llvm::{
-    Arg, Condition, Function, Instruction, MiniLlvm, Opcode, Register, Type,
-};
+use lltz::compiler::compile;
+use lltz::mini_llvm::{Arg, Condition, Function, Instruction, MiniLlvm, Opcode, Register, Type};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -121,7 +119,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("10"),
+            value: Register::new("100"),
             ptr: Register::new("%2"),
         },
         Instruction::Store {

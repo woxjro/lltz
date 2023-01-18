@@ -1,4 +1,4 @@
-use mini_llvm_michelson_compiler::mini_llvm::Type;
+use lltz::mini_llvm::Type;
 
 #[test]
 fn mini_llvm_test() {

@@ -1,6 +1,6 @@
 /*
-use mini_llvm_michelson_compiler::compiler::compile;
-use mini_llvm_michelson_compiler::mini_llvm::{Instruction, Opcode, Register, Type};
+use lltz::compiler::compile;
+use lltz::mini_llvm::{Instruction, Opcode, Register, Type};
 use std::fs::File;
 use std::io::prelude::*;
 */

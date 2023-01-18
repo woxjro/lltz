@@ -1,5 +1,5 @@
 [package]
-name = "mini_llvm_michelson_compiler"
+name = "lltz"
 version = "0.1.0"
 edition = "2021"
 

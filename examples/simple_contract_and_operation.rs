@@ -1,5 +1,5 @@
-use mini_llvm_michelson_compiler::compiler::compile;
-use mini_llvm_michelson_compiler::mini_llvm::{
+use lltz::compiler::compile;
+use lltz::mini_llvm::{
     Arg, Function, Instruction, MiniLlvm, Register, Type,
 };
 use std::fs::File;

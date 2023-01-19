@@ -5,7 +5,8 @@ use std::collections::HashMap;
 mod backend;
 mod utils;
 
-///LLTZ IRファイルを擬似的に表現したLltzIrを入力として受け取り, コンパイル後のMichelsonを返す
+///LLTZ IRファイルを擬似的に表現したLltzIrを入力として受け取り，
+///その挙動をエミュレートするMichelsonコードを返す
 pub fn compile(lltz_ir: LltzIr) -> String {
     /*
      * RegisterをKeyとして,そのRegisterのMichelsonのStack上での位置を返すHashMap
@@ -27,14 +28,14 @@ pub fn compile(lltz_ir: LltzIr) -> String {
     /*
      * Michelsonのスタック領域におけるレジスタ領域でのレジスタ確保において
      * 既に確保したレジスタのレジスタ領域での相対的ポインタを保持しておく為の変数
-     * analyse_registers_and_memoryを行った後は使わない
+     * scan_registers_and_memoryを行った後は使わない
      */
     let mut stack_ptr = 0;
 
     /*
      * Michelsonのスタック領域におけるメモリ領域でのBIG_MAP確保において
      * 既に確保したBIG_MAPのメモリ領域での相対的ポインタを保持しておく為の変数
-     * analyse_registers_and_memoryを行った後は使わない
+     * scan_registers_and_memoryを行った後は使わない
      */
     let mut memory_ptr = 0;
 
@@ -48,7 +49,7 @@ pub fn compile(lltz_ir: LltzIr) -> String {
         .find(|f| f.function_name == String::from("smart_contract"))
         .unwrap();
 
-    backend::analyse(
+    backend::scan(
         &lltz_ir.structure_types,
         &smart_contract_function.argument_list,
         &smart_contract_function.instructions,
@@ -74,7 +75,7 @@ pub fn compile(lltz_ir: LltzIr) -> String {
         )
     );
 
-    michelson_code = backend::prepare(
+    michelson_code = backend::stack_initialization(
         michelson_code,
         tab,
         &register2stack_ptr,
@@ -82,7 +83,7 @@ pub fn compile(lltz_ir: LltzIr) -> String {
         &memory_ty2stack_ptr,
     );
 
-    michelson_code = backend::prepare_from_argument_list(
+    michelson_code = backend::inject_argument_list(
         smart_contract_function,
         michelson_code,
         tab,
@@ -91,7 +92,7 @@ pub fn compile(lltz_ir: LltzIr) -> String {
         &memory_ty2stack_ptr,
     );
 
-    michelson_code = backend::body(
+    michelson_code = backend::compile_instructions(
         michelson_code,
         tab,
         tab_depth,

@@ -3,7 +3,7 @@ use crate::lltz_ir::{Arg, BackendType, Function, Register, Type};
 use std::collections::HashMap;
 
 ///ここが終わった段階ではMichelson StackのTopに(Parameter, Storage)が乗っている
-pub fn prepare_storage(
+pub fn inject_storage(
     smart_contract_function: &Function,
     michelson_code: String,
     tab: &str,
@@ -32,7 +32,7 @@ pub fn prepare_storage(
 }
 
 ///ここが終わった段階では(Parameter, Strorage)はもう要らないのでDROP.
-pub fn prepare_parameter(
+pub fn inject_parameter(
     smart_contract_function: &Function,
     michelson_code: String,
     tab: &str,
@@ -62,7 +62,7 @@ pub fn prepare_parameter(
 
 ///スマートコントラクトの返り値として使うPairをAllocaする関数
 ///（ここでAllocaしたPairをエンコードしてコントラクトの返り値とする）
-pub fn prepare_pair(
+pub fn inject_pair(
     smart_contract_function: &Function,
     michelson_code: String,
     tab: &str,

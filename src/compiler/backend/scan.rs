@@ -5,7 +5,7 @@ use crate::lltz_ir::{Arg, BackendType, Instruction, Register, Type};
 use std::collections::HashMap;
 
 /// 構造体宣言を事前に走査し, 必要なメモリの型を洗い出しておく関数
-pub fn analyse_structure_types(
+pub fn scan_structure_types(
     memory_ty2stack_ptr: &mut HashMap<BackendType, usize>,
     memory_ptr: &mut usize,
     structure_types: &Vec<Type>,
@@ -18,7 +18,7 @@ pub fn analyse_structure_types(
                 match structure_type {
                     Type::Struct { id: _, fields } => {
                         for field in fields {
-                            helper::analyse::analyse_memory4alloca(
+                            helper::scan::scan_memory4alloca(
                                 field.clone(),
                                 memory_ty2stack_ptr,
                                 memory_ptr,
@@ -43,7 +43,7 @@ pub fn analyse_structure_types(
 
 /// （主にsmart_contract関数の）LltzIrのargument_listを受け取り, その中に出てくる
 /// レジスタなどを洗い出しておく関数
-pub fn analyse_argument_list(
+pub fn scan_argument_list(
     register2stack_ptr: &mut HashMap<Register, usize>,
     register2ty: &mut HashMap<Register, BackendType>,
     stack_ptr: &mut usize,
@@ -76,11 +76,11 @@ pub fn analyse_argument_list(
 }
 
 ///Step.0
-///まず与えられたLLVM IRの命令列（instructions）を事前に走査して
+///まず与えられたLLTZ IRの命令列（instructions）を事前に走査して
 ///命令列に出現しうる型やレジスタの種類・数などを把握する
 ///つまり、レジスタ型環境（register2ty, register2stack_ptr）と
 ///メモリ型環境（memory_ty2stack_ptr）の可変参照を受け取っておき、これらを構築する
-pub fn analyse_registers_and_memory(
+pub fn scan_registers_and_memory(
     register2stack_ptr: &mut HashMap<Register, usize>,
     register2ty: &mut HashMap<Register, BackendType>,
     memory_ty2stack_ptr: &mut HashMap<BackendType, usize>,
@@ -104,7 +104,7 @@ pub fn analyse_registers_and_memory(
 
                 //（レジスタは上記で良いんだけど、）Struct型の場合は内部にも, メモリの型を
                 // 保持している（ケースがほとんどである）ので再帰的に調べる必要がある
-                helper::analyse::analyse_memory4alloca(ty.clone(), memory_ty2stack_ptr, memory_ptr);
+                helper::scan::scan_memory4alloca(ty.clone(), memory_ty2stack_ptr, memory_ptr);
             }
             Instruction::Store { ty, value, ptr } => {
                 let _ = register2stack_ptr.entry(value.clone()).or_insert_with(|| {
@@ -220,7 +220,7 @@ pub fn analyse_registers_and_memory(
                     *stack_ptr
                 });
                 register2ty.entry(reg.clone()).or_insert(BackendType::Bool);
-                analyse_registers_and_memory(
+                scan_registers_and_memory(
                     register2stack_ptr,
                     register2ty,
                     memory_ty2stack_ptr,
@@ -229,7 +229,7 @@ pub fn analyse_registers_and_memory(
                     structure_types,
                     code_block_t,
                 );
-                analyse_registers_and_memory(
+                scan_registers_and_memory(
                     register2stack_ptr,
                     register2ty,
                     memory_ty2stack_ptr,
@@ -244,7 +244,7 @@ pub fn analyse_registers_and_memory(
                 cond_block,
                 loop_block,
             } => {
-                analyse_registers_and_memory(
+                scan_registers_and_memory(
                     register2stack_ptr,
                     register2ty,
                     memory_ty2stack_ptr,
@@ -253,7 +253,7 @@ pub fn analyse_registers_and_memory(
                     structure_types,
                     cond_block,
                 );
-                analyse_registers_and_memory(
+                scan_registers_and_memory(
                     register2stack_ptr,
                     register2ty,
                     memory_ty2stack_ptr,

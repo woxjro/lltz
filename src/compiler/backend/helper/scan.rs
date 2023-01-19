@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 ///Struct型の場合は内部にも, メモリの型を 保持している
 ///（ケースがほとんどである）ので再帰的に調べる
-pub fn analyse_memory4alloca(
+pub fn scan_memory4alloca(
     ty: Type,
     memory_ty2stack_ptr: &mut HashMap<BackendType, usize>,
     memory_ptr: &mut usize,
@@ -18,7 +18,7 @@ pub fn analyse_memory4alloca(
         Type::Struct { id: _, fields } => {
             //先に子Fieldを登録する
             for field in fields {
-                self::analyse_memory4alloca(field, memory_ty2stack_ptr, memory_ptr);
+                self::scan_memory4alloca(field, memory_ty2stack_ptr, memory_ptr);
             }
             let _ = memory_ty2stack_ptr
                 .entry(BackendType::from(&ty))
@@ -31,7 +31,7 @@ pub fn analyse_memory4alloca(
             size: _,
             elementtype,
         } => {
-            self::analyse_memory4alloca(*elementtype.clone(), memory_ty2stack_ptr, memory_ptr);
+            self::scan_memory4alloca(*elementtype.clone(), memory_ty2stack_ptr, memory_ptr);
             let _ = memory_ty2stack_ptr
                 .entry(BackendType::from(&ty))
                 .or_insert_with(|| {

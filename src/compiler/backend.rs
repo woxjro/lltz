@@ -1,18 +1,16 @@
 //! 以下のコンパイルフローにおけるLLTZ IRからMichelsonへのコンパイル（Backend）を担当するモジュール
 //! LLVM IR ---> LLTZ IR ---> Michelson
 
-mod analyse;
 mod helper;
-mod prepare;
+mod inject;
+mod scan;
 use crate::compiler::utils;
-use crate::lltz_ir::{
-    Arg, BackendType, Condition, Function, Instruction, Opcode, Register, Type,
-};
+use crate::lltz_ir::{Arg, BackendType, Condition, Function, Instruction, Opcode, Register, Type};
 use std::collections::HashMap;
 
-///LltzIrの構造体宣言,引数リスト,命令列を受け取り,それらに現れるレジスタ、メモリや型
-///などを調べる.
-pub fn analyse(
+///LltzIrの構造体宣言，引数リスト，命令列を受け取り，それらに現れるレジスタ，メモリや型
+///などを調べる．
+pub fn scan(
     structure_types: &Vec<Type>,
     argument_list: &Vec<Arg>,
     instructions: &Vec<Instruction>,
@@ -22,11 +20,11 @@ pub fn analyse(
     memory_ty2stack_ptr: &mut HashMap<BackendType, usize>,
     register2ty: &mut HashMap<Register, BackendType>,
 ) {
-    analyse::analyse_structure_types(memory_ty2stack_ptr, memory_ptr, &structure_types);
+    scan::scan_structure_types(memory_ty2stack_ptr, memory_ptr, &structure_types);
 
-    analyse::analyse_argument_list(register2stack_ptr, register2ty, stack_ptr, &argument_list);
+    scan::scan_argument_list(register2stack_ptr, register2ty, stack_ptr, &argument_list);
 
-    analyse::analyse_registers_and_memory(
+    scan::scan_registers_and_memory(
         register2stack_ptr,
         register2ty,
         memory_ty2stack_ptr,
@@ -37,9 +35,9 @@ pub fn analyse(
     );
 }
 
-///（主に）LltzIrの`smart_contract_function`を受け取りそのargument_listである引数について
-///Allocaに相当する事をしたり, Michelson引数であるStorage, Parameterなどの値を挿入したりする
-pub fn prepare_from_argument_list(
+///（主に）LltzIrの`smart_contract_function`を受け取り，そのargument_listである
+///スマートコントラクト引数をメモリ領域に格納する．
+pub fn inject_argument_list(
     smart_contract_function: &Function,
     michelson_code: String,
     tab: &str,
@@ -48,7 +46,7 @@ pub fn prepare_from_argument_list(
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> String {
     let mut michelson_code = michelson_code;
-    michelson_code = prepare::prepare_storage(
+    michelson_code = inject::inject_storage(
         smart_contract_function,
         michelson_code,
         tab,
@@ -57,7 +55,7 @@ pub fn prepare_from_argument_list(
         memory_ty2stack_ptr,
     );
 
-    michelson_code = prepare::prepare_parameter(
+    michelson_code = inject::inject_parameter(
         smart_contract_function,
         michelson_code,
         tab,
@@ -66,7 +64,7 @@ pub fn prepare_from_argument_list(
         memory_ty2stack_ptr,
     );
 
-    michelson_code = prepare::prepare_pair(
+    michelson_code = inject::inject_pair(
         smart_contract_function,
         michelson_code,
         tab,
@@ -78,10 +76,12 @@ pub fn prepare_from_argument_list(
     michelson_code
 }
 
-///ここではmichelson_codeを受け取り、実際にMichelsonの命令を追加していく.
+///michelson_codeを受け取り、レジスタ領域とメモリ領域を構築するMichelson命令を発行する．
 ///レジスタ型環境（register2ty, register2stack_ptr）とメモリ型環境（memory_ty2stack_ptr）
 ///を受け取り,それらに相当するMichelson命令をスタックにPUSHする
-pub fn prepare(
+/// before:                               (storage, parameter)
+/// after:  (storage, parameter):[register area]:[memory area]
+pub fn stack_initialization(
     michelson_code: String,
     tab: &str,
     register2stack_ptr: &HashMap<Register, usize>,
@@ -159,11 +159,12 @@ pub fn prepare(
     )
 }
 
-///LLVMの命令列instructionsを実際にコンパイルしていく関数
+///LLTZ IRの命令列instructionsを受け取り，それらの挙動をエミュレートする
+///Michelson コードを発行する関数．
 ///レジスタ型環境（register2ty（これは今回は無し）, register2stack_ptr）と
 ///メモリ型環境（memory_ty2stack_ptr）を参考にコンパイルしていく.
 ///tab,tab_depthはMichelsonコードのフォーマットのために使う
-pub fn body(
+pub fn compile_instructions(
     michelson_code: String,
     tab: &str,
     tab_depth: usize,
@@ -284,12 +285,12 @@ pub fn body(
                 code_block_t,
                 code_block_f,
             } => {
-                michelson_code = format!("{michelson_code}{tab}### If {{\n");
+                michelson_code = format!("{michelson_code}{tab}### if {{\n");
                 michelson_code = format!(
                     "{michelson_code}{tab}DUP {};\n",
                     register2stack_ptr.get(&reg).unwrap()
                 );
-                let michelson_code_block_t = body(
+                let michelson_code_block_t = compile_instructions(
                     String::new(),
                     tab,
                     tab_depth + 1,
@@ -298,7 +299,7 @@ pub fn body(
                     memory_ty2stack_ptr,
                     code_block_t,
                 );
-                let michelson_code_block_f = body(
+                let michelson_code_block_f = compile_instructions(
                     String::new(),
                     tab,
                     tab_depth + 1,
@@ -339,7 +340,7 @@ pub fn body(
                  *  DUP id
                  * }
                  */
-                let michelson_cond_block = body(
+                let michelson_cond_block = compile_instructions(
                     String::new(),
                     tab,
                     tab_depth,
@@ -350,7 +351,7 @@ pub fn body(
                 );
 
                 // FIXME: インデントを揃えるために上とほぼ同じものを生成している
-                let michelson_cond_block_used_in_loop = body(
+                let michelson_cond_block_used_in_loop = compile_instructions(
                     String::new(),
                     tab,
                     tab_depth + 1,
@@ -360,7 +361,7 @@ pub fn body(
                     cond_block,
                 );
 
-                let michelson_loop_block = body(
+                let michelson_loop_block = compile_instructions(
                     String::new(),
                     tab,
                     tab_depth + 1,
@@ -372,7 +373,7 @@ pub fn body(
 
                 michelson_code = format!(
                     "{michelson_code}{}",
-                    utils::format(&vec![format!("### While {{")], tab, tab_depth)
+                    utils::format(&vec![format!("### while {{")], tab, tab_depth)
                 );
                 michelson_code = format!("{michelson_code}{}", michelson_cond_block);
 
@@ -467,7 +468,7 @@ pub fn body(
                 op2,
             } => {
                 let mut michelson_instructions = vec![
-                    format!("### Icmp {{"),
+                    format!("### icmp {{"),
                     format!("DUP {};", register2stack_ptr.get(&op1).unwrap()),
                     format!("DUP {};", register2stack_ptr.get(&op2).unwrap() + 1),
                 ];
@@ -608,7 +609,7 @@ pub fn body(
                 let michelson_instructions = vec![
                     format!("### {} = MichelsonGetSelf {{", result.get_id()),
                     format!("SELF;"),
-                    format!("SOME; # to (option contract ty)"),
+                    format!("SOME; # => (option contract ty)"),
                     format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
                     format!("DROP;"),
                     format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
@@ -689,6 +690,7 @@ pub fn body(
                         register2stack_ptr.get(&tokens).unwrap() + 1,
                         "# tokens"
                     ),
+                    // FIXME: unit しか対応していない...
                     format!("UNIT; # FIXME,TODO: retrieive_struct_from_memory"),
                     format!("TRANSFER_TOKENS;"),
                     format!("SOME; {}", "# to option operation"),

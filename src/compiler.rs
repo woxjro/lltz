@@ -1,11 +1,11 @@
-//! LLVMからMichelsonへのコンパイルを担当するTOPレベルのモジュール
+//! LLTZからMichelsonへのコンパイルを担当するTOPレベルのモジュール
 use super::lltz_ir::LltzIr;
 use super::lltz_ir::{BackendType, Register};
 use std::collections::HashMap;
 mod backend;
 mod utils;
 
-///LLVM IRファイルを擬似的に表現したLltzIrを入力として受け取り, コンパイル後のMichelsonを返す
+///LLTZ IRファイルを擬似的に表現したLltzIrを入力として受け取り, コンパイル後のMichelsonを返す
 pub fn compile(lltz_ir: LltzIr) -> String {
     /*
      * RegisterをKeyとして,そのRegisterのMichelsonのStack上での位置を返すHashMap
@@ -14,7 +14,7 @@ pub fn compile(lltz_ir: LltzIr) -> String {
     let mut register2stack_ptr = HashMap::new();
 
     /*
-     * RegisterをKeyとして,そのRegisterのLLVMの型を返すHashMap
+     * RegisterをKeyとして,そのRegisterのLLTZの型を返すHashMap
      */
     let mut register2ty: HashMap<Register, BackendType> = HashMap::new();
 

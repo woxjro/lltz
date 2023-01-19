@@ -1,5 +1,5 @@
-//! 以下のコンパイルフローにおけるLLVM IR'からMichelsonへのコンパイル（Backend）を担当するモジュール
-//! LLVM IR ---> LLVM IR' ---> Michelson
+//! 以下のコンパイルフローにおけるLLTZ IRからMichelsonへのコンパイル（Backend）を担当するモジュール
+//! LLVM IR ---> LLTZ IR ---> Michelson
 
 mod analyse;
 mod helper;

@@ -112,8 +112,9 @@ pub fn exec_aggregate_type_alloca(
 
     for (idx, field) in fields.iter().enumerate() {
         res.append(&mut vec![format!(
-            "### alloca field idx={idx} : {} {{",
-            Type::get_name(field)
+            "### {}[{idx}] = alloca {} {{",
+            Type::get_name(&aggregate_ty),
+            Type::get_name(field),
         )]);
         res.append(&mut exec_struct_field_alloca(
             idx,

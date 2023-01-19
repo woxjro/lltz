@@ -52,7 +52,7 @@ fn main() {
     //  ret Int %14
     //}
 
-    // mini LLVM IR
+    // LLTZ IR
     //%struct.Parameter = type {}
     //%struct.Storage   = type {}
     //%struct.Operation = type {}

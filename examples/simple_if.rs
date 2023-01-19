@@ -50,7 +50,7 @@ fn main() {
     //   ret int 0
     // }
 
-    // mini LLVM IR
+    // LLTZ IR
     //define dso_local void @smart_contract(
     //  %struct.Pair* noalias sret %pair,
     //  %struct.Parameter* byval(%struct.Parameter) align 8 %parameter,

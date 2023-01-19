@@ -64,7 +64,7 @@ pub fn exec_llvm_memcpy(
                 //DUP big_map struct { id, fields }
                 let field_memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(field)).unwrap();
                 michelson_instructions.append(&mut vec![
-                    format!("### llvm.memcpy GET idx={idx} {{"),
+                    format!("### llvm.memcpy GET {}[{idx}] {{", Type::get_name(&ty)),
                     format!("DUP;"),
                     format!("PUSH int {idx};"),
                     format!("GET;"),
@@ -90,7 +90,7 @@ pub fn exec_llvm_memcpy(
 
                 michelson_instructions.append(&mut vec![
                     format!("### }}"),
-                    //format!("### llvm.memcpy PUT {idx} {{"),
+                    //format!("### llvm.memcpy PUT {}[{idx}] {{", Type::get_name(&ty)),
                 ]);
             }
             michelson_instructions.push(format!("DROP;"));

@@ -1,12 +1,12 @@
 //! LLVMからMichelsonへのコンパイルを担当するTOPレベルのモジュール
-use super::mini_llvm::MiniLlvm;
-use super::mini_llvm::{BackendType, Register};
+use super::lltz_ir::LltzIr;
+use super::lltz_ir::{BackendType, Register};
 use std::collections::HashMap;
 mod backend;
 mod utils;
 
-///LLVM IRファイルを擬似的に表現したMiniLlvmを入力として受け取り, コンパイル後のMichelsonを返す
-pub fn compile(mini_llvm: MiniLlvm) -> String {
+///LLVM IRファイルを擬似的に表現したLltzIrを入力として受け取り, コンパイル後のMichelsonを返す
+pub fn compile(lltz_ir: LltzIr) -> String {
     /*
      * RegisterをKeyとして,そのRegisterのMichelsonのStack上での位置を返すHashMap
      * Registerの1-indexでのレジスタ領域における相対位置を返す事に注意
@@ -42,14 +42,14 @@ pub fn compile(mini_llvm: MiniLlvm) -> String {
     let tab = "       ";
     let tab_depth = 1;
 
-    let smart_contract_function = mini_llvm
+    let smart_contract_function = lltz_ir
         .functions
         .iter()
         .find(|f| f.function_name == String::from("smart_contract"))
         .unwrap();
 
     backend::analyse(
-        &mini_llvm.structure_types,
+        &lltz_ir.structure_types,
         &smart_contract_function.argument_list,
         &smart_contract_function.instructions,
         &mut stack_ptr,
@@ -125,7 +125,7 @@ pub fn compile(mini_llvm: MiniLlvm) -> String {
         tab,
         &register2stack_ptr,
         &memory_ty2stack_ptr,
-        &mini_llvm.structure_types,
+        &lltz_ir.structure_types,
     );
     michelson_code
 }

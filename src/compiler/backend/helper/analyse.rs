@@ -1,4 +1,4 @@
-use crate::mini_llvm::{BackendType, Type};
+use crate::lltz_ir::{BackendType, Type};
 use std::collections::HashMap;
 
 ///Struct型の場合は内部にも, メモリの型を 保持している

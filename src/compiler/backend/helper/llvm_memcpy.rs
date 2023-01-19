@@ -1,5 +1,5 @@
 use crate::compiler::utils;
-use crate::mini_llvm::{BackendType, Register, Type};
+use crate::lltz_ir::{BackendType, Register, Type};
 use std::collections::HashMap;
 
 ///@llvm.memcpyを実行する関数

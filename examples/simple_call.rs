@@ -1,6 +1,6 @@
 /*
 use lltz::compiler::compile;
-use lltz::mini_llvm::{Instruction, Opcode, Register, Type};
+use lltz::lltz_ir::{Instruction, Opcode, Register, Type};
 use std::fs::File;
 use std::io::prelude::*;
 */

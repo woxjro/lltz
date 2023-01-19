@@ -1,6 +1,6 @@
 use lltz::compiler::compile;
-use lltz::mini_llvm::{
-    Arg, Function, Instruction, MiniLlvm, Register, Type,
+use lltz::lltz_ir::{
+    Arg, Function, Instruction, LltzIr, Register, Type,
 };
 use std::fs::File;
 use std::io::prelude::*;
@@ -34,7 +34,7 @@ fn main() {
         ],
     };
 
-    let mini_llvm = MiniLlvm {
+    let lltz_ir = LltzIr {
         structure_types: vec![
             pair.clone(),
             parameter.clone(),
@@ -89,7 +89,7 @@ fn main() {
         ],
     };
 
-    let michelson_code = compile(mini_llvm);
+    let michelson_code = compile(lltz_ir);
 
     let file_name = "simple_smartcontract";
     let command_typecheck =

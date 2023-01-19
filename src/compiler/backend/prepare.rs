@@ -1,5 +1,5 @@
 use super::helper;
-use crate::mini_llvm::{Arg, BackendType, Function, Register, Type};
+use crate::lltz_ir::{Arg, BackendType, Function, Register, Type};
 use std::collections::HashMap;
 
 ///ここが終わった段階ではMichelson StackのTopに(Parameter, Storage)が乗っている

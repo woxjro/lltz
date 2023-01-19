@@ -5,12 +5,12 @@ mod analyse;
 mod helper;
 mod prepare;
 use crate::compiler::utils;
-use crate::mini_llvm::{
+use crate::lltz_ir::{
     Arg, BackendType, Condition, Function, Instruction, Opcode, Register, Type,
 };
 use std::collections::HashMap;
 
-///MiniLlvmの構造体宣言,引数リスト,命令列を受け取り,それらに現れるレジスタ、メモリや型
+///LltzIrの構造体宣言,引数リスト,命令列を受け取り,それらに現れるレジスタ、メモリや型
 ///などを調べる.
 pub fn analyse(
     structure_types: &Vec<Type>,
@@ -37,7 +37,7 @@ pub fn analyse(
     );
 }
 
-///（主に）MiniLlvmの`smart_contract_function`を受け取りそのargument_listである引数について
+///（主に）LltzIrの`smart_contract_function`を受け取りそのargument_listである引数について
 ///Allocaに相当する事をしたり, Michelson引数であるStorage, Parameterなどの値を挿入したりする
 pub fn prepare_from_argument_list(
     smart_contract_function: &Function,

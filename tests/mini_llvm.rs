@@ -1,7 +1,7 @@
-use lltz::mini_llvm::Type;
+use lltz::lltz_ir::Type;
 
 #[test]
-fn mini_llvm_test() {
+fn lltz_ir_test() {
     let res = Type::struct_type2michelson_pair(Type::Int);
     assert_eq!(res, String::from("int"));
 

@@ -367,7 +367,7 @@ pub struct Arg {
     pub reg: Register,
 }
 
-pub struct MiniLlvm {
+pub struct LltzIr {
     pub structure_types: Vec<Type>, //構造体宣言
     pub functions: Vec<Function>,
 }

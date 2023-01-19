@@ -1,5 +1,5 @@
 use crate::compiler::utils;
-use crate::mini_llvm::{Arg, BackendType, Register, Type};
+use crate::lltz_ir::{Arg, BackendType, Register, Type};
 use std::collections::HashMap;
 
 ///parameterをMichelsonのPairからLLVMのレジスタ・メモリモデルへとデコードする関数

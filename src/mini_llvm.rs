@@ -1,6 +1,6 @@
-//! LLVM IR'に出てくるもの（命令, 型定義, 関数...）を定義しているモジュール
+//! LLTZ IRに出てくるもの（命令, 型定義, 関数...）を定義しているモジュール
 
-///LLVM IR'のレジスタ
+///LLTZ IRのレジスタ
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct Register {
     id: String,
@@ -22,7 +22,7 @@ impl Register {
     }
 }
 
-///LLVM IR'に出てくるデータ型
+///LLTZ IRに出てくるデータ型
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub enum Type {
     Address,
@@ -93,28 +93,28 @@ impl Type {
         }
     }
 
-    pub fn to_llvm_ty(ty: &Type) -> String {
+    pub fn get_name(ty: &Type) -> String {
         match ty {
             Type::Address => "address".to_string(),
-            Type::Bool => "i1 for bool".to_string(),
-            Type::Mutez => "(i64 for mutez)".to_string(),
-            Type::Int => "(i64 for int)".to_string(),
-            Type::Nat => "(i64 for nat)".to_string(),
+            Type::Bool => "bool".to_string(),
+            Type::Mutez => "mutez".to_string(),
+            Type::Int => "int".to_string(),
+            Type::Nat => "nat".to_string(),
             Type::Struct { id, fields: _ } => format!("%struct.{id}"),
             Type::Array { size, elementtype } => {
-                format!("[{} x {}]", size, Type::to_llvm_ty(&**elementtype))
+                format!("[{} x {}]", size, Type::get_name(&**elementtype))
             }
             Type::Contract(ty) => {
-                let inner = Type::to_llvm_ty(&*ty);
+                let inner = Type::get_name(&*ty);
                 format!("(%struct.contract {inner})")
             }
             Type::Operation => String::from("%struct.operation"),
             Type::Ptr(ty) => {
-                let inner = Type::to_llvm_ty(&*ty);
+                let inner = Type::get_name(&*ty);
                 format!("{inner}*")
             }
             Type::Option(ty) => {
-                let inner = Type::to_llvm_ty(&*ty);
+                let inner = Type::get_name(&*ty);
                 format!("(option {inner})")
             }
         }
@@ -294,13 +294,13 @@ impl BackendType {
         res
     }
 
-    pub fn to_llvm_ty(&self) -> String {
+    pub fn get_name(&self) -> String {
         match self {
             BackendType::Address => "address".to_string(),
             BackendType::Array { size, elementtype } => {
-                format!("[{} x {}]", size, elementtype.to_llvm_ty())
+                format!("[{} x {}]", size, elementtype.get_name())
             }
-            BackendType::Bool => "i1".to_string(),
+            BackendType::Bool => "bool".to_string(),
             BackendType::Mutez => "mutez".to_string(),
             BackendType::Int => "int".to_string(),
             BackendType::Nat => "nat".to_string(),
@@ -308,7 +308,7 @@ impl BackendType {
             BackendType::Contract(_) => panic!(),
             BackendType::Operation => panic!(),
             BackendType::Ptr(ty) => {
-                let inner = ty.to_llvm_ty();
+                let inner = ty.get_name();
                 format!("{inner}*")
             }
             BackendType::Option(ty) => match &**ty {
@@ -316,12 +316,12 @@ impl BackendType {
                     format!("address")
                 }
                 BackendType::Contract(child_ty) => {
-                    let inner = child_ty.to_llvm_ty();
+                    let inner = child_ty.get_name();
                     format!("(%struct.contract {inner})")
                 }
                 BackendType::Operation => format!("operation"),
                 _ => {
-                    let inner = ty.to_llvm_ty();
+                    let inner = ty.get_name();
                     format!("(option {inner})")
                 }
             },

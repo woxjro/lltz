@@ -31,7 +31,7 @@ pub fn exec_alloca(
         }
         _ => {
             vec![
-                format!("### {} = alloca {} {{", ptr.get_id(), Type::to_llvm_ty(ty),),
+                format!("### {} = alloca {} {{", ptr.get_id(), Type::get_name(ty),),
                 format!("DIG {};", register2stack_ptr.len() + memory_ptr - 1),
                 format!("UNPAIR;"),
                 format!("SWAP;"),
@@ -93,7 +93,7 @@ pub fn exec_aggregate_type_alloca(
         format!(
             "### {} = alloca {} {{",
             ptr.get_id(),
-            Type::to_llvm_ty(&aggregate_ty)
+            Type::get_name(&aggregate_ty)
         ),
         format!("EMPTY_MAP int int;"),
     ];
@@ -113,7 +113,7 @@ pub fn exec_aggregate_type_alloca(
     for (idx, field) in fields.iter().enumerate() {
         res.append(&mut vec![format!(
             "### alloca field idx={idx} : {} {{",
-            Type::to_llvm_ty(field)
+            Type::get_name(field)
         )]);
         res.append(&mut exec_struct_field_alloca(
             idx,

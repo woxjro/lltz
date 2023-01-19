@@ -98,7 +98,7 @@ pub fn prepare(
     for (ty, _v) in memory_ty2stack_ptr_sorted.iter().rev() {
         let ty_str = ty.to_memory_string();
 
-        let llvm_ty_string = ty.to_llvm_ty();
+        let llvm_ty_string = ty.get_name();
         let comment = format!("memory for {llvm_ty_string}");
 
         michelson_instructions.append(&mut vec![
@@ -120,7 +120,7 @@ pub fn prepare(
             BackendType::default_value(&ty)
         };
         let michelson_ty = ty.to_memory_string();
-        let llvm_ty_string = ty.to_llvm_ty();
+        let llvm_ty_string = ty.get_name();
 
         let comment = if Register::is_const(reg) {
             let val = if val.len() >= 6 {
@@ -194,9 +194,9 @@ pub fn body(
                 let michelson_instructions = vec![
                     format!(
                         "### store {} {}, {}* {} {{",
-                        Type::to_llvm_ty(ty),
+                        Type::get_name(ty),
                         value.get_id(),
-                        Type::to_llvm_ty(ty),
+                        Type::get_name(ty),
                         ptr.get_id()
                     ),
                     format!("DUP {};", register2stack_ptr.get(&value).unwrap()),
@@ -222,8 +222,8 @@ pub fn body(
                     format!(
                         "### {} = load {}, {}* {} {{",
                         result.get_id(),
-                        Type::to_llvm_ty(ty),
-                        Type::to_llvm_ty(ty),
+                        Type::get_name(ty),
+                        Type::get_name(ty),
                         ptr.get_id()
                     ),
                     format!("DUP {};", register2stack_ptr.len() + memory_ptr),
@@ -257,8 +257,8 @@ pub fn body(
                     format!(
                         "### {} = getElementPtr {}, {}*, {} {{",
                         result.get_id(),
-                        Type::to_llvm_ty(ty),
-                        Type::to_llvm_ty(ty),
+                        Type::get_name(ty),
+                        Type::get_name(ty),
                         ptrval.get_id()
                     ),
                     format!("DUP {};", register2stack_ptr.len() + memory_ptr),
@@ -830,7 +830,7 @@ fn retrieve_storage_field_from_memory(
                 format!(
                     "DUP {}; # memory: {}",
                     register2stack_ptr.len() + memory_ptr + path.iter().sum::<usize>() + 1,
-                    Type::to_llvm_ty(field)
+                    Type::get_name(field)
                 ),
                 format!("CAR;"),
                 format!("SWAP;"),
@@ -870,7 +870,7 @@ fn retrieve_storage_field_from_memory(
                 format!(
                     "DUP {}; # memory: {}",
                     register2stack_ptr.len() + memory_ptr + path.iter().sum::<usize>() + 1,
-                    Type::to_llvm_ty(field)
+                    Type::get_name(field)
                 ),
                 format!("CAR;"),
                 format!("SWAP;"),

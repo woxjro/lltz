@@ -22,8 +22,8 @@ pub fn exec_llvm_memcpy(
             if **inner != BackendType::from(ty) {
                 panic!(
                     "@llvm.memcpyでdestの指す先の型:{}がty:{}と一致していません.",
-                    inner.to_llvm_ty(),
-                    BackendType::from(ty).to_llvm_ty()
+                    inner.get_name(),
+                    BackendType::from(ty).get_name()
                 );
             }
         }
@@ -37,8 +37,8 @@ pub fn exec_llvm_memcpy(
             if **inner != BackendType::from(ty) {
                 panic!(
                     "@llvm.memcpyでsrcの指す先の型:{}がty:{}と一致していません.",
-                    inner.to_llvm_ty(),
-                    BackendType::from(ty).to_llvm_ty()
+                    inner.get_name(),
+                    BackendType::from(ty).get_name()
                 );
             }
         }

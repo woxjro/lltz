@@ -5,3 +5,10 @@ version = 3
 [[package]]
 name = "lltz"
 version = "0.1.0"
+dependencies = [
+ "michelson-ast",
+]
+
+[[package]]
+name = "michelson-ast"
+version = "0.1.0"

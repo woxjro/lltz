@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Analysis/LoopPass.h"
 #include "llvm/IR/CFG.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/InlineAsm.h"
@@ -83,20 +84,18 @@ class CFGToJSON : public llvm::ModulePass {
     virtual bool runOnModule(llvm::Module &) override;
 };
 
-class ReconstructCFGPass: public llvm::LoopInfoWrapperPass {
+class ReconstructCFGPass: public llvm::LoopPass {
   public:
-    virtual bool runOnFunction(llvm::Function &) override;
+    static char ID;
+    ReconstructCFGPass() : llvm::LoopPass(ID) {}
+    virtual bool runOnLoop(llvm::Loop *, llvm::LPPassManager &) override;
 };
 
 
 } // anonymous namespace
 
 char CFGToJSON::ID = 0;
-
-bool ReconstructCFGPass::runOnFunction(llvm::Function &F) {
-    llvm::errs() << "Function " << F.getName() << '\n';
-    return false;
-}
+char ReconstructCFGPass::ID = 1;
 
 // Adapted from llvm::CFGPrinter::getSimpleNodeLabel
 static std::string getBBLabel(const llvm::BasicBlock *BB) {
@@ -123,6 +122,57 @@ static SourceRange getSourceRange(const llvm::BasicBlock *BB) {
 
     return {Start, BB->getTerminator()->getDebugLoc()};
 }
+
+bool ReconstructCFGPass::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM) {
+    Json::Value JLoop;
+    Json::Value JBlocks;
+
+    //unsigned int depth = L->getLoopDepth();
+    auto LoopLatchBB = L->getLoopLatch();
+    auto LoopHeaderBB = L->getHeader();
+    auto LoopExitBB = L->getExitBlock();
+
+    JLoop["loop"] = L->getName().str();
+    if (L->getParentLoop() != nullptr) {
+        JLoop["parent"] = L->getParentLoop()->getName().str();
+    } else {
+        JLoop["parent"] = Json::nullValue;
+    }
+    JLoop["loop"] = L->getName().str();
+    JLoop["header"] = getBBLabel(LoopHeaderBB);
+    JLoop["latch"] = getBBLabel(LoopLatchBB);
+    JLoop["exiting"] = getBBLabel(LoopExitBB);
+
+    for (const auto &BB: L->getBlocks()) {
+        if (BB == LoopHeaderBB || BB == LoopLatchBB) {
+            continue;
+        } else {
+            JBlocks.append(getBBLabel(BB));
+        }
+    }
+
+    JLoop["blocks"] = JBlocks;
+    const auto FuncName = llvm::sys::path::filename(L->getName());
+    llvm::SmallString<32> Filename(OutDir.c_str());
+    llvm::sys::path::append(Filename, "cfg." + FuncName + ".json");
+    llvm::errs() << "Writing loop'" << L->getName() << "' to '" << Filename
+                 << "'...";
+
+    std::error_code EC;
+    llvm::raw_fd_ostream File(
+        Filename, EC, llvm::sys::fs::CreationDisposition::CD_CreateAlways);
+
+    if (!EC) {
+        File << JLoop.toStyledString();
+    } else {
+        llvm::errs() << "  error opening file for writing!";
+    }
+    llvm::errs() << "\n";
+
+    return false;
+}
+
+
 
 void CFGToJSON::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
     AU.setPreservesAll();

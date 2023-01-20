@@ -1,6 +1,6 @@
-//! LLTZ IRに出てくるもの（命令, 型定義, 関数...）を定義しているモジュール
+//! LLTZ IR の定義
 
-///LLTZ IRのレジスタ
+///レジスタ
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct Register {
     id: String,
@@ -22,7 +22,7 @@ impl Register {
     }
 }
 
-///LLTZ IRに出てくるデータ型
+///データ型
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub enum Type {
     Address,
@@ -128,8 +128,8 @@ impl Type {
     }
 }
 
-///MichelsonのRegister, Memoryモデルで出てくるデータ型
-///contract ty, operation型がoptionに包まれているのが特徴
+/// Michelson のスタック上で構築するレジスタ領域及びメモリ領域で使用する型．
+/// LLTZ IR に出てくる型を，初期値などを扱いやすくするために，この型へと変換する必要がある．
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub enum BackendType {
     Address,
@@ -336,12 +336,14 @@ impl BackendType {
     }
 }
 
+/// 演算子
 pub enum Opcode {
     Add,
     Sub,
     Mul,
 }
 
+/// icmp でオペランドに対して適用する条件
 pub enum Condition {
     Eq,  //equal
     Ne,  //not equal
@@ -355,30 +357,26 @@ pub enum Condition {
     Sle, //signed less or equal
 }
 
+/// 予約語の構造体
 pub enum ReservedStructKind {
     Parameter,
     Storage,
     Operation,
 }
 
-#[allow(dead_code)]
+/// 関数の引数
 pub struct Arg {
     pub ty: Type,
     pub reg: Register,
 }
 
+/// LLTZ IR プログラム
 pub struct LltzIr {
     pub structure_types: Vec<Type>, //構造体宣言
     pub functions: Vec<Function>,
 }
 
-///define [linkage] [PreemptionSpecifier] [visibility] [DLLStorageClass]
-///       [cconv] [ret attrs]
-///       <ResultType> @<FunctionName> ([argument list])
-///       [(unnamed_addr|local_unnamed_addr)] [AddrSpace] [fn Attrs]
-///       [section "name"] [partition "name"] [comdat [($name)]] [align N]
-///       [gc] [prefix Constant] [prologue Constant] [personality Constant]
-///       (!name !N)* { ... }
+/// 関数
 pub struct Function {
     pub function_name: String,
     pub result_type: Type,
@@ -386,6 +384,7 @@ pub struct Function {
     pub instructions: Vec<Instruction>,
 }
 
+/// 命令
 pub enum Instruction {
     Alloca {
         ptr: Register,

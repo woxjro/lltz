@@ -1,12 +1,12 @@
-//! LLTZからMichelsonへのコンパイルを担当するTOPレベルのモジュール
+//! LLTZ IR を Michelson へのコンパイルする module
 use super::lltz_ir::LltzIr;
 use super::lltz_ir::{BackendType, Register};
 use std::collections::HashMap;
 mod backend;
 mod utils;
 
-///LLTZ IRファイルを擬似的に表現したLltzIrを入力として受け取り，
-///その挙動をエミュレートするMichelsonコードを返す
+///入力として LLTZ IR プログラム LltzIr を受け取り，
+///その挙動をエミュレートするMichelsonコードを返す関数
 pub fn compile(lltz_ir: LltzIr) -> String {
     /*
      * RegisterをKeyとして,そのRegisterのMichelsonのStack上での位置を返すHashMap

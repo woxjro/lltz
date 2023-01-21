@@ -1,11 +1,15 @@
 pub enum Instruction {
+    Comment(String),
     ////////////////////////////////////////////////
     ////////////////Control Structures//////////////
     ////////////////////////////////////////////////
     Apply,
     Exec,
     Failwith,
-    //If { instr1: Vec<Instruction>, instr2: Vec<Instruction>, },
+    If {
+        instr1: Vec<Instruction>,
+        instr2: Vec<Instruction>,
+    },
     //IF_CONS instr1 instr2,
     //IF_LEFT instr1 instr2,
     //IF_NONE instr1 instr2,
@@ -26,7 +30,7 @@ pub enum Instruction {
     EmptyMap,
     EmptySet,
     Get,
-    //GetN { n: usize, },
+    //GetN(usize),
     GetAndUpdate,
     //LEFT ty2,
     //MAP instr,
@@ -117,18 +121,70 @@ pub enum Instruction {
     ////////////////////////////////////////////////
     /////////////Stack manipulation/////////////////
     ////////////////////////////////////////////////
-    //DigN { n: usize },
-    //DugN { n: usize },
+    DigN(usize),
+    DugN(usize),
     Dip,
-    //DipN { n: usize },
+    DipN(usize),
     Dup,
-    //DupN { n: usize },
+    DupN(usize),
     Push,
     Drop,
     Swap,
 }
 
 impl Instruction {
+    pub fn has_instructions(&self) -> bool {
+        match self {
+            ////////////////////////////////////////////////
+            ////////////////Control Structures//////////////
+            ////////////////////////////////////////////////
+            Instruction::If { .. } => true,
+            //IF_CONS instr1 instr2,
+            //IF_LEFT instr1 instr2,
+            //IF_NONE instr1 instr2,
+            //ITER inster,
+            //LAMBDA ty1 ty2 instr,
+            //LOOP instr,
+            //LOOP_LEFT instr,
+            //instr1 ; instr2,
+            //{},
+            ////////////////////////////////////////////////
+            //////////Operations on data structures/////////
+            ////////////////////////////////////////////////
+            //LEFT ty2,
+            //MAP instr,
+            ////////////////////////////////////////////////
+            /////////////Blockchain operations//////////////
+            ////////////////////////////////////////////////
+            ////CONTRACT ty,
+            //CREATE_CONTRACT { parameter ty1; storage ty2; code instr1 },
+            //Instruction::Self => "SELF".to_string(),
+            ////////////////////////////////////////////////
+            ////////////Operations on tickets///////////////
+            ////////////////////////////////////////////////
+
+            ////////////////////////////////////////////////
+            ////////////Cryptographic operations////////////
+            ////////////////////////////////////////////////
+
+            ////////////////////////////////////////////////
+            //////////////Boolean operations////////////////
+            ////////////////////////////////////////////////
+
+            ////////////////////////////////////////////////
+            ////////////Arithmetic operations///////////////
+            ////////////////////////////////////////////////
+
+            ////////////////////////////////////////////////
+            /////////////Stack manipulation/////////////////
+            ////////////////////////////////////////////////
+            //DIG { n: usize, },
+            //DUG { n: usize, },
+            //DIP { n: usize, },
+            //DUP { n: usize, },
+            _ => false,
+        }
+    }
     pub fn to_string(&self) -> String {
         match self {
             ////////////////////////////////////////////////
@@ -137,7 +193,7 @@ impl Instruction {
             Instruction::Apply => "APPLY".to_string(),
             Instruction::Exec => "EXEC".to_string(),
             Instruction::Failwith => "FAILWITH".to_string(),
-            //Instruction::If { instr1, instr2 } => "IF".to_string(),
+            Instruction::If { .. } => "IF".to_string(), //TODO: 1つのtabを入れたものを作る
             //IF_CONS instr1 instr2,
             //IF_LEFT instr1 instr2,
             //IF_NONE instr1 instr2,
@@ -199,12 +255,16 @@ impl Instruction {
             Instruction::TotalVotingPower => "TOTAL_VOTING_POWER".to_string(),
             Instruction::TransferTokens => "TRANSFER_TOKENS".to_string(),
             Instruction::VotingPower => "VOTING_POWER".to_string(),
-            ////Operations on tickets
+            ////////////////////////////////////////////////
+            ////////////Operations on tickets///////////////
+            ////////////////////////////////////////////////
             Instruction::JointTickets => "JOINT_TICKETS".to_string(),
             Instruction::ReadTicket => "READ_TICKET".to_string(),
             Instruction::SplitTicket => "SPLIT_TICKET".to_string(),
             Instruction::Ticket => "TICKET".to_string(),
-            //Cryptographic operations
+            ////////////////////////////////////////////////
+            ////////////Cryptographic operations////////////
+            ////////////////////////////////////////////////
             Instruction::Blake2b => "BLAKE2B".to_string(),
             Instruction::CheckSignature => "CHECK_SIGNATURE".to_string(),
             Instruction::HashKey => "HASH_KEY".to_string(),
@@ -215,7 +275,9 @@ impl Instruction {
             Instruction::Sha256 => "SHA256".to_string(),
             Instruction::Sha3 => "SHA3".to_string(),
             Instruction::Sha512 => "SHA512".to_string(),
-            //Boolean operations
+            ////////////////////////////////////////////////
+            //////////////Boolean operations////////////////
+            ////////////////////////////////////////////////
             Instruction::And => "AND".to_string(),
             Instruction::Not => "NOT".to_string(),
             Instruction::Or => "OR".to_string(),
@@ -252,6 +314,7 @@ impl Instruction {
             Instruction::Push => "PUSH".to_string(),
             Instruction::Drop => "DROP".to_string(),
             Instruction::Swap => "SWAP".to_string(),
+            _ => todo!(),
         }
     }
 }

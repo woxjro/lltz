@@ -1,11 +1,16 @@
-int main()
+typedef int MyInt;
+typedef int Mutez;
+
+MyInt main()
 {
-    int res = 0;
-    for (int i = 0; i < 10; ++i) {
-        int count = 0;
-        while (count < 10) {
-            res += 1;
-            count += 1;
+    Mutez res = 0;
+    for (Mutez i = 0; i < 10; ++i) {
+        for (Mutez j = 0; j < 10; ++j) {
+            Mutez count = 0;
+            while (count < 10) {
+                res += 1;
+                count += 1;
+            }
         }
     }
     return res;

@@ -1,4 +1,4 @@
-//===-- CFGToJSON.cpp - Export CFG to JSON --------------------------------===//
+//===-- front-end.cpp - Export CFG to JSON --------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 ///
-/// \file
-/// Exports an LLVM control flow graph (CFG), including function calls, to JSON.
 ///
 //===----------------------------------------------------------------------===//
 
@@ -73,10 +71,10 @@ getCalledFunctionThroughAliasesAndCasts(const llvm::Value *V) {
     return CalledV;
 }
 
-class CFGToJSON : public llvm::ModulePass {
+class ReconstructMichelsonPrimitivePass : public llvm::ModulePass {
   public:
     static char ID;
-    CFGToJSON() : ModulePass(ID) {}
+    ReconstructMichelsonPrimitivePass() : ModulePass(ID) {}
 
     virtual void getAnalysisUsage(llvm::AnalysisUsage &) const override;
     virtual void print(llvm::raw_ostream &,
@@ -94,7 +92,7 @@ class ReconstructCFGPass: public llvm::LoopPass {
 
 } // anonymous namespace
 
-char CFGToJSON::ID = 0;
+char ReconstructMichelsonPrimitivePass::ID = 0;
 char ReconstructCFGPass::ID = 1;
 
 // Adapted from llvm::CFGPrinter::getSimpleNodeLabel
@@ -132,6 +130,11 @@ bool ReconstructCFGPass::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM) {
     auto LoopHeaderBB = L->getHeader();
     auto LoopExitBB = L->getExitBlock();
 
+
+    for (auto& SL : L->getSubLoops()) {
+        llvm::errs() << SL->getName().str() << '\n';
+    }
+
     JLoop["loop"] = L->getName().str();
     if (L->getParentLoop() != nullptr) {
         JLoop["parent"] = L->getParentLoop()->getName().str();
@@ -161,7 +164,6 @@ bool ReconstructCFGPass::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM) {
     std::error_code EC;
     llvm::raw_fd_ostream File(
         Filename, EC, llvm::sys::fs::CreationDisposition::CD_CreateAlways);
-
     if (!EC) {
         File << JLoop.toStyledString();
     } else {
@@ -174,15 +176,15 @@ bool ReconstructCFGPass::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM) {
 
 
 
-void CFGToJSON::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
+void ReconstructMichelsonPrimitivePass::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
     AU.setPreservesAll();
 }
 
-void CFGToJSON::print(llvm::raw_ostream &OS, const llvm::Module *M) const {
+void ReconstructMichelsonPrimitivePass::print(llvm::raw_ostream &OS, const llvm::Module *M) const {
     // Nothing to do here
 }
 
-bool CFGToJSON::runOnModule(llvm::Module &M) {
+bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
     llvm::SmallPtrSet<const llvm::BasicBlock *, 32> SeenBBs;
     llvm::SmallVector<const llvm::BasicBlock *, 32> Worklist;
 
@@ -192,6 +194,7 @@ bool CFGToJSON::runOnModule(llvm::Module &M) {
         if (F.isDeclaration()) {
             continue;
         }
+
         SeenBBs.clear();
         Worklist.clear();
         Worklist.push_back(&F.getEntryBlock());
@@ -242,6 +245,24 @@ bool CFGToJSON::runOnModule(llvm::Module &M) {
 
             // Save the inter-procedural edges
             for (auto &I : *BB) {
+
+                llvm::SmallVector<std::pair<unsigned, llvm::MDNode *>, 1000> MDs;
+                I.getAllMetadata(MDs);
+                for (auto &MD : MDs) {
+                    llvm::DINode* N = (llvm::DINode *) MD.second;
+                    for (unsigned i = 0; i < N->getNumOperands(); i++) {
+                        N->getOperand(i)->dump();
+                    }
+                }
+
+                llvm::DILocation* debugLoc = I.getDebugLoc();
+                if (debugLoc) {
+                    //I.dump();
+                    for (unsigned i = 0; i < debugLoc->getNumOperands(); i++) {
+                        //debugLoc->getOperand(i)->dump();
+                    }
+                }
+
                 // Skip debug instructions
                 if (llvm::isa<llvm::DbgInfoIntrinsic>(&I)) {
                     continue;
@@ -326,9 +347,25 @@ bool CFGToJSON::runOnModule(llvm::Module &M) {
     return false;
 }
 
-//static llvm::RegisterPass<CFGToJSON> tmp("cfg-to-json", "Export a CFG to JSON",
-//                                       false, false);
+//// register ReconstructMichelsonPrimitivePass {{{
+static llvm::RegisterPass<ReconstructMichelsonPrimitivePass> tmp0("cfg-to-json", "Export a CFG to JSON",
+                                       false, false);
+static void registerReconstructMichelsonPrimitivePass(const llvm::PassManagerBuilder &,
+                              llvm::legacy::PassManagerBase &PM) {
+    PM.add(new ReconstructMichelsonPrimitivePass());
+}
 
+static llvm::RegisterStandardPasses
+    RegisterReconstructMichelsonPrimitivePass(llvm::PassManagerBuilder::EP_OptimizerLast,
+                      registerReconstructMichelsonPrimitivePass);
+
+static llvm::RegisterStandardPasses
+    RegisterReconstructMichelsonPrimitivePass0(llvm::PassManagerBuilder::EP_EnabledOnOptLevel0,
+                       registerReconstructMichelsonPrimitivePass);
+
+//// }}}
+
+//// register ReconstructCFGPass {{{
 static llvm::RegisterPass<ReconstructCFGPass> tmp("reconstruct-cfg", "Reconstruct CFG",
                                        false, false);
 
@@ -345,3 +382,4 @@ static llvm::RegisterStandardPasses
 static llvm::RegisterStandardPasses
     RegisterReconstructCFGPass0(llvm::PassManagerBuilder::EP_EnabledOnOptLevel0,
                        registerReconstructCFGPass);
+//// }}}

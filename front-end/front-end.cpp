@@ -1,4 +1,4 @@
-//===-- front-end.cpp - Export CFG to JSON --------------------------------===//
+//===-- front-end.cpp - Implementation of LLTZ front-end --------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -82,13 +82,12 @@ class ReconstructMichelsonPrimitivePass : public llvm::ModulePass {
     virtual bool runOnModule(llvm::Module &) override;
 };
 
-class ReconstructCFGPass: public llvm::LoopPass {
+class ReconstructCFGPass : public llvm::LoopPass {
   public:
     static char ID;
     ReconstructCFGPass() : llvm::LoopPass(ID) {}
     virtual bool runOnLoop(llvm::Loop *, llvm::LPPassManager &) override;
 };
-
 
 } // anonymous namespace
 
@@ -125,13 +124,12 @@ bool ReconstructCFGPass::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM) {
     Json::Value JLoop;
     Json::Value JBlocks;
 
-    //unsigned int depth = L->getLoopDepth();
+    // unsigned int depth = L->getLoopDepth();
     auto LoopLatchBB = L->getLoopLatch();
     auto LoopHeaderBB = L->getHeader();
     auto LoopExitBB = L->getExitBlock();
 
-
-    for (auto& SL : L->getSubLoops()) {
+    for (auto &SL : L->getSubLoops()) {
         llvm::errs() << SL->getName().str() << '\n';
     }
 
@@ -146,7 +144,7 @@ bool ReconstructCFGPass::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM) {
     JLoop["latch"] = getBBLabel(LoopLatchBB);
     JLoop["exiting"] = getBBLabel(LoopExitBB);
 
-    for (const auto &BB: L->getBlocks()) {
+    for (const auto &BB : L->getBlocks()) {
         if (BB == LoopHeaderBB || BB == LoopLatchBB) {
             continue;
         } else {
@@ -174,13 +172,13 @@ bool ReconstructCFGPass::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM) {
     return false;
 }
 
-
-
-void ReconstructMichelsonPrimitivePass::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
+void ReconstructMichelsonPrimitivePass::getAnalysisUsage(
+    llvm::AnalysisUsage &AU) const {
     AU.setPreservesAll();
 }
 
-void ReconstructMichelsonPrimitivePass::print(llvm::raw_ostream &OS, const llvm::Module *M) const {
+void ReconstructMichelsonPrimitivePass::print(llvm::raw_ostream &OS,
+                                              const llvm::Module *M) const {
     // Nothing to do here
 }
 
@@ -246,25 +244,24 @@ bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
             // Save the inter-procedural edges
             for (auto &I : *BB) {
 
-                llvm::SmallVector<std::pair<unsigned, llvm::MDNode *>, 1000> MDs;
-                I.getAllMetadata(MDs);
-                for (auto &MD : MDs) {
-                    llvm::DINode* N = (llvm::DINode *) MD.second;
-                    for (unsigned i = 0; i < N->getNumOperands(); i++) {
-                        N->getOperand(i)->dump();
-                    }
-                }
-
-                llvm::DILocation* debugLoc = I.getDebugLoc();
-                if (debugLoc) {
-                    //I.dump();
-                    for (unsigned i = 0; i < debugLoc->getNumOperands(); i++) {
-                        //debugLoc->getOperand(i)->dump();
-                    }
-                }
-
                 // Skip debug instructions
-                if (llvm::isa<llvm::DbgInfoIntrinsic>(&I)) {
+                if (llvm::isa<llvm::DbgDeclareInst>(&I)) {
+                    //auto *inst = llvm::dyn_cast<llvm::DbgDeclareInst>(&I);
+                    const llvm::DbgDeclareInst* dbgDeclare = llvm::dyn_cast<llvm::DbgDeclareInst>(&I);
+
+                    // llvm.dbg.declare命令の2番目の引数(metadata !15)を取得
+                    llvm::Metadata* metadata = dbgDeclare->getVariable();
+
+                    // !15 = !DILocalVariable(name: "res", scope: !8, file: !9, line: 6, type: !16)
+                    llvm::DILocalVariable* variable = llvm::dyn_cast<llvm::DILocalVariable>(metadata);
+
+                    // !16 = !DIDerivedType(tag: DW_TAG_typedef, name: "Mutez", file: !9, line: 2, baseType: !13)
+                    llvm::DIType* type = variable->getType();
+                    llvm::DIDerivedType* derivedType = llvm::dyn_cast<llvm::DIDerivedType>(type);
+
+                    // "Mutez"
+                    llvm::StringRef typeName = derivedType->getName();
+                    llvm::errs() << typeName << '\n';
                     continue;
                 }
 
@@ -348,38 +345,38 @@ bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
 }
 
 //// register ReconstructMichelsonPrimitivePass {{{
-static llvm::RegisterPass<ReconstructMichelsonPrimitivePass> tmp0("cfg-to-json", "Export a CFG to JSON",
-                                       false, false);
-static void registerReconstructMichelsonPrimitivePass(const llvm::PassManagerBuilder &,
-                              llvm::legacy::PassManagerBase &PM) {
+static llvm::RegisterPass<ReconstructMichelsonPrimitivePass>
+    tmp0("cfg-to-json", "Export a CFG to JSON", false, false);
+static void
+registerReconstructMichelsonPrimitivePass(const llvm::PassManagerBuilder &,
+                                          llvm::legacy::PassManagerBase &PM) {
     PM.add(new ReconstructMichelsonPrimitivePass());
 }
 
-static llvm::RegisterStandardPasses
-    RegisterReconstructMichelsonPrimitivePass(llvm::PassManagerBuilder::EP_OptimizerLast,
-                      registerReconstructMichelsonPrimitivePass);
+static llvm::RegisterStandardPasses RegisterReconstructMichelsonPrimitivePass(
+    llvm::PassManagerBuilder::EP_OptimizerLast,
+    registerReconstructMichelsonPrimitivePass);
 
-static llvm::RegisterStandardPasses
-    RegisterReconstructMichelsonPrimitivePass0(llvm::PassManagerBuilder::EP_EnabledOnOptLevel0,
-                       registerReconstructMichelsonPrimitivePass);
+static llvm::RegisterStandardPasses RegisterReconstructMichelsonPrimitivePass0(
+    llvm::PassManagerBuilder::EP_EnabledOnOptLevel0,
+    registerReconstructMichelsonPrimitivePass);
 
 //// }}}
 
 //// register ReconstructCFGPass {{{
-static llvm::RegisterPass<ReconstructCFGPass> tmp("reconstruct-cfg", "Reconstruct CFG",
-                                       false, false);
-
+static llvm::RegisterPass<ReconstructCFGPass>
+    tmp("reconstruct-cfg", "Reconstruct CFG", false, false);
 
 static void registerReconstructCFGPass(const llvm::PassManagerBuilder &,
-                              llvm::legacy::PassManagerBase &PM) {
+                                       llvm::legacy::PassManagerBase &PM) {
     PM.add(new ReconstructCFGPass());
 }
 
 static llvm::RegisterStandardPasses
     RegisterReconstructCFGPass(llvm::PassManagerBuilder::EP_OptimizerLast,
-                      registerReconstructCFGPass);
+                               registerReconstructCFGPass);
 
 static llvm::RegisterStandardPasses
     RegisterReconstructCFGPass0(llvm::PassManagerBuilder::EP_EnabledOnOptLevel0,
-                       registerReconstructCFGPass);
+                                registerReconstructCFGPass);
 //// }}}

@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(reconstruct-cfg
+project(front-end
     LANGUAGES C CXX
-    DESCRIPTION "Reconstruct LLVM control-flow graph"
+    DESCRIPTION "Implementation of LLTZ front-end"
 )
 
 set(CMAKE_CC_COMPILER "/usr/bin/clang-14")
@@ -22,4 +22,4 @@ include(AddLLVM)
 add_definitions(${LLVM_DEFINITIONS})
 include_directories(${LLVM_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp)
 
-add_library(LLVMReconstructCFG MODULE ReconstructCFG.cpp jsoncpp/jsoncpp.cpp)
+add_library(LLTZFrontEnd MODULE front-end.cpp jsoncpp/jsoncpp.cpp)

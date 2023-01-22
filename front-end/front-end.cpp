@@ -184,10 +184,50 @@ void ReconstructMichelsonPrimitivePass::print(llvm::raw_ostream &OS,
 }
 
 bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
+
+    //@llvm.dbg.declare をscanし，MetadataからMichelsonの型を取得する．
+    llvm::DenseMap<const llvm::Value *, llvm::DIDerivedType *>
+        Address2MichelsonType;
+    for (auto &F : M) {
+        for (auto &BB : F) {
+            for (auto &I : BB) {
+                if (llvm::isa<llvm::DbgDeclareInst>(&I)) {
+                    // auto *inst = llvm::dyn_cast<llvm::DbgDeclareInst>(&I);
+                    const llvm::DbgDeclareInst *dbgDeclare =
+                        llvm::dyn_cast<llvm::DbgDeclareInst>(&I);
+
+                    // llvm.dbg.declare命令の2番目の引数(metadata !15)を取得
+                    llvm::Metadata *metadata = dbgDeclare->getVariable();
+
+                    // Metadataが付与されている'''LLVM IR の'''register
+                    llvm::Value *address = dbgDeclare->getAddress();
+                    // !15 = !DILocalVariable(name: "res", scope: !8, file: !9,
+                    // line: 6, type: !16)
+                    llvm::DILocalVariable *variable =
+                        llvm::dyn_cast<llvm::DILocalVariable>(metadata);
+                    // !16 = !DIDerivedType(tag: DW_TAG_typedef, name: "Mutez",
+                    // file: !9, line: 2, baseType: !13)
+                    llvm::DIType *type = variable->getType();
+                    llvm::DIDerivedType *derivedType =
+                        llvm::dyn_cast<llvm::DIDerivedType>(type);
+
+                    auto p = std::make_pair(address, derivedType);
+                    Address2MichelsonType.insert(p);
+                    // "Mutez"
+                    llvm::StringRef typeName = derivedType->getName();
+                    llvm::errs() << "%" << address->getName().str() << " : "
+                                 << typeName << "*" << '\n';
+                    continue;
+                }
+            }
+        }
+    }
+
     llvm::SmallPtrSet<const llvm::BasicBlock *, 32> SeenBBs;
     llvm::SmallVector<const llvm::BasicBlock *, 32> Worklist;
 
     Json::Value JFuncs, JBlocks, JEdges, JCalls, JUnresolvedCalls, JReturns;
+
 
     for (const auto &F : M) {
         if (F.isDeclaration()) {
@@ -222,27 +262,41 @@ bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
             JBlock["end_line"] = SrcEnd ? SrcEnd.getLine() : Json::Value();
             Json::Value JInstructions;
             for (const auto &I : *BB) {
+                // Skip debug instructions
+                if (llvm::isa<llvm::DbgDeclareInst>(&I)) {
+                    continue;
+                }
+
                 std::string str;
                 llvm::raw_string_ostream ss(str);
                 ss << I;
 
                 Json::Value JInstruction, JOps;
                 JInstruction["opcode"] = I.getOpcodeName();
+
+                // JInstruction の 各要素の label
+                // はllvm.org/docs/LangRefのSyntaxに従う 例:
+                //https://llvm.org/docs/LangRef.html#alloca-instruction
                 if (llvm::isa<llvm::AllocaInst>(&I)) {
                     const auto allocaInst =
                         llvm::dyn_cast<llvm::AllocaInst>(&I);
-                    JInstruction["type_id"] =
-                        allocaInst->getAllocatedType()->getTypeID();
                     const llvm::Value *allocaPointer = allocaInst;
                     JInstruction["result"] = allocaPointer->getName().str();
+                    auto p = Address2MichelsonType.find(allocaPointer);
+
+                    if (p != Address2MichelsonType.end()) { //見つかった場合
+                        JInstruction["type"] = p->getSecond()->getName().str();
+                    } else { //無い場合
+                        JInstruction["type"] = "XXXXXX";
+                    }
                 } else if (llvm::isa<llvm::StoreInst>(&I)) {
-                    //todo
+                    // TODO
                 } else if (llvm::isa<llvm::LoadInst>(&I)) {
-                    //todo
+                    // TODO
                 } else if (llvm::isa<llvm::GetElementPtrInst>(&I)) {
-                    //todo
+                    // TODO
                 }
-                JInstruction["instruction"] = ss.str();
+                JInstruction["original_instruction"] = ss.str();
                 JInstructions.append(JInstruction);
             }
             JBlock["instructions"] = JInstructions;
@@ -265,27 +319,6 @@ bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
 
                 // Skip debug instructions
                 if (llvm::isa<llvm::DbgDeclareInst>(&I)) {
-                    // auto *inst = llvm::dyn_cast<llvm::DbgDeclareInst>(&I);
-                    const llvm::DbgDeclareInst *dbgDeclare =
-                        llvm::dyn_cast<llvm::DbgDeclareInst>(&I);
-
-                    // llvm.dbg.declare命令の2番目の引数(metadata !15)を取得
-                    llvm::Metadata *metadata = dbgDeclare->getVariable();
-
-                    // !15 = !DILocalVariable(name: "res", scope: !8, file: !9,
-                    // line: 6, type: !16)
-                    llvm::DILocalVariable *variable =
-                        llvm::dyn_cast<llvm::DILocalVariable>(metadata);
-
-                    // !16 = !DIDerivedType(tag: DW_TAG_typedef, name: "Mutez",
-                    // file: !9, line: 2, baseType: !13)
-                    llvm::DIType *type = variable->getType();
-                    llvm::DIDerivedType *derivedType =
-                        llvm::dyn_cast<llvm::DIDerivedType>(type);
-
-                    // "Mutez"
-                    llvm::StringRef typeName = derivedType->getName();
-                    llvm::errs() << typeName << '\n';
                     continue;
                 }
 

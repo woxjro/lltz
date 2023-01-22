@@ -1,4 +1,5 @@
-//===-- front-end.cpp - Implementation of LLTZ front-end --------------------------------===//
+//===-- front-end.cpp - Implementation of LLTZ front-end
+//--------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -224,7 +225,25 @@ bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
                 std::string str;
                 llvm::raw_string_ostream ss(str);
                 ss << I;
-                JInstructions.append(ss.str());
+
+                Json::Value JInstruction, JOps;
+                JInstruction["opcode"] = I.getOpcodeName();
+                if (llvm::isa<llvm::AllocaInst>(&I)) {
+                    const auto allocaInst =
+                        llvm::dyn_cast<llvm::AllocaInst>(&I);
+                    JInstruction["type_id"] =
+                        allocaInst->getAllocatedType()->getTypeID();
+                    const llvm::Value *allocaPointer = allocaInst;
+                    JInstruction["result"] = allocaPointer->getName().str();
+                } else if (llvm::isa<llvm::StoreInst>(&I)) {
+                    //todo
+                } else if (llvm::isa<llvm::LoadInst>(&I)) {
+                    //todo
+                } else if (llvm::isa<llvm::GetElementPtrInst>(&I)) {
+                    //todo
+                }
+                JInstruction["instruction"] = ss.str();
+                JInstructions.append(JInstruction);
             }
             JBlock["instructions"] = JInstructions;
 
@@ -246,18 +265,23 @@ bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
 
                 // Skip debug instructions
                 if (llvm::isa<llvm::DbgDeclareInst>(&I)) {
-                    //auto *inst = llvm::dyn_cast<llvm::DbgDeclareInst>(&I);
-                    const llvm::DbgDeclareInst* dbgDeclare = llvm::dyn_cast<llvm::DbgDeclareInst>(&I);
+                    // auto *inst = llvm::dyn_cast<llvm::DbgDeclareInst>(&I);
+                    const llvm::DbgDeclareInst *dbgDeclare =
+                        llvm::dyn_cast<llvm::DbgDeclareInst>(&I);
 
                     // llvm.dbg.declare命令の2番目の引数(metadata !15)を取得
-                    llvm::Metadata* metadata = dbgDeclare->getVariable();
+                    llvm::Metadata *metadata = dbgDeclare->getVariable();
 
-                    // !15 = !DILocalVariable(name: "res", scope: !8, file: !9, line: 6, type: !16)
-                    llvm::DILocalVariable* variable = llvm::dyn_cast<llvm::DILocalVariable>(metadata);
+                    // !15 = !DILocalVariable(name: "res", scope: !8, file: !9,
+                    // line: 6, type: !16)
+                    llvm::DILocalVariable *variable =
+                        llvm::dyn_cast<llvm::DILocalVariable>(metadata);
 
-                    // !16 = !DIDerivedType(tag: DW_TAG_typedef, name: "Mutez", file: !9, line: 2, baseType: !13)
-                    llvm::DIType* type = variable->getType();
-                    llvm::DIDerivedType* derivedType = llvm::dyn_cast<llvm::DIDerivedType>(type);
+                    // !16 = !DIDerivedType(tag: DW_TAG_typedef, name: "Mutez",
+                    // file: !9, line: 2, baseType: !13)
+                    llvm::DIType *type = variable->getType();
+                    llvm::DIDerivedType *derivedType =
+                        llvm::dyn_cast<llvm::DIDerivedType>(type);
 
                     // "Mutez"
                     llvm::StringRef typeName = derivedType->getName();

@@ -1,6 +1,10 @@
+typedef int _mutez;
+typedef int _int;
+typedef int _nat;
+
 __attribute__((always_inline))
-int sub_func(int a, int b) {
-    int res = 0;
+_int sub_func(_int a, _int b) {
+    _int res = 0;
     if (a < 10) {
         res += a + b;
     } else {
@@ -10,8 +14,8 @@ int sub_func(int a, int b) {
 }
 
 __attribute__((always_inline))
-int func(int a, int b) {
-    int res = 0;
+_int func(_int a, _int b) {
+    _int res = 0;
     if (a < 10) {
         res += sub_func(a, b);
     } else {
@@ -21,7 +25,7 @@ int func(int a, int b) {
 }
 
 //__attribute__((flatten))
-int main()
+_int main()
 {
     return func(5, 3);
 }

@@ -37,7 +37,7 @@ using SourceRange = std::pair<llvm::DebugLoc, llvm::DebugLoc>;
 llvm::cl::opt<std::string> OutDir("cfg-outdir",
                                   llvm::cl::desc("Output directory"),
                                   llvm::cl::value_desc("directory"),
-                                  llvm::cl::init("./examples/cfg-json/"));
+                                  llvm::cl::init("./examples/out/"));
 
 // Not available in older LLVM versions
 static std::string getNameOrAsOperand(const llvm::Value *V) {
@@ -121,30 +121,48 @@ static SourceRange getSourceRange(const llvm::BasicBlock *BB) {
     return {Start, BB->getTerminator()->getDebugLoc()};
 }
 
-bool ReconstructCFGPass::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM) {
+Json::Value LoopToJson(llvm::Loop *L) {
     Json::Value JLoop;
+    Json::Value JSubLoops;
     Json::Value JBlocks;
-
     // unsigned int depth = L->getLoopDepth();
     auto LoopLatchBB = L->getLoopLatch();
     auto LoopHeaderBB = L->getHeader();
     auto LoopExitBB = L->getExitBlock();
 
+    JSubLoops = Json::arrayValue;
     for (auto &SL : L->getSubLoops()) {
-        llvm::errs() << SL->getName().str() << '\n';
+        JSubLoops.append(LoopToJson(SL));
     }
 
     JLoop["loop"] = L->getName().str();
+
     if (L->getParentLoop() != nullptr) {
         JLoop["parent"] = L->getParentLoop()->getName().str();
     } else {
         JLoop["parent"] = Json::nullValue;
     }
+
     JLoop["loop"] = L->getName().str();
+    JLoop["sub_loops"] = JSubLoops;
     JLoop["header"] = getBBLabel(LoopHeaderBB);
+
+    // header の terminator 命令の 条件分岐レジスタ i1 を取得する．
+    llvm::Instruction *terminator = LoopHeaderBB->getTerminator();
+    if (llvm::isa<llvm::BranchInst>(terminator)) {
+        llvm::BranchInst *br = llvm::dyn_cast<llvm::BranchInst>(terminator);
+        if (br->isConditional()) {
+            llvm::Value *cond = br->getOperand(0);
+            JLoop["header_cond"] = cond->getName().str();
+        } else {
+            llvm::errs() << "<header> の terminator が 条件分岐 br ではありません．" << '\n';
+        }
+    }
+
     JLoop["latch"] = getBBLabel(LoopLatchBB);
     JLoop["exiting"] = getBBLabel(LoopExitBB);
 
+    JBlocks = Json::arrayValue;
     for (const auto &BB : L->getBlocks()) {
         if (BB == LoopHeaderBB || BB == LoopLatchBB) {
             continue;
@@ -154,6 +172,19 @@ bool ReconstructCFGPass::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM) {
     }
 
     JLoop["blocks"] = JBlocks;
+    return JLoop;
+}
+
+bool ReconstructCFGPass::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM) {
+    Json::Value JLoop;
+
+    // L が SubLoop の場合は解析しない．
+    if (L->getParentLoop() != nullptr) {
+        return false;
+    }
+
+    JLoop = LoopToJson(L);
+
     const auto FuncName = llvm::sys::path::filename(L->getName());
     llvm::SmallString<32> Filename(OutDir.c_str());
     llvm::sys::path::append(Filename, "cfg." + FuncName + ".json");
@@ -228,7 +259,6 @@ bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
 
     Json::Value JFuncs, JBlocks, JEdges, JCalls, JUnresolvedCalls, JReturns;
 
-
     for (const auto &F : M) {
         if (F.isDeclaration()) {
             continue;
@@ -276,7 +306,7 @@ bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
 
                 // JInstruction の 各要素の label
                 // はllvm.org/docs/LangRefのSyntaxに従う 例:
-                //https://llvm.org/docs/LangRef.html#alloca-instruction
+                // https://llvm.org/docs/LangRef.html#alloca-instruction
                 if (llvm::isa<llvm::AllocaInst>(&I)) {
                     const auto allocaInst =
                         llvm::dyn_cast<llvm::AllocaInst>(&I);
@@ -383,7 +413,7 @@ bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
 
     const auto ModName = llvm::sys::path::filename(M.getName());
     llvm::SmallString<32> Filename(OutDir.c_str());
-    llvm::sys::path::append(Filename, "cfg." + ModName + ".json");
+    llvm::sys::path::append(Filename, "metadata." + ModName + ".json");
     llvm::errs() << "Writing module '" << M.getName() << "' to '" << Filename
                  << "'...";
 

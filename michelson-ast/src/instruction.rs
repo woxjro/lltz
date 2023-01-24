@@ -1,3 +1,4 @@
+use super::formatter::format;
 pub enum Instruction {
     Comment(String),
     ////////////////////////////////////////////////
@@ -185,7 +186,7 @@ impl Instruction {
             _ => false,
         }
     }
-    pub fn to_string(&self) -> String {
+    pub fn get_label(&self) -> String {
         match self {
             ////////////////////////////////////////////////
             ////////////////Control Structures//////////////
@@ -193,7 +194,7 @@ impl Instruction {
             Instruction::Apply => "APPLY".to_string(),
             Instruction::Exec => "EXEC".to_string(),
             Instruction::Failwith => "FAILWITH".to_string(),
-            Instruction::If { .. } => "IF".to_string(), //TODO: 1つのtabを入れたものを作る
+            Instruction::If { .. } => "IF".to_string(),
             //IF_CONS instr1 instr2,
             //IF_LEFT instr1 instr2,
             //IF_NONE instr1 instr2,
@@ -315,6 +316,62 @@ impl Instruction {
             Instruction::Drop => "DROP".to_string(),
             Instruction::Swap => "SWAP".to_string(),
             _ => todo!(),
+        }
+    }
+
+    pub fn to_formatted_string(&self, depth: usize, tab: &str) -> String {
+        let space = tab.repeat(depth);
+        match self {
+            ////////////////////////////////////////////////
+            ////////////////Control Structures//////////////
+            ////////////////////////////////////////////////
+            Instruction::If { instr1, instr2 } => {
+                let label = self.get_label();
+                let space = tab.repeat(depth);
+                let formatted_instr1 = format(instr1, depth + 1, tab);
+                let formatted_instr2 = format(instr2, depth + 1, tab);
+                format!(
+                    r#"{space}{label}
+{space}{{
+{formatted_instr1}
+{space}}}
+{space}{{
+{formatted_instr2}
+{space}}}"#
+                )
+            }
+            //IF_CONS instr1 instr2,
+            //IF_LEFT instr1 instr2,
+            //IF_NONE instr1 instr2,
+            //ITER inster,
+            //LAMBDA ty1 ty2 instr,
+            //LOOP instr,
+            //LOOP_LEFT instr,
+            //instr1 ; instr2,
+            //{},
+            ////////////////////////////////////////////////
+            //////////Operations on data structures/////////
+            ////////////////////////////////////////////////
+            ////////////////////////////////////////////////
+            /////////////Blockchain operations//////////////
+            ////////////////////////////////////////////////
+            //CREATE_CONTRACT { parameter ty1; storage ty2; code instr1 },
+            ////////////////////////////////////////////////
+            ////////////Operations on tickets///////////////
+            ////////////////////////////////////////////////
+            ////////////////////////////////////////////////
+            ////////////Cryptographic operations////////////
+            ////////////////////////////////////////////////
+            ////////////////////////////////////////////////
+            //////////////Boolean operations////////////////
+            ////////////////////////////////////////////////
+            ////////////////////////////////////////////////
+            ////////////Arithmetic operations///////////////
+            ////////////////////////////////////////////////
+            ////////////////////////////////////////////////
+            /////////////Stack manipulation/////////////////
+            ////////////////////////////////////////////////
+            _ => format!("{space}{}", self.get_label()),
         }
     }
 }

@@ -30,3 +30,15 @@ pub enum Val {
     //Timepstamp,
     //Unit,
 }
+
+impl Val {
+    pub fn to_string(&self) -> String {
+        match self {
+            Val::Bool(b) => b.to_string(),
+            Val::Int(i) => i.to_string(),
+            Val::Mutez(m) => m.to_string(),
+            Val::Nat(n) => n.to_string(),
+            _ => todo!(),
+        }
+    }
+}

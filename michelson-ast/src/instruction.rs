@@ -1,4 +1,6 @@
 use super::formatter::format;
+use super::ty::Ty;
+use super::val::Val;
 pub enum Instruction {
     Comment(String),
     ////////////////////////////////////////////////
@@ -128,7 +130,10 @@ pub enum Instruction {
     DipN(usize),
     Dup,
     DupN(usize),
-    Push,
+    Push {
+        ty: Ty,
+        val: Val,
+    },
     Drop,
     Swap,
 }
@@ -312,7 +317,7 @@ impl Instruction {
             //DIP { n: usize, },
             Instruction::Dup => "DUP".to_string(),
             //DUP { n: usize, },
-            Instruction::Push => "PUSH".to_string(),
+            Instruction::Push { .. } => "PUSH".to_string(),
             Instruction::Drop => "DROP".to_string(),
             Instruction::Swap => "SWAP".to_string(),
             _ => todo!(),
@@ -322,6 +327,7 @@ impl Instruction {
     pub fn to_formatted_string(&self, depth: usize, tab: &str) -> String {
         let space = tab.repeat(depth);
         match self {
+            Instruction::Comment(cmt) => format!("{space}# {}", cmt),
             ////////////////////////////////////////////////
             ////////////////Control Structures//////////////
             ////////////////////////////////////////////////
@@ -371,6 +377,14 @@ impl Instruction {
             ////////////////////////////////////////////////
             /////////////Stack manipulation/////////////////
             ////////////////////////////////////////////////
+            Instruction::Push { ty, val } => {
+                format!(
+                    "{space}{} {} {}",
+                    self.get_label(),
+                    ty.to_string(),
+                    val.to_string()
+                )
+            }
             _ => format!("{space}{}", self.get_label()),
         }
     }

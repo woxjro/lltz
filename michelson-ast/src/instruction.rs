@@ -13,13 +13,27 @@ pub enum Instruction {
         instr1: Vec<Instruction>,
         instr2: Vec<Instruction>,
     },
-    //IF_CONS instr1 instr2,
-    //IF_LEFT instr1 instr2,
-    //IF_NONE instr1 instr2,
+    IfCons {
+        instr1: Vec<Instruction>,
+        instr2: Vec<Instruction>,
+    },
+    IfLeft {
+        instr1: Vec<Instruction>,
+        instr2: Vec<Instruction>,
+    },
+    IfNone {
+        instr1: Vec<Instruction>,
+        instr2: Vec<Instruction>,
+    },
     //ITER inster,
     //LAMBDA ty1 ty2 instr,
     //LOOP instr,
-    //LOOP_LEFT instr,
+    Loop {
+        instr: Vec<Instruction>,
+    },
+    LoopLeft {
+        instr: Vec<Instruction>,
+    },
     //instr1 ; instr2,
     //{},
     ////////////////////////////////////////////////
@@ -139,58 +153,6 @@ pub enum Instruction {
 }
 
 impl Instruction {
-    pub fn has_instructions(&self) -> bool {
-        match self {
-            ////////////////////////////////////////////////
-            ////////////////Control Structures//////////////
-            ////////////////////////////////////////////////
-            Instruction::If { .. } => true,
-            //IF_CONS instr1 instr2,
-            //IF_LEFT instr1 instr2,
-            //IF_NONE instr1 instr2,
-            //ITER inster,
-            //LAMBDA ty1 ty2 instr,
-            //LOOP instr,
-            //LOOP_LEFT instr,
-            //instr1 ; instr2,
-            //{},
-            ////////////////////////////////////////////////
-            //////////Operations on data structures/////////
-            ////////////////////////////////////////////////
-            //LEFT ty2,
-            //MAP instr,
-            ////////////////////////////////////////////////
-            /////////////Blockchain operations//////////////
-            ////////////////////////////////////////////////
-            ////CONTRACT ty,
-            //CREATE_CONTRACT { parameter ty1; storage ty2; code instr1 },
-            //Instruction::Self => "SELF".to_string(),
-            ////////////////////////////////////////////////
-            ////////////Operations on tickets///////////////
-            ////////////////////////////////////////////////
-
-            ////////////////////////////////////////////////
-            ////////////Cryptographic operations////////////
-            ////////////////////////////////////////////////
-
-            ////////////////////////////////////////////////
-            //////////////Boolean operations////////////////
-            ////////////////////////////////////////////////
-
-            ////////////////////////////////////////////////
-            ////////////Arithmetic operations///////////////
-            ////////////////////////////////////////////////
-
-            ////////////////////////////////////////////////
-            /////////////Stack manipulation/////////////////
-            ////////////////////////////////////////////////
-            //DIG { n: usize, },
-            //DUG { n: usize, },
-            //DIP { n: usize, },
-            //DUP { n: usize, },
-            _ => false,
-        }
-    }
     pub fn get_label(&self) -> String {
         match self {
             ////////////////////////////////////////////////
@@ -200,13 +162,13 @@ impl Instruction {
             Instruction::Exec => "EXEC".to_string(),
             Instruction::Failwith => "FAILWITH".to_string(),
             Instruction::If { .. } => "IF".to_string(),
-            //IF_CONS instr1 instr2,
-            //IF_LEFT instr1 instr2,
-            //IF_NONE instr1 instr2,
+            Instruction::IfCons { .. } => "IF_CONS".to_string(),
+            Instruction::IfLeft { .. } => "IF_LEFT".to_string(),
+            Instruction::IfNone { .. } => "IF_NONE".to_string(),
+            Instruction::Loop { .. } => "LOOP".to_string(),
+            Instruction::LoopLeft { .. } => "LOOP_LEFT".to_string(),
             //ITER inster,
             //LAMBDA ty1 ty2 instr,
-            //LOOP instr,
-            //LOOP_LEFT instr,
             //instr1 ; instr2,
             //{},
             ////////////////////////////////////////////////
@@ -311,12 +273,12 @@ impl Instruction {
             ////////////////////////////////////////////////
             /////////////Stack manipulation/////////////////
             ////////////////////////////////////////////////
-            //DIG { n: usize, },
-            //DUG { n: usize, },
+            Instruction::DigN(_) => "DIG".to_string(),
+            Instruction::DugN(_) => "DUG".to_string(),
             Instruction::Dip => "DIP".to_string(),
-            //DIP { n: usize, },
+            Instruction::DipN(_) => "DIP".to_string(),
             Instruction::Dup => "DUP".to_string(),
-            //DUP { n: usize, },
+            Instruction::DupN(_) => "DUP".to_string(),
             Instruction::Push { .. } => "PUSH".to_string(),
             Instruction::Drop => "DROP".to_string(),
             Instruction::Swap => "SWAP".to_string(),
@@ -346,13 +308,13 @@ impl Instruction {
 {space}}}"#
                 )
             }
-            //IF_CONS instr1 instr2,
-            //IF_LEFT instr1 instr2,
-            //IF_NONE instr1 instr2,
+            Instruction::IfCons { .. } => todo!(),
+            Instruction::IfLeft { .. } => todo!(),
+            Instruction::IfNone { .. } => todo!(),
             //ITER inster,
             //LAMBDA ty1 ty2 instr,
-            //LOOP instr,
-            //LOOP_LEFT instr,
+            Instruction::Loop { .. } => todo!(),
+            Instruction::LoopLeft { .. } => todo!(),
             //instr1 ; instr2,
             //{},
             ////////////////////////////////////////////////

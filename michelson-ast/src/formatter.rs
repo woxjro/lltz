@@ -3,20 +3,15 @@ use super::instruction::Instruction;
 pub fn format(instructions: &Vec<Instruction>, depth: usize, tab: &str) -> String {
     let mut res = String::from("");
     for instruction in instructions {
-        res = match instruction {
-            Instruction::Comment(_) => {
-                format!(
-                    r#"{res}
-{}"#,
-                    instruction.to_formatted_string(depth, tab)
-                )
-            }
-            _ => format!(
-                r#"{res}
-{};"#,
-                instruction.to_formatted_string(depth, tab)
-            ),
+        let suffix = match instruction {
+            Instruction::Comment(_) => "",
+            _ => ";",
         };
+        res = format!(
+            r#"{res}
+{}{suffix}"#,
+            instruction.to_formatted_string(depth, tab)
+        );
     }
     res.trim_matches('\n').to_string()
 }
@@ -44,6 +39,6 @@ mod tests {
         }];
         let result = format(&instructions, 0, "    ");
         println!("{}", result);
-        assert_eq!(result, String::from(""));
+        assert_eq!(result, String::from("IF\n{\n    # This is a comment\n    PUSH mutez 999;\n}\n{\n    IF\n    {\n\n    }\n    {\n\n    };\n};"));
     }
 }

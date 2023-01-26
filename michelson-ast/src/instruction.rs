@@ -1,6 +1,7 @@
-use super::formatter::format;
 use super::ty::Ty;
 use super::val::Val;
+use crate::formatter::format;
+use crate::instruction_wrapper::InstructionWrapper;
 pub enum Instruction {
     Comment(String),
     ////////////////////////////////////////////////
@@ -10,29 +11,29 @@ pub enum Instruction {
     Exec,
     Failwith,
     If {
-        instr1: Vec<Instruction>,
-        instr2: Vec<Instruction>,
+        instr1: Vec<InstructionWrapper>,
+        instr2: Vec<InstructionWrapper>,
     },
     IfCons {
-        instr1: Vec<Instruction>,
-        instr2: Vec<Instruction>,
+        instr1: Vec<InstructionWrapper>,
+        instr2: Vec<InstructionWrapper>,
     },
     IfLeft {
-        instr1: Vec<Instruction>,
-        instr2: Vec<Instruction>,
+        instr1: Vec<InstructionWrapper>,
+        instr2: Vec<InstructionWrapper>,
     },
     IfNone {
-        instr1: Vec<Instruction>,
-        instr2: Vec<Instruction>,
+        instr1: Vec<InstructionWrapper>,
+        instr2: Vec<InstructionWrapper>,
     },
     //ITER inster,
     //LAMBDA ty1 ty2 instr,
     //LOOP instr,
     Loop {
-        instr: Vec<Instruction>,
+        instr: Vec<InstructionWrapper>,
     },
     LoopLeft {
-        instr: Vec<Instruction>,
+        instr: Vec<InstructionWrapper>,
     },
     //instr1 ; instr2,
     //{},

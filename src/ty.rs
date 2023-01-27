@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub enum Ty {
     Address,
     BigMap { kty: Box<Ty>, vty: Box<Ty> },

@@ -1,5 +1,6 @@
 use crate::formatter::format;
 use crate::instruction::Instruction;
+#[derive(Clone)]
 pub enum InstructionWrapper {
     Comment(String),
     Instruction {
@@ -75,6 +76,9 @@ impl InstructionWrapper {
                             val.to_string()
                         )
                     }
+                    Instruction::DupN(n) => format!("{space}{} {}", instruction.get_label(), n),
+                    Instruction::DigN(n) => format!("{space}{} {}", instruction.get_label(), n),
+                    Instruction::DugN(n) => format!("{space}{} {}", instruction.get_label(), n),
                     _ => format!("{space}{}", instruction.get_label()),
                 };
                 match comment {

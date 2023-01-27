@@ -343,6 +343,16 @@ pub enum Opcode {
     Mul,
 }
 
+impl Opcode {
+    pub fn to_string(&self) -> String {
+        match self {
+            Opcode::Add => "add".to_string(),
+            Opcode::Sub => "sub".to_string(),
+            Opcode::Mul => "mul".to_string(),
+        }
+    }
+}
+
 /// icmp でオペランドに対して適用する条件
 pub enum Condition {
     Eq,  //equal

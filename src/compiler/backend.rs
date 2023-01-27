@@ -6,6 +6,9 @@ mod inject;
 mod scan;
 use crate::compiler::utils;
 use crate::lltz_ir::{Arg, BackendType, Condition, Function, Instruction, Opcode, Register, Type};
+use michelson_ast::formatter;
+use michelson_ast::instruction::Instruction as MInstr;
+use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
 use std::collections::HashMap;
 
 ///LltzIrの構造体宣言，引数リスト，命令列を受け取り，それらに現れるレジスタ，メモリや型
@@ -416,32 +419,45 @@ pub fn compile_instructions(
                 todo!()
             }
             Instruction::Op {
-                ty: _,
+                ty,
                 opcode,
                 result,
                 op1,
                 op2,
             } => {
-                let op = match opcode {
-                    Opcode::Add => "ADD",
-                    Opcode::Sub => "SUB",
-                    Opcode::Mul => "MUL",
-                };
+                let instructions = vec![
+                    vec![MInstrWrapper::Comment(format!(
+                        "{} = {} {} {} {} {{",
+                        result.get_id(),
+                        opcode.to_string(),
+                        Type::get_name(ty),
+                        op1.get_id(),
+                        op2.get_id(),
+                    ))],
+                    vec![
+                        MInstr::DupN(*register2stack_ptr.get(&op2).unwrap()),
+                        MInstr::DupN(*register2stack_ptr.get(&op1).unwrap() + 1),
+                        match opcode {
+                            Opcode::Add => MInstr::Add,
+                            Opcode::Sub => MInstr::Sub,
+                            Opcode::Mul => MInstr::Mul,
+                        },
+                        MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                        MInstr::Drop,
+                        MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    ]
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                    vec![MInstrWrapper::Comment("}".to_string())],
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
 
-                let michelson_instructions = vec![
-                    //NOTE: 意図的にop2を先にDUPしている(LLVMとの被演算子の順番を揃えるため)
-                    format!("### Op {{"),
-                    format!("DUP {};", register2stack_ptr.get(&op2).unwrap()),
-                    format!("DUP {};", register2stack_ptr.get(&op1).unwrap() + 1),
-                    format!("{op};"),
-                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
-                    format!("DROP;"),
-                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
-                    format!("### }}"),
-                ];
                 michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&michelson_instructions, tab, tab_depth)
+                    "{michelson_code}{}\n",
+                    formatter::format(&instructions, tab_depth, tab)
                 );
             }
             Instruction::LlvmMemcpy { dest, src, ty } => {

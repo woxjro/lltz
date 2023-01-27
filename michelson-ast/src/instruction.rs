@@ -1,7 +1,7 @@
 use super::ty::Ty;
 use super::val::Val;
-use crate::formatter::format;
 use crate::instruction_wrapper::InstructionWrapper;
+#[derive(Clone)]
 pub enum Instruction {
     Comment(String),
     ////////////////////////////////////////////////
@@ -287,68 +287,17 @@ impl Instruction {
         }
     }
 
-    pub fn to_formatted_string(&self, depth: usize, tab: &str) -> String {
-        let space = tab.repeat(depth);
-        match self {
-            Instruction::Comment(cmt) => format!("{space}# {}", cmt),
-            ////////////////////////////////////////////////
-            ////////////////Control Structures//////////////
-            ////////////////////////////////////////////////
-            Instruction::If { instr1, instr2 } => {
-                let label = self.get_label();
-                let space = tab.repeat(depth);
-                let formatted_instr1 = format(instr1, depth + 1, tab);
-                let formatted_instr2 = format(instr2, depth + 1, tab);
-                format!(
-                    r#"{space}{label}
-{space}{{
-{formatted_instr1}
-{space}}}
-{space}{{
-{formatted_instr2}
-{space}}}"#
-                )
-            }
-            Instruction::IfCons { .. } => todo!(),
-            Instruction::IfLeft { .. } => todo!(),
-            Instruction::IfNone { .. } => todo!(),
-            //ITER inster,
-            //LAMBDA ty1 ty2 instr,
-            Instruction::Loop { .. } => todo!(),
-            Instruction::LoopLeft { .. } => todo!(),
-            //instr1 ; instr2,
-            //{},
-            ////////////////////////////////////////////////
-            //////////Operations on data structures/////////
-            ////////////////////////////////////////////////
-            ////////////////////////////////////////////////
-            /////////////Blockchain operations//////////////
-            ////////////////////////////////////////////////
-            //CREATE_CONTRACT { parameter ty1; storage ty2; code instr1 },
-            ////////////////////////////////////////////////
-            ////////////Operations on tickets///////////////
-            ////////////////////////////////////////////////
-            ////////////////////////////////////////////////
-            ////////////Cryptographic operations////////////
-            ////////////////////////////////////////////////
-            ////////////////////////////////////////////////
-            //////////////Boolean operations////////////////
-            ////////////////////////////////////////////////
-            ////////////////////////////////////////////////
-            ////////////Arithmetic operations///////////////
-            ////////////////////////////////////////////////
-            ////////////////////////////////////////////////
-            /////////////Stack manipulation/////////////////
-            ////////////////////////////////////////////////
-            Instruction::Push { ty, val } => {
-                format!(
-                    "{space}{} {} {}",
-                    self.get_label(),
-                    ty.to_string(),
-                    val.to_string()
-                )
-            }
-            _ => format!("{space}{}", self.get_label()),
+    pub fn to_instruction_wrapper(&self) -> InstructionWrapper {
+        InstructionWrapper::Instruction {
+            comment: None,
+            instruction: self.clone(),
+        }
+    }
+
+    pub fn to_instruction_wrapper_with_comment(&self, comment: &str) -> InstructionWrapper {
+        InstructionWrapper::Instruction {
+            comment: Some(comment.to_string()),
+            instruction: self.clone(),
         }
     }
 }

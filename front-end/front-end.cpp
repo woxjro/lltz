@@ -108,19 +108,6 @@ static std::string getBBLabel(const llvm::BasicBlock *BB) {
     return OS.str();
 }
 
-static SourceRange getSourceRange(const llvm::BasicBlock *BB) {
-    llvm::DebugLoc Start;
-    for (const auto &I : *BB) {
-        const auto &DbgLoc = I.getDebugLoc();
-        if (DbgLoc) {
-            Start = DbgLoc;
-            break;
-        }
-    }
-
-    return {Start, BB->getTerminator()->getDebugLoc()};
-}
-
 Json::Value LoopToJson(llvm::Loop *L) {
     Json::Value JLoop;
     Json::Value JSubLoops;
@@ -155,7 +142,9 @@ Json::Value LoopToJson(llvm::Loop *L) {
             llvm::Value *cond = br->getOperand(0);
             JLoop["header_cond"] = cond->getName().str();
         } else {
-            llvm::errs() << "<header> の terminator が 条件分岐 br ではありません．" << '\n';
+            llvm::errs()
+                << "<header> の terminator が 条件分岐 br ではありません．"
+                << '\n';
         }
     }
 
@@ -284,12 +273,8 @@ bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
 
             // Save the basic block
             const auto &BBLabel = getBBLabel(BB);
-            const auto &[SrcStart, SrcEnd] = getSourceRange(BB);
 
             Json::Value JBlock;
-            JBlock["start_line"] =
-                SrcStart ? SrcStart.getLine() : Json::Value();
-            JBlock["end_line"] = SrcEnd ? SrcEnd.getLine() : Json::Value();
             Json::Value JInstructions;
             for (const auto &I : *BB) {
                 // Skip debug instructions
@@ -320,9 +305,48 @@ bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
                         JInstruction["type"] = "XXXXXX";
                     }
                 } else if (llvm::isa<llvm::StoreInst>(&I)) {
-                    // TODO
+                    const auto storeInst = llvm::dyn_cast<llvm::StoreInst>(&I);
+
+                    const llvm::Value *ptr = storeInst->getPointerOperand();
+                    const llvm::Value *value = storeInst->getValueOperand();
+
+                    if (llvm::isa<llvm::ConstantInt>(
+                            value)) { // FIXME:
+                                      // 即値が整数じゃない場合の対応が必要
+                        const auto cons =
+                            llvm::dyn_cast<llvm::ConstantInt>(value);
+                        JInstruction["value"] =
+                            std::to_string(cons->getSExtValue());
+                    } else {
+                        JInstruction["value"] = value->getName().str();
+                    }
+                    JInstruction["pointer"] = ptr->getName().str();
+
+                    auto p = Address2MichelsonType.find(ptr);
+
+                    if (p != Address2MichelsonType.end()) { //見つかった場合
+                        JInstruction["ty"] = p->getSecond()->getName().str();
+                        //JInstruction["ptr_ty"] = p->getSecond()->getName().str() + "*";
+                    } else { //無い場合
+                        JInstruction["ty"] = "XXXXXX";
+                        //JInstruction["ptr_ty"] = "XXXXXX";
+                    }
                 } else if (llvm::isa<llvm::LoadInst>(&I)) {
-                    // TODO
+                    const auto loadInst =
+                        llvm::dyn_cast<llvm::LoadInst>(&I);
+                    //const llvm::Value *loadPointer = loadInst;
+
+                    JInstruction["result"] = loadInst->getName().str();
+
+                    const llvm::Value *pointer = loadInst->getPointerOperand();
+                    JInstruction["pointer"] = pointer->getName().str();
+                    auto p = Address2MichelsonType.find(pointer);
+
+                    if (p != Address2MichelsonType.end()) { //見つかった場合
+                        JInstruction["ty"] = p->getSecond()->getName().str();
+                    } else { //無い場合
+                        JInstruction["ty"] = "XXXXXX";
+                    }
                 } else if (llvm::isa<llvm::GetElementPtrInst>(&I)) {
                     // TODO
                 }

@@ -2,6 +2,8 @@
 mkdir ./examples/out/$1
 clang-14 -S -emit-llvm -g ./examples/$1.c -o ./examples/out/$1/$1.ll
 
+opt-14 -S -enable-new-pm=0 -instnamer ./examples/out/$1/$1.ll -o ./examples/out/$1/$1.ll
+
 opt-14 -enable-new-pm=0 -load ./build/libLLTZFrontEnd.so -reconstruct-cfg ./examples/out/$1/$1.ll >/dev/null
 opt-14 -enable-new-pm=0 -load ./build/libLLTZFrontEnd.so -cfg-to-json ./examples/out/$1/$1.ll >/dev/null
 

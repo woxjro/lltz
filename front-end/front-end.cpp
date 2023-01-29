@@ -28,7 +28,7 @@
 
 #include "json/json.h"
 
-#define DEBUG_TYPE "cfg-to-json"
+#define DEBUG_TYPE "reconstruct-michelson-primitive"
 
 namespace {
 
@@ -306,7 +306,6 @@ bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
                     }
                 } else if (llvm::isa<llvm::StoreInst>(&I)) {
                     const auto storeInst = llvm::dyn_cast<llvm::StoreInst>(&I);
-
                     const llvm::Value *ptr = storeInst->getPointerOperand();
                     const llvm::Value *value = storeInst->getValueOperand();
 
@@ -457,7 +456,7 @@ bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
 
 //// register ReconstructMichelsonPrimitivePass {{{
 static llvm::RegisterPass<ReconstructMichelsonPrimitivePass>
-    tmp0("cfg-to-json", "Export a CFG to JSON", false, false);
+    tmp0("reconstruct-michelson-primitive", "Export a CFG to JSON", false, false);
 static void
 registerReconstructMichelsonPrimitivePass(const llvm::PassManagerBuilder &,
                                           llvm::legacy::PassManagerBase &PM) {

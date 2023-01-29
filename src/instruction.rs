@@ -81,7 +81,7 @@ pub enum Instruction {
     ImplicitAccount,
     Level,
     Now,
-    //Self,
+    Slf, // Self
     SelfAddress,
     Sender,
     SetDelegate,
@@ -285,6 +285,10 @@ impl Instruction {
             Instruction::Swap => "SWAP".to_string(),
             _ => todo!(),
         }
+    }
+
+    pub fn get_label_len(&self) -> usize {
+        self.get_label().len()
     }
 
     pub fn to_instruction_wrapper(&self) -> InstructionWrapper {

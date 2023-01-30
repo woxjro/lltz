@@ -151,6 +151,10 @@ pub enum Instruction {
     },
     Drop,
     Swap,
+    ////////////////////////////////////////////////
+    /////////////      Macro       /////////////////
+    ////////////////////////////////////////////////
+    AssertSome,
 }
 
 impl Instruction {
@@ -283,6 +287,10 @@ impl Instruction {
             Instruction::Push { .. } => "PUSH".to_string(),
             Instruction::Drop => "DROP".to_string(),
             Instruction::Swap => "SWAP".to_string(),
+            ////////////////////////////////////////////////
+            /////////////      Macro       /////////////////
+            ////////////////////////////////////////////////
+            Instruction::AssertSome => "ASSERT_SOME".to_string(),
             _ => todo!(),
         }
     }

@@ -25,16 +25,16 @@ impl InstructionWrapper {
                     Instruction::If { instr1, instr2 } => {
                         let label = instruction.get_label();
                         let space = tab.repeat(depth);
+                        let space_label = " ".repeat(instruction.get_label_len());
                         let formatted_instr1 = format(instr1, depth + 1, tab);
                         let formatted_instr2 = format(instr2, depth + 1, tab);
                         format!(
-                            r#"{space}{label}
-{space}{{
+                            r#"{space}{label} {{
 {formatted_instr1}
-{space}}}
-{space}{{
+{space}{space_label} }}
+{space}{space_label} {{
 {formatted_instr2}
-{space}}}"#
+{space}{space_label} }}"#
                         )
                     }
                     Instruction::IfCons { .. } => todo!(),

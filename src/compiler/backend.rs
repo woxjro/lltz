@@ -231,28 +231,36 @@ pub fn compile_instructions(
             Instruction::Load { result, ty, ptr } => {
                 let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
 
-                let michelson_instructions = vec![
-                    format!(
-                        "### {} = load {}, {}* {} {{",
+                let instructions = vec![
+                    vec![MInstrWrapper::Comment(format!(
+                        "{} = load {}, {}* {} {{",
                         result.get_id(),
                         Type::get_name(ty),
                         Type::get_name(ty),
                         ptr.get_id()
-                    ),
-                    format!("DUP {};", register2stack_ptr.len() + memory_ptr),
-                    format!("CAR;"),
-                    format!("DUP {};", register2stack_ptr.get(&ptr).unwrap() + 1),
-                    format!("GET;"),
-                    format!("ASSERT_SOME;"),
-                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
-                    format!("DROP;"),
-                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
-                    format!("### }}"),
-                ];
+                    ))],
+                    vec![
+                        MInstr::DupN(register2stack_ptr.len() + memory_ptr),
+                        MInstr::Car,
+                        MInstr::DupN(register2stack_ptr.get(&ptr).unwrap() + 1),
+                        MInstr::Get,
+                        MInstr::AssertSome,
+                        MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                        MInstr::Drop,
+                        MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    ]
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                    vec![MInstrWrapper::Comment("}".to_string())],
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
 
                 michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&michelson_instructions, tab, tab_depth)
+                    "{michelson_code}{}\n",
+                    formatter::format(&instructions, tab_depth, tab)
                 );
             }
             Instruction::GetElementPtr {
@@ -530,59 +538,107 @@ pub fn compile_instructions(
                 );
             }
             Instruction::MichelsonGetAmount { result } => {
-                let michelson_instructions = vec![
-                    format!("### {} = MichelsonGetAmount {{", result.get_id()),
-                    format!("AMOUNT;"),
-                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
-                    format!("DROP;"),
-                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
-                    format!("### }}"),
-                ];
+                let instructions = vec![
+                    vec![MInstrWrapper::Comment(format!(
+                        "{} = MichelsonGetAmount {{",
+                        result.get_id()
+                    ))],
+                    vec![
+                        MInstr::Amount,
+                        MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                        MInstr::Drop,
+                        MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    ]
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                    vec![MInstrWrapper::Comment("}".to_string())],
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
+
                 michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&michelson_instructions, tab, tab_depth)
+                    "{michelson_code}{}\n",
+                    formatter::format(&instructions, tab_depth, tab)
                 );
             }
             Instruction::MichelsonGetBalance { result } => {
-                let michelson_instructions = vec![
-                    format!("### {} = MichelsonGetBalance {{", result.get_id()),
-                    format!("BALANCE;"),
-                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
-                    format!("DROP;"),
-                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
-                    format!("### }}"),
-                ];
+                let instructions = vec![
+                    vec![MInstrWrapper::Comment(format!(
+                        "{} = MichelsonGetBalance {{",
+                        result.get_id()
+                    ))],
+                    vec![
+                        MInstr::Balance,
+                        MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                        MInstr::Drop,
+                        MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    ]
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                    vec![MInstrWrapper::Comment("}".to_string())],
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
+
                 michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&michelson_instructions, tab, tab_depth)
+                    "{michelson_code}{}\n",
+                    formatter::format(&instructions, tab_depth, tab)
                 );
             }
             Instruction::MichelsonGetTotalVotingPower { result } => {
-                let michelson_instructions = vec![
-                    format!("### {} = MichelsonGetTotalVotingPower {{", result.get_id()),
-                    format!("TOTAL_VOTING_POWER;"),
-                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
-                    format!("DROP;"),
-                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
-                    format!("### }}"),
-                ];
+                let instructions = vec![
+                    vec![MInstrWrapper::Comment(format!(
+                        "{} = MichelsonGetTotalVotingPower {{",
+                        result.get_id()
+                    ))],
+                    vec![
+                        MInstr::TotalVotingPower,
+                        MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                        MInstr::Drop,
+                        MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    ]
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                    vec![MInstrWrapper::Comment("}".to_string())],
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
+
                 michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&michelson_instructions, tab, tab_depth)
+                    "{michelson_code}{}\n",
+                    formatter::format(&instructions, tab_depth, tab)
                 );
             }
             Instruction::MichelsonGetLevel { result } => {
-                let michelson_instructions = vec![
-                    format!("### {} = MichelsonGetLevel {{", result.get_id()),
-                    format!("LEVEL;"),
-                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
-                    format!("DROP;"),
-                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
-                    format!("### }}"),
-                ];
+                let instructions = vec![
+                    vec![MInstrWrapper::Comment(format!(
+                        "{} = MichelsonGetLevel {{",
+                        result.get_id()
+                    ))],
+                    vec![
+                        MInstr::Level,
+                        MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                        MInstr::Drop,
+                        MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    ]
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                    vec![MInstrWrapper::Comment("}".to_string())],
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
+
                 michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&michelson_instructions, tab, tab_depth)
+                    "{michelson_code}{}\n",
+                    formatter::format(&instructions, tab_depth, tab)
                 );
             }
             Instruction::MichelsonGetSender { result } => {

@@ -195,28 +195,37 @@ pub fn compile_instructions(
             Instruction::Store { ty, value, ptr } => {
                 let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
 
-                let michelson_instructions = vec![
-                    format!(
-                        "### store {} {}, {}* {} {{",
+                let instructions = vec![
+                    vec![MInstrWrapper::Comment(format!(
+                        "store {} {}, {}* {} {{",
                         Type::get_name(ty),
                         value.get_id(),
                         Type::get_name(ty),
                         ptr.get_id()
-                    ),
-                    format!("DUP {};", register2stack_ptr.get(&value).unwrap()),
-                    format!("SOME;"),
-                    format!("DIG {};", register2stack_ptr.len() + memory_ptr),
-                    format!("UNPAIR;"),
-                    format!("DIG 2;"),
-                    format!("DUP {};", register2stack_ptr.get(&ptr).unwrap() + 3),
-                    format!("UPDATE;"),
-                    format!("PAIR;"),
-                    format!("DUG {};", register2stack_ptr.len() + memory_ptr - 1),
-                    format!("### }}"),
-                ];
+                    ))],
+                    vec![
+                        MInstr::DupN(*register2stack_ptr.get(&value).unwrap()),
+                        MInstr::Some,
+                        MInstr::DigN(register2stack_ptr.len() + memory_ptr),
+                        MInstr::Unpair,
+                        MInstr::DigN(2),
+                        MInstr::DupN(*register2stack_ptr.get(&ptr).unwrap() + 3),
+                        MInstr::Update,
+                        MInstr::Pair,
+                        MInstr::DugN(register2stack_ptr.len() + memory_ptr - 1),
+                    ]
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                    vec![MInstrWrapper::Comment("}".to_string())],
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
+
                 michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&michelson_instructions, tab, tab_depth)
+                    "{michelson_code}{}\n",
+                    formatter::format(&instructions, tab_depth, tab)
                 );
             }
             Instruction::Load { result, ty, ptr } => {

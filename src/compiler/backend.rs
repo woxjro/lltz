@@ -642,33 +642,57 @@ pub fn compile_instructions(
                 );
             }
             Instruction::MichelsonGetSender { result } => {
-                let michelson_instructions = vec![
-                    format!("### {} = MichelsonGetSender {{", result.get_id()),
-                    format!("SENDER;"),
-                    format!("SOME; # to (option address)"),
-                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
-                    format!("DROP;"),
-                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
-                    format!("### }}"),
-                ];
+                let instructions = vec![
+                    vec![MInstrWrapper::Comment(format!(
+                        "{} = MichelsonGetSender {{",
+                        result.get_id()
+                    ))],
+                    vec![
+                        MInstr::Sender,
+                        MInstr::Some, // to (option address)
+                        MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                        MInstr::Drop,
+                        MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    ]
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                    vec![MInstrWrapper::Comment("}".to_string())],
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
+
                 michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&michelson_instructions, tab, tab_depth)
+                    "{michelson_code}{}\n",
+                    formatter::format(&instructions, tab_depth, tab)
                 );
             }
             Instruction::MichelsonGetSource { result } => {
-                let michelson_instructions = vec![
-                    format!("### {} = MichelsonGetSource {{", result.get_id()),
-                    format!("SOURCE;"),
-                    format!("SOME; # to (option address)"),
-                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
-                    format!("DROP;"),
-                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
-                    format!("### }}"),
-                ];
+                let instructions = vec![
+                    vec![MInstrWrapper::Comment(format!(
+                        "{} = MichelsonGetSource {{",
+                        result.get_id()
+                    ))],
+                    vec![
+                        MInstr::Source,
+                        MInstr::Some, // to (option address)
+                        MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                        MInstr::Drop,
+                        MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    ]
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                    vec![MInstrWrapper::Comment("}".to_string())],
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
+
                 michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&michelson_instructions, tab, tab_depth)
+                    "{michelson_code}{}\n",
+                    formatter::format(&instructions, tab_depth, tab)
                 );
             }
             Instruction::MichelsonGetSelfAddress { result } => {

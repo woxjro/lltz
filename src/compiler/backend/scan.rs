@@ -1,4 +1,4 @@
-//! LltzIrの中をコンパイル前に事前に走査し, 出てきうるレジスタ, メモリの数や型などを
+//! Programの中をコンパイル前に事前に走査し, 出てきうるレジスタ, メモリの数や型などを
 //! 洗い出しておくといった事前分析を担当するモジュール
 use super::helper;
 use crate::lltz_ir::{Arg, BackendType, Instruction, Register, Type};
@@ -41,7 +41,7 @@ pub fn scan_structure_types(
     }
 }
 
-/// （主にsmart_contract関数の）LltzIrのargument_listを受け取り, その中に出てくる
+/// （主にsmart_contract関数の）Programのargument_listを受け取り, その中に出てくる
 /// レジスタなどを洗い出しておく関数
 pub fn scan_argument_list(
     register2stack_ptr: &mut HashMap<Register, usize>,

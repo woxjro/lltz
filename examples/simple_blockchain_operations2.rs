@@ -1,6 +1,6 @@
 use lltz::compiler::compile;
 use lltz::lltz_ir::{
-    Arg, Function, Instruction, LltzIr, Register, Type,
+    Arg, Function, Instruction, Program, Register, Type,
 };
 use std::fs::File;
 use std::io::prelude::*;
@@ -222,7 +222,7 @@ fn main() {
         //  ret void, !dbg !69
     ];
 
-    let lltz_ir = LltzIr {
+    let lltz_ir = Program {
         structure_types: vec![storage.clone(), parameter.clone(), pair.clone()],
         functions: vec![
             //define dso_local void @smart_contract(

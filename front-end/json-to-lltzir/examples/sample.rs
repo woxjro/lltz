@@ -1,4 +1,4 @@
-use json_to_lltzir;
+use json_to_Program;
 fn main() {
-    json_to_lltzir::main();
+    json_to_Program::main();
 }

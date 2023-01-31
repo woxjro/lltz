@@ -11,7 +11,7 @@ use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
 use std::collections::HashMap;
 
-///LltzIrの構造体宣言，引数リスト，命令列を受け取り，それらに現れるレジスタ，メモリや型
+///Programの構造体宣言，引数リスト，命令列を受け取り，それらに現れるレジスタ，メモリや型
 ///などを調べる．
 pub fn scan(
     structure_types: &Vec<Type>,
@@ -38,7 +38,7 @@ pub fn scan(
     );
 }
 
-///（主に）LltzIrの`smart_contract_function`を受け取り，そのargument_listである
+///（主に）Programの`smart_contract_function`を受け取り，そのargument_listである
 ///スマートコントラクト引数をメモリ領域に格納する．
 pub fn inject_argument_list(
     smart_contract_function: &Function,

@@ -1,6 +1,6 @@
 use lltz::compiler::compile;
 use lltz::lltz_ir::{
-    Arg, Function, Instruction, LltzIr, Register, Type,
+    Arg, Function, Instruction, Program, Register, Type,
 };
 use std::fs::File;
 use std::io::prelude::*;
@@ -189,7 +189,7 @@ fn main() {
         },
     ];
 
-    let lltz_ir = LltzIr {
+    let lltz_ir = Program {
         structure_types: vec![parameter.clone(), storage.clone(), pair.clone()],
         functions: vec![Function {
             function_name: String::from("smart_contract"),

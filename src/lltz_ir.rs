@@ -381,7 +381,7 @@ pub struct Arg {
 }
 
 /// LLTZ IR プログラム
-pub struct LltzIr {
+pub struct Program {
     pub structure_types: Vec<Type>, //構造体宣言
     pub functions: Vec<Function>,
 }

@@ -49,6 +49,20 @@ impl InstructionWrapper {
                     ////////////////////////////////////////////////
                     //////////Operations on data structures/////////
                     ////////////////////////////////////////////////
+                    Instruction::EmptyBigMap { kty, vty } => format!(
+                        "{space}{} {} {}",
+                        instruction.get_label(),
+                        kty.to_string(),
+                        vty.to_string()
+                    ),
+                    Instruction::EmptyMap { kty, vty } => {
+                        format!(
+                            "{space}{} {} {}",
+                            instruction.get_label(),
+                            kty.to_string(),
+                            vty.to_string()
+                        )
+                    }
                     ////////////////////////////////////////////////
                     /////////////Blockchain operations//////////////
                     ////////////////////////////////////////////////

@@ -1,4 +1,8 @@
 //! LLTZ IR の定義
+use michelson_ast::instruction::Instruction as MInstr;
+use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
+use michelson_ast::ty::Ty as MTy;
+use michelson_ast::val::Val as MVal;
 
 ///レジスタ
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
@@ -201,6 +205,30 @@ impl BackendType {
         }
     }
 
+    pub fn to_michelson_ty(&self) -> MTy {
+        match self {
+            BackendType::Address => MTy::Address,
+            BackendType::Bool => MTy::Bool,
+            BackendType::Mutez => MTy::Mutez,
+            BackendType::Int => MTy::Int,
+            BackendType::Nat => MTy::Nat,
+            BackendType::Struct { .. } => {
+                panic!("Struct 型に対応する michelson プリミティブはありません")
+            }
+            BackendType::Contract(child_ty) => MTy::Contract {
+                ty: Box::new(child_ty.to_michelson_ty()),
+            },
+            BackendType::Operation => MTy::Operation,
+            BackendType::Ptr(_) => MTy::Int,
+            BackendType::Option(child_ty) => MTy::Option {
+                ty: Box::new(child_ty.to_michelson_ty()),
+            },
+            BackendType::Array { .. } => {
+                panic!("Array 型に対応する michelson プリミティブはありません")
+            }
+        }
+    }
+
     pub fn to_memory_string(&self) -> String {
         match self {
             BackendType::Struct { .. } => String::from("(map int int)"),
@@ -290,6 +318,53 @@ impl BackendType {
                 let inner = child_ty.clone().to_string();
                 format!("NONE {inner}")
             }
+        };
+        res
+    }
+
+    pub fn default_value_instruction(ty: &BackendType) -> MInstr {
+        let res = match ty {
+            BackendType::Address => MInstr::None {
+                ty: Box::new(MTy::Address),
+            },
+            BackendType::Array {
+                size: _,
+                elementtype: _,
+            } => {
+                todo!()
+            }
+            BackendType::Bool => MInstr::Push {
+                ty: MTy::Bool,
+                val: MVal::Bool(false),
+            },
+            BackendType::Mutez => MInstr::Push {
+                ty: MTy::Mutez,
+                val: MVal::Mutez(0),
+            },
+            BackendType::Int => MInstr::Push {
+                ty: MTy::Int,
+                val: MVal::Int(0),
+            },
+            BackendType::Nat => MInstr::Push {
+                ty: MTy::Nat,
+                val: MVal::Nat(0),
+            },
+            BackendType::Contract(_) => {
+                todo!()
+            }
+            BackendType::Operation => {
+                todo!()
+            }
+            BackendType::Struct { .. } => {
+                todo!()
+            }
+            BackendType::Ptr(_) => MInstr::Push {
+                ty: MTy::Int,
+                val: MVal::Int(-1),
+            },
+            BackendType::Option(child_ty) => MInstr::None {
+                ty: Box::new(child_ty.to_michelson_ty()),
+            },
         };
         res
     }

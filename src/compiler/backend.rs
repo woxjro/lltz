@@ -181,7 +181,7 @@ pub fn compile_instructions(
         match instruction {
             Instruction::Alloca { ptr, ty } => {
                 michelson_code = format!(
-                    "{michelson_code}{}",
+                    "{michelson_code}{}\n",
                     helper::alloca::exec_alloca(
                         ptr,
                         ty,

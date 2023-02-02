@@ -61,7 +61,9 @@ pub enum Instruction {
     Mem,
     Never,
     //NIL ty,
-    //NONE ty,
+    None {
+        ty: Box<Ty>,
+    },
     Pack,
     Pair,
     //PAIR n,

@@ -20,7 +20,7 @@ pub fn inject_storage(
         })
         .unwrap();
     format!(
-        "{michelson_code}{}",
+        "{michelson_code}{}\n",
         helper::storage::alloca_storage_by_value(
             storage_arg,
             tab,
@@ -49,7 +49,7 @@ pub fn inject_parameter(
         })
         .unwrap();
     format!(
-        "{michelson_code}{}",
+        "{michelson_code}{}\n",
         helper::parameter::alloca_parameter_by_value(
             parameter_arg,
             tab,

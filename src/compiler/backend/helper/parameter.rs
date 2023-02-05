@@ -1,5 +1,9 @@
-use crate::compiler::utils;
 use crate::lltz_ir::{Arg, BackendType, Register, Type};
+use michelson_ast::formatter;
+use michelson_ast::instruction::Instruction as MInstr;
+use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
+use michelson_ast::ty::Ty as MTy;
+use michelson_ast::val::Val as MVal;
 use std::collections::HashMap;
 
 ///parameterをMichelsonのPairからLLVMのレジスタ・メモリモデルへとデコードする関数
@@ -16,13 +20,13 @@ pub fn alloca_parameter_by_value(
 ) -> String {
     let Arg { reg, ty } = parameter_arg;
     let mut michelson_instructions = vec![];
-    michelson_instructions.push(format!("### alloca parameter {{"));
+    michelson_instructions.push(MInstrWrapper::Comment(format!("alloca parameter {{")));
 
     //Step 0.(parameter, storage)をスタックの一番下に入れる
-    michelson_instructions.push(format!(
-        "DUG {};",
-        register2stack_ptr.len() + memory_ty2stack_ptr.len()
-    ));
+    michelson_instructions.push(
+        MInstr::DugN(register2stack_ptr.len() + memory_ty2stack_ptr.len()).to_instruction_wrapper(),
+    );
+
     //Step 1.普通のallocaをする（parameterの場所を確保するため）
     match Type::deref(ty) {
         Type::Struct { .. } => {
@@ -39,10 +43,9 @@ pub fn alloca_parameter_by_value(
     }
 
     //Step 2.(parameter, storage)を上に持ってきた後,
-    michelson_instructions.push(format!(
-        "DIG {};",
-        register2stack_ptr.len() + memory_ty2stack_ptr.len()
-    ));
+    michelson_instructions.push(
+        MInstr::DigN(register2stack_ptr.len() + memory_ty2stack_ptr.len()).to_instruction_wrapper(),
+    );
 
     //Step 3.LLVMのメモリモデルへとデコードして値を入れていく
     michelson_instructions.append(&mut decode_parameter_from_input(
@@ -52,9 +55,10 @@ pub fn alloca_parameter_by_value(
         memory_ty2stack_ptr,
     ));
 
-    michelson_instructions.push(format!("### }}"));
-    michelson_instructions.push(format!("DROP; # DROP (Paramter, Storage)"));
-    utils::format(&michelson_instructions, tab, tab_depth)
+    michelson_instructions.push(MInstrWrapper::Comment(format!("}}")));
+    michelson_instructions
+        .push(MInstr::Drop.to_instruction_wrapper_with_comment("DROP (Paramter, Storage)"));
+    formatter::format(&michelson_instructions, tab_depth, tab)
 }
 
 /// Michelson引数のparameterをLLVMのメモリモデルへとデコードする関数
@@ -67,17 +71,20 @@ fn decode_parameter_from_input(
     ty: &Type,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
-) -> Vec<String> {
+) -> Vec<MInstrWrapper> {
     let mut michelson_instructions = vec![
-        format!("DUP;"),
-        format!("CAR;"), //storage を破棄
-    ];
+        MInstr::Dup,
+        MInstr::Car, //storage を破棄
+    ]
+    .iter()
+    .map(|instr| instr.to_instruction_wrapper())
+    .collect::<Vec<_>>();
     match Type::deref(ty) {
         Type::Struct { id: _, fields } => {
             if fields.len() == 0 {
                 // unit
                 // do nothing
-                michelson_instructions.push(format!("DROP;"));
+                michelson_instructions.push(MInstr::Drop.to_instruction_wrapper());
             } else if fields.len() == 1 {
                 // ty
                 todo!()
@@ -123,11 +130,14 @@ fn decode_parameter_field_from_input(
     path: Vec<(usize, Type)>,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
-) -> Vec<String> {
+) -> Vec<MInstrWrapper> {
     let mut michelson_instructions = vec![
-        format!("DUP;"),
-        format!("GET {};", get_n_idx), //PairからStructの子fieldに対応する部分を取得
-    ];
+        MInstr::Dup,
+        MInstr::GetN(get_n_idx), //PairからStructの子fieldに対応する部分を取得
+    ]
+    .iter()
+    .map(|instr| instr.to_instruction_wrapper())
+    .collect::<Vec<_>>();
 
     match ty {
         Type::Struct {
@@ -157,14 +167,14 @@ fn decode_parameter_field_from_input(
             //最後の要素だった場合は後処理
             //Struct { .. }から出るときは後処理が必要。入る時にDUPしている為.
             if is_last_field {
-                michelson_instructions.push(format!("DROP;"));
+                michelson_instructions.push(MInstr::Drop.to_instruction_wrapper());
             }
         }
         _ => {
             /* primitiveの値がスタックの上に乗っているのでそれを使って,Memoryに入れる */
             michelson_instructions.append(&mut vec![
-                format!("### PUT {{"), //
-                format!("SOME;"),
+                MInstrWrapper::Comment(format!("PUT {{")),
+                MInstr::Some.to_instruction_wrapper(),
             ]);
             for (i, (child_idx, child_ty)) in path.iter().enumerate() {
                 let memory_ptr = memory_ty2stack_ptr
@@ -173,61 +183,70 @@ fn decode_parameter_field_from_input(
 
                 if i == 0 {
                     /* 最初はptrを使う */
-                    michelson_instructions.append(&mut vec![
-                        format!(
-                            "DUP {};",
-                            register2stack_ptr.len() + memory_ptr + (depth + 2)
-                        ),
-                        format!("CAR;"), //bm:some(v):michelson_instructionst
-                        format!(
-                            "DUP {};",
-                            register2stack_ptr.get(ptr).unwrap() + (depth + 2) + 1
-                        ), //key:bm:some(v)
-                        format!("GET;"),
-                        format!("ASSERT_SOME;"), //struct_instance_bm:some(v)
-                        format!("PUSH int {child_idx};"),
-                        format!("GET;"),
-                        format!("ASSERT_SOME;"), //field_ptr:some(v)
-                    ]);
+                    michelson_instructions.append(
+                        &mut vec![
+                            MInstr::DupN(register2stack_ptr.len() + memory_ptr + (depth + 2)),
+                            MInstr::Car, //bm:some(v):michelson_instructionst
+                            MInstr::DupN(register2stack_ptr.get(ptr).unwrap() + (depth + 2) + 1), //key:bm:some(v)
+                            MInstr::Get,
+                            MInstr::AssertSome, //struct_instance_bm:some(v)
+                            MInstr::Push {
+                                ty: MTy::Int,
+                                val: MVal::Int((*child_idx).try_into().unwrap()),
+                            },
+                            MInstr::Get,
+                            MInstr::AssertSome, //field_ptr:some(v)
+                        ]
+                        .iter()
+                        .map(|instr| instr.to_instruction_wrapper())
+                        .collect::<Vec<_>>(),
+                    );
                 } else {
-                    michelson_instructions.append(&mut vec![
-                        format!(
-                            "DUP {};",
-                            register2stack_ptr.len() + memory_ptr + (depth + 2) + 1
-                        ),
-                        format!("CAR;"),
-                        format!("SWAP;"), //field_ptr:mem:some(v)
-                        format!("GET;"),
-                        format!("ASSERT_SOME;"), //field_instance:some(v)
-                        format!("PUSH int {};", *child_idx),
-                        format!("GET;"),
-                        format!("ASSERT_SOME;"), //field_ptr:some(v)
-                    ]);
+                    michelson_instructions.append(
+                        &mut vec![
+                            MInstr::DupN(register2stack_ptr.len() + memory_ptr + (depth + 2) + 1),
+                            MInstr::Car,
+                            MInstr::Swap, //field_ptr:mem:some(v)
+                            MInstr::Get,
+                            MInstr::AssertSome, //field_instance:some(v)
+                            MInstr::Push {
+                                ty: MTy::Int,
+                                val: MVal::Int((*child_idx).try_into().unwrap()),
+                            },
+                            MInstr::Get,
+                            MInstr::AssertSome, //field_ptr:some(v)
+                        ]
+                        .iter()
+                        .map(|instr| instr.to_instruction_wrapper())
+                        .collect::<Vec<_>>(),
+                    );
                 }
             }
 
             let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
-            michelson_instructions.append(&mut vec![
-                format!(
-                    "DIG {};",
-                    register2stack_ptr.len() + memory_ptr + (depth + 2) //+ 1 - 1
-                ), //(mem,cnt):field_ptr:some(v)
-                format!("UNPAIR;"), //mem:cnt:field_ptr:some(v)
-                format!("DIG 3;"),  //some(v):mem:cnt:field_ptr
-                format!("DIG 3;"),  //field_ptr:some(v):mem:cnt
-                format!("UPDATE;"), //mem:cnt
-                format!("PAIR;"),   //(mem,cnt)
-                format!(
-                    "DUG {};",
-                    register2stack_ptr.len() + (memory_ptr - 1) + (depth + 1)
-                ),
-            ]);
+            michelson_instructions.append(
+                &mut vec![
+                    MInstr::DigN(
+                        register2stack_ptr.len() + memory_ptr + (depth + 2), /*+ 1 - 1 */
+                    ),
+                    //(mem,cnt):field_ptr:some(v)
+                    MInstr::Unpair,  //mem:cnt:field_ptr:some(v)
+                    MInstr::DigN(3), //some(v):mem:cnt:field_ptr
+                    MInstr::DigN(3), //field_ptr:some(v):mem:cnt
+                    MInstr::Update,  //mem:cnt
+                    MInstr::Pair,    //(mem,cnt)
+                    MInstr::DugN(register2stack_ptr.len() + (memory_ptr - 1) + (depth + 1)),
+                ]
+                .iter()
+                .map(|instr| instr.to_instruction_wrapper())
+                .collect::<Vec<_>>(),
+            );
             //最後の要素だった場合は後処理
             //Struct { .. }から出るときは後処理が必要。入る時にDUPしている為.
             if is_last_field {
-                michelson_instructions.push(format!("DROP;"));
+                michelson_instructions.push(MInstr::Drop.to_instruction_wrapper());
             }
-            michelson_instructions.push(format!("### }}"));
+            michelson_instructions.push(MInstrWrapper::Comment(format!("}}")));
         }
     }
     michelson_instructions

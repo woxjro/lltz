@@ -63,6 +63,7 @@ impl InstructionWrapper {
                             vty.to_string()
                         )
                     }
+                    Instruction::GetN(n) => format!("{space}{} {}", instruction.get_label(), n),
                     ////////////////////////////////////////////////
                     /////////////Blockchain operations//////////////
                     ////////////////////////////////////////////////

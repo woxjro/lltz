@@ -274,30 +274,40 @@ pub fn compile_instructions(
                 // FIXME TODO: subsequent[1]で決め打ちで取得しているので直したい.
                 //              (...が, これ以外無い気がする)
                 let (_, reg) = &subsequent[1];
-                let michelson_instructions = vec![
-                    format!(
-                        "### {} = getElementPtr {}, {}*, {} {{",
+
+                let instructions = vec![
+                    vec![MInstrWrapper::Comment(format!(
+                        "{} = getElementPtr {}, {}*, {} {{",
                         result.get_id(),
                         Type::get_name(ty),
                         Type::get_name(ty),
                         ptrval.get_id()
-                    ),
-                    format!("DUP {};", register2stack_ptr.len() + memory_ptr),
-                    format!("CAR;"), //bm
-                    format!("DUP {};", register2stack_ptr.get(&ptrval).unwrap() + 1),
-                    format!("GET;"),         //some(map)
-                    format!("ASSERT_SOME;"), //map
-                    format!("DUP {};", register2stack_ptr.get(&reg).unwrap() + 1), //int:map
-                    format!("GET;"),
-                    format!("ASSERT_SOME;"), //ptr
-                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
-                    format!("DROP;"),
-                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
-                    format!("### }}"),
-                ];
+                    ))],
+                    vec![
+                        MInstr::DupN(register2stack_ptr.len() + memory_ptr),
+                        MInstr::Car, // bm
+                        MInstr::DupN(register2stack_ptr.get(&ptrval).unwrap() + 1),
+                        MInstr::Get,        //some(map)
+                        MInstr::AssertSome, //map
+                        MInstr::DupN(register2stack_ptr.get(&reg).unwrap() + 1), //int:map
+                        MInstr::Get,
+                        MInstr::AssertSome, //ptr
+                        MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                        MInstr::Drop,
+                        MInstr::DugN(register2stack_ptr.get(&result).unwrap() - 1),
+                    ]
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                    vec![MInstrWrapper::Comment("}".to_string())],
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
+
                 michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&michelson_instructions, tab, tab_depth)
+                    "{michelson_code}{}\n",
+                    formatter::format(&instructions, tab_depth, tab)
                 );
             }
             Instruction::If {
@@ -754,24 +764,34 @@ pub fn compile_instructions(
                 ty,
                 address,
             } => {
-                let michelson_instructions = vec![
-                    format!(
-                        "### {} = MichelsonContract {} {{",
-                        result.get_id(),
-                        address.get_id()
-                    ),
-                    format!("DUP {};", register2stack_ptr.get(&address).unwrap()),
-                    format!("ASSERT_SOME; # unwrap (option address)"),
-                    format!("CONTRACT {};", ty.struct_type2michelson_pair().to_string()),
-                    format!("SOME; {}", "# to option (option (contract ty))"), // registerもoptionで包む
-                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
-                    format!("DROP;"),
-                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
-                    format!("### }}"),
-                ];
+                let instructions = vec![
+                    vec![MInstrWrapper::Comment(format!(
+                        "{} = MichelsonContract {{",
+                        result.get_id()
+                    ))],
+                    vec![
+                        MInstr::DupN(*register2stack_ptr.get(&address).unwrap()),
+                        MInstr::AssertSome,
+                        MInstr::Contract {
+                            ty: ty.struct_type2michelson_pair(),
+                        },
+                        MInstr::Some,
+                        MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                        MInstr::Drop,
+                        MInstr::DugN(register2stack_ptr.get(&result).unwrap() - 1),
+                    ]
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                    vec![MInstrWrapper::Comment("}".to_string())],
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
+
                 michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&michelson_instructions, tab, tab_depth)
+                    "{michelson_code}{}\n",
+                    formatter::format(&instructions, tab_depth, tab)
                 );
             }
             Instruction::MichelsonAssertSome { result, ty, value } => {
@@ -809,37 +829,37 @@ pub fn compile_instructions(
                 tokens,
                 contract,
             } => {
-                let michelson_instructions = vec![
-                    format!(
-                        "### {} = MichelsonTransferTokens {} {} {} {{",
+                let instructions = vec![
+                    vec![MInstrWrapper::Comment(format!(
+                        "{} = MichelsonTransferTokens {} {} {} {{",
                         result.get_id(),
                         init.get_id(),
                         tokens.get_id(),
                         contract.get_id()
-                    ),
-                    format!(
-                        "DUP {}; {}",
-                        register2stack_ptr.get(&contract).unwrap(),
-                        "# option contract"
-                    ),
-                    format!("ASSERT_SOME; {}", "# to contract"),
-                    format!(
-                        "DUP {}; {}",
-                        register2stack_ptr.get(&tokens).unwrap() + 1,
-                        "# tokens"
-                    ),
-                    // FIXME: unit しか対応していない...
-                    format!("UNIT; # FIXME,TODO: retrieive_struct_from_memory"),
-                    format!("TRANSFER_TOKENS;"),
-                    format!("SOME; {}", "# to option operation"),
-                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
-                    format!("DROP;"),
-                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
-                    format!("### }}"),
-                ];
+                    ))],
+                    vec![
+                        MInstr::DupN(*register2stack_ptr.get(&contract).unwrap()),
+                        MInstr::AssertSome,
+                        MInstr::DupN(register2stack_ptr.get(&tokens).unwrap() + 1),
+                        MInstr::Unit, // FIXME: unit しか対応していない...
+                        MInstr::TransferTokens,
+                        MInstr::Some,
+                        MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                        MInstr::Drop,
+                        MInstr::DugN(register2stack_ptr.get(&result).unwrap() - 1),
+                    ]
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                    vec![MInstrWrapper::Comment("}".to_string())],
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
+
                 michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&michelson_instructions, tab, tab_depth)
+                    "{michelson_code}{}\n",
+                    formatter::format(&instructions, tab_depth, tab)
                 );
             }
         };

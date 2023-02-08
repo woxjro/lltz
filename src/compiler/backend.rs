@@ -506,41 +506,52 @@ pub fn compile_instructions(
                 op1,
                 op2,
             } => {
-                let mut michelson_instructions = vec![
-                    format!("### icmp {{"),
-                    format!("DUP {};", register2stack_ptr.get(&op1).unwrap()),
-                    format!("DUP {};", register2stack_ptr.get(&op2).unwrap() + 1),
-                ];
-
-                let mut op = vec![];
-                // TODO: 他のConditionについても実装
-                match cond {
-                    Condition::Eq => {
-                        op.push(format!("COMPARE;"));
-                        op.push(format!("EQ;"));
+                let instructions = vec![
+                    vec![MInstrWrapper::Comment(format!(
+                        "{} = icmp {} {} {{", //TODO: icmp -> cond.to_string()
+                        result.get_id(),
+                        op1.get_id(),
+                        op2.get_id(),
+                    ))],
+                    vec![
+                        MInstr::DupN(*register2stack_ptr.get(&op1).unwrap()),
+                        MInstr::DupN(register2stack_ptr.get(&op2).unwrap() + 1),
+                    ]
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                    // TODO: 他のConditionについても実装
+                    match cond {
+                        Condition::Eq => {
+                            vec![MInstr::Compare, MInstr::Eq]
+                        }
+                        Condition::Slt => {
+                            vec![MInstr::Sub, MInstr::Gt]
+                        }
+                        _ => {
+                            vec![MInstr::Compare]
+                        }
                     }
-                    Condition::Slt => {
-                        op.push(format!("SUB;"));
-                        op.push(format!("GT;"));
-                    }
-                    _ => {
-                        op.push(format!("COMPARE;"));
-                    }
-                };
-
-                let mut rest = vec![
-                    format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
-                    format!("DROP;"),
-                    format!("DUG {};", register2stack_ptr.get(&result).unwrap() - 1),
-                    format!("### }}"),
-                ];
-
-                michelson_instructions.append(&mut op);
-                michelson_instructions.append(&mut rest);
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                    vec![
+                        MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                        MInstr::Drop,
+                        MInstr::DugN(register2stack_ptr.get(&result).unwrap() - 1),
+                    ]
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                    vec![MInstrWrapper::Comment("}".to_string())],
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
 
                 michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&michelson_instructions, tab, tab_depth)
+                    "{michelson_code}{}\n",
+                    formatter::format(&instructions, tab_depth, tab)
                 );
             }
             Instruction::MichelsonGetAmount { result } => {
@@ -793,7 +804,7 @@ pub fn compile_instructions(
             Instruction::MichelsonAssertSome { result, ty, value } => {
                 let instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
-                        "### {} = MichelsonAssertSome {} {} {{",
+                        "{} = MichelsonAssertSome {} {} {{",
                         result.get_id(),
                         BackendType::from(ty).to_string(),
                         value.get_id()

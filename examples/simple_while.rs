@@ -1,5 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{Arg, Condition, Function, Instruction, Program, Opcode, Register, Type};
+use lltz::lltz_ir::{Arg, Condition, Function, Instruction, Opcode, Program, Register, Type};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -119,7 +119,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("100"),
+            value: Register::new("10"),
             ptr: Register::new("%2"),
         },
         Instruction::Store {

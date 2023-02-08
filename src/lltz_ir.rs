@@ -536,16 +536,6 @@ pub enum Instruction {
         cond_block: Vec<Instruction>,
         loop_block: Vec<Instruction>,
     },
-    // TODO:  その他の任意フィールドの実装
-    //<result> = [tail | musttail | notail ] call [fast-math flags] [cconv] [ret attrs]
-    //           [addrspace(<num>)] <ty>|<fnty> <fnptrval>(<function args>) [fn attrs]
-    //           [ operand bundles ]
-    Call {
-        result: Register,
-        fnty: Type,
-        fnptrval: Register,
-        function_args: Vec<Arg>,
-    },
     Op {
         result: Register,
         ty: Type,
@@ -569,10 +559,6 @@ pub enum Instruction {
         dest: Register,
         src: Register,
         ty: Type, //ポインタdest,srcが指す中身の型
-    },
-    Ret {
-        ty: Type,
-        value: Register,
     },
     ///////////////////////////////////////
     ////Michelson Blockcnain Operations////

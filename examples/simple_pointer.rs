@@ -1,7 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{
-    Arg, Function, Instruction, Program, Opcode, Register, Type,
-};
+use lltz::lltz_ir::{Arg, Function, Instruction, Opcode, Program, Register, Type};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -123,10 +121,6 @@ fn main() {
             ptr: Register::new("%6"),
         },
         //  ret Int 0
-        Instruction::Ret {
-            ty: Type::Int,
-            value: Register::new("0"),
-        },
         //}}
     ];
 

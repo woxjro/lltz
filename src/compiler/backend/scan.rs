@@ -263,9 +263,6 @@ pub fn scan_registers_and_memory(
                     loop_block,
                 );
             }
-            Instruction::Call { .. } => {
-                todo!()
-            }
             Instruction::Op {
                 ty,
                 opcode: _,
@@ -312,15 +309,6 @@ pub fn scan_registers_and_memory(
                     *stack_ptr
                 });
                 */
-            }
-            Instruction::Ret { ty, value } => {
-                let _ = register2stack_ptr.entry(value.clone()).or_insert_with(|| {
-                    *stack_ptr += 1;
-                    *stack_ptr
-                });
-                register2ty
-                    .entry(value.clone())
-                    .or_insert(BackendType::from(ty));
             }
             Instruction::Icmp {
                 result,

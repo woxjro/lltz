@@ -1,7 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{
-    Arg, Function, Instruction, Program, Opcode, Register, Type,
-};
+use lltz::lltz_ir::{Arg, Function, Instruction, Opcode, Program, Register, Type};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -91,10 +89,6 @@ fn main() {
             ty: Type::Mutez,
             value: Register::new("%7"),
             ptr: Register::new("%4"),
-        },
-        Instruction::Ret {
-            ty: Type::Mutez,
-            value: Register::new("0"),
         },
     ];
 

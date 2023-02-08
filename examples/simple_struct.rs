@@ -1,7 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{
-    Arg, Function, Instruction, Program, Register, Type,
-};
+use lltz::lltz_ir::{Arg, Function, Instruction, Program, Register, Type};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -125,10 +123,7 @@ fn main() {
             value: Register::new("700"),
             ptr: Register::new("%5"),
         },
-        Instruction::Ret {
-            ty: Type::Int,
-            value: Register::new("0"),
-        }, //}}
+        //}}
     ];
 
     let parameter = Type::Struct {

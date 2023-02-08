@@ -1,7 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{
-    Arg, Function, Instruction, Program, Register, Type,
-};
+use lltz::lltz_ir::{Arg, Function, Instruction, Program, Register, Type};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -225,10 +223,6 @@ fn main() {
             ty: struct_fish.clone(),
         },
         //  ret Int 0
-        Instruction::Ret {
-            ty: Type::Int,
-            value: Register::new("0"),
-        },
     ];
 
     //}}

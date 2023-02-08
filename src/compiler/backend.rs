@@ -442,9 +442,6 @@ pub fn compile_instructions(
 
                 //];
             }
-            Instruction::Call { .. } => {
-                todo!()
-            }
             Instruction::Op {
                 ty,
                 opcode,
@@ -502,7 +499,6 @@ pub fn compile_instructions(
                     )
                 );
             }
-            Instruction::Ret { ty: _, value: _ } => {}
             Instruction::Icmp {
                 result,
                 cond,

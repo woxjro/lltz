@@ -68,6 +68,9 @@ impl InstructionWrapper {
                     /////////////Blockchain operations//////////////
                     ////////////////////////////////////////////////
                     //CREATE_CONTRACT { parameter ty1; storage ty2; code instr1 },
+                    Instruction::Contract { ty } => {
+                        format!("{space}{} {}", instruction.get_label(), ty.to_string())
+                    }
                     ////////////////////////////////////////////////
                     ////////////Operations on tickets///////////////
                     ////////////////////////////////////////////////

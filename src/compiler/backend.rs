@@ -762,7 +762,7 @@ pub fn compile_instructions(
                     ),
                     format!("DUP {};", register2stack_ptr.get(&address).unwrap()),
                     format!("ASSERT_SOME; # unwrap (option address)"),
-                    format!("CONTRACT {};", Type::struct_type2michelson_pair(ty.clone())),
+                    format!("CONTRACT {};", ty.struct_type2michelson_pair().to_string()),
                     format!("SOME; {}", "# to option (option (contract ty))"), // registerもoptionで包む
                     format!("DIG {};", register2stack_ptr.get(&result).unwrap()),
                     format!("DROP;"),
@@ -1155,26 +1155,24 @@ pub fn exit(
         }
     }
 
-    let parameter_michelson_ty = Type::struct_type2michelson_pair(
-        structure_types
-            .iter()
-            .find(|ty| match ty {
-                Type::Struct { id, fields: _ } => id == &String::from("Parameter"),
-                _ => false,
-            })
-            .expect("Parameter型が宣言されていません.")
-            .clone(),
-    );
-    let storage_michelson_ty = Type::struct_type2michelson_pair(
-        structure_types
-            .iter()
-            .find(|ty| match ty {
-                Type::Struct { id, fields: _ } => id == &String::from("Storage"),
-                _ => false,
-            })
-            .expect("Storage型が宣言されていません.")
-            .clone(),
-    );
+    let parameter_michelson_ty = structure_types
+        .iter()
+        .find(|ty| match ty {
+            Type::Struct { id, fields: _ } => id == &String::from("Parameter"),
+            _ => false,
+        })
+        .expect("Parameter型が宣言されていません.")
+        .struct_type2michelson_pair()
+        .to_string();
+    let storage_michelson_ty = structure_types
+        .iter()
+        .find(|ty| match ty {
+            Type::Struct { id, fields: _ } => id == &String::from("Storage"),
+            _ => false,
+        })
+        .expect("Storage型が宣言されていません.")
+        .struct_type2michelson_pair()
+        .to_string();
 
     format!(
         "

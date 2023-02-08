@@ -1,6 +1,5 @@
 //! LLTZ IR の定義
 use michelson_ast::instruction::Instruction as MInstr;
-use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
 use michelson_ast::ty::Ty as MTy;
 use michelson_ast::val::Val as MVal;
 
@@ -45,55 +44,82 @@ pub enum Type {
 impl Type {
     ///予約語Typeを受け取り, MichelsonのPairを返す.
     ///Storage, Parameter, PairなどといったMichelsonコードの引数を生成するために使う
-    pub fn struct_type2michelson_pair(ty: Type) -> String {
-        match ty {
+    pub fn struct_type2michelson_pair(&self) -> MTy {
+        match self {
             Type::Struct { id: _, fields } => {
-                let mut res = String::new();
                 if fields.len() >= 2 {
-                    for (i, field) in fields.iter().enumerate() {
-                        if i == 0 {
-                            res = Type::struct_type2michelson_pair(field.clone())
-                        } else {
-                            res = format!(
-                                "{res} {}",
-                                Type::struct_type2michelson_pair(field.clone())
-                            );
+                    let mut es = fields
+                        .iter()
+                        .map(|field| field.struct_type2michelson_pair())
+                        .collect::<Vec<_>>();
+
+                    // CAUTION: ty2, ty1の順番はこのまま．逆にしない．
+                    let mut res = MTy::Pair {
+                        ty2: Box::new(es.pop().unwrap()),
+                        ty1: Box::new(es.pop().unwrap()),
+                    };
+
+                    while let Some(e) = es.pop() {
+                        res = MTy::Pair {
+                            ty1: Box::new(e),
+                            ty2: Box::new(res.clone()),
                         }
                     }
-                    format!("(pair {res})")
+
+                    res
                 } else if fields.len() == 1 {
-                    Type::struct_type2michelson_pair(fields.iter().nth(0).unwrap().clone())
+                    fields.iter().nth(0).unwrap().struct_type2michelson_pair()
                 } else {
-                    format!("unit")
+                    MTy::Unit
                 }
             }
             Type::Array {
                 size: _,
                 elementtype: _,
             } => todo!(),
-            _ => match ty {
-                Type::Address => String::from("address"),
-                Type::Bool => String::from("bool"),
-                Type::Mutez => String::from("mutez"),
-                Type::Int => String::from("int"),
-                Type::Nat => String::from("nat"),
+            _ => match self {
+                Type::Address => self.to_michelson_ty(),
+                Type::Array { .. } => panic!(),
+                Type::Bool => self.to_michelson_ty(),
+                Type::Mutez => self.to_michelson_ty(),
+                Type::Int => self.to_michelson_ty(),
+                Type::Nat => self.to_michelson_ty(),
                 Type::Struct { .. } => {
                     panic!() //never occur
                 }
-                Type::Array { .. } => {
-                    panic!() //never occur
-                }
-                Type::Contract(ty) => {
-                    let inner = Type::struct_type2michelson_pair(*ty);
-                    format!("(contract {inner})")
-                }
-                Type::Operation => String::from("operation"),
-                Type::Ptr(_) => String::from("int"),
-                Type::Option(ty) => {
-                    let inner = Type::struct_type2michelson_pair(*ty);
-                    format!("(option {inner})")
-                }
+                Type::Contract(ty) => MTy::Contract {
+                    ty: Box::new(ty.struct_type2michelson_pair()),
+                },
+                Type::Operation => self.to_michelson_ty(),
+                Type::Ptr(_) => MTy::Int,
+                Type::Option(ty) => MTy::Option {
+                    ty: Box::new(ty.struct_type2michelson_pair()),
+                },
             },
+        }
+    }
+
+    pub fn to_michelson_ty(&self) -> MTy {
+        match self {
+            Type::Address => MTy::Address,
+            Type::Bool => MTy::Bool,
+            Type::Mutez => MTy::Mutez,
+            Type::Int => MTy::Int,
+            Type::Nat => MTy::Nat,
+            Type::Struct { .. } => {
+                panic!("Struct 型に対応する michelson プリミティブはありません")
+            }
+            Type::Contract(child_ty) => MTy::Contract {
+                ty: Box::new(child_ty.to_michelson_ty()),
+            },
+            Type::Operation => MTy::Operation,
+            Type::Ptr(_) => MTy::Int,
+            Type::Option(child_ty) => MTy::Option {
+                ty: Box::new(child_ty.to_michelson_ty()),
+            },
+            Type::Array { .. } => {
+                panic!("Array 型に対応する michelson プリミティブはありません")
+            }
         }
     }
 
@@ -185,18 +211,18 @@ impl BackendType {
 
     pub fn to_string(&self) -> String {
         match self {
-            BackendType::Address => String::from("address"),
-            BackendType::Bool => String::from("bool"),
-            BackendType::Mutez => String::from("mutez"),
-            BackendType::Int => String::from("int"),
-            BackendType::Nat => String::from("nat"),
-            BackendType::Struct { .. } => BackendType::struct_type2michelson_pair(self),
+            BackendType::Address => self.to_michelson_ty().to_string(),
+            BackendType::Bool => self.to_michelson_ty().to_string(),
+            BackendType::Mutez => self.to_michelson_ty().to_string(),
+            BackendType::Int => self.to_michelson_ty().to_string(),
+            BackendType::Nat => self.to_michelson_ty().to_string(),
+            BackendType::Struct { .. } => self.struct_type2michelson_pair().to_string(),
             BackendType::Contract(child_ty) => {
-                let inner = BackendType::struct_type2michelson_pair(&**child_ty);
+                let inner = BackendType::struct_type2michelson_pair(&**child_ty).to_string();
                 format!("(contract {inner})")
             }
-            BackendType::Operation => String::from("operation"),
-            BackendType::Ptr(_) => String::from("int"),
+            BackendType::Operation => self.to_michelson_ty().to_string(),
+            BackendType::Ptr(_) => self.to_michelson_ty().to_string(),
             BackendType::Option(child_ty) => {
                 let inner = child_ty.to_string();
                 format!("(option {inner})")
@@ -237,28 +263,36 @@ impl BackendType {
         }
     }
 
+    ///要らない気がする．？
     ///予約語Typeを受け取り, MichelsonのPairを返す.
     ///Storage, Parameter, PairなどといったMichelsonコードの引数を生成するために使う
-    pub fn struct_type2michelson_pair(&self) -> String {
+    fn struct_type2michelson_pair(&self) -> MTy {
         match self {
             BackendType::Struct { id: _, fields } => {
-                let mut res = String::new();
                 if fields.len() >= 2 {
-                    for (i, field) in fields.iter().enumerate() {
-                        if i == 0 {
-                            res = BackendType::struct_type2michelson_pair(&field)
-                        } else {
-                            res = format!(
-                                "{res} {}",
-                                BackendType::struct_type2michelson_pair(&field)
-                            );
+                    let mut es = fields
+                        .iter()
+                        .map(|field| field.struct_type2michelson_pair())
+                        .collect::<Vec<_>>();
+
+                    // CAUTION: ty2, ty1の順番はこのまま．逆にしない．
+                    let mut res = MTy::Pair {
+                        ty2: Box::new(es.pop().unwrap()),
+                        ty1: Box::new(es.pop().unwrap()),
+                    };
+
+                    while let Some(e) = es.pop() {
+                        res = MTy::Pair {
+                            ty1: Box::new(e),
+                            ty2: Box::new(res.clone()),
                         }
                     }
-                    format!("(pair {res})")
+
+                    res
                 } else if fields.len() == 1 {
                     BackendType::struct_type2michelson_pair(&fields.iter().nth(0).unwrap())
                 } else {
-                    format!("unit")
+                    MTy::Unit
                 }
             }
             BackendType::Array {
@@ -268,25 +302,23 @@ impl BackendType {
                 panic!()
             }
             _ => match self {
-                BackendType::Address => String::from("address"),
+                BackendType::Address => self.to_michelson_ty(),
                 BackendType::Array { .. } => panic!(),
-                BackendType::Bool => String::from("bool"),
-                BackendType::Mutez => String::from("mutez"),
-                BackendType::Int => String::from("int"),
-                BackendType::Nat => String::from("nat"),
+                BackendType::Bool => self.to_michelson_ty(),
+                BackendType::Mutez => self.to_michelson_ty(),
+                BackendType::Int => self.to_michelson_ty(),
+                BackendType::Nat => self.to_michelson_ty(),
                 BackendType::Struct { .. } => {
                     panic!() //never occur
                 }
-                BackendType::Contract(ty) => {
-                    let inner = BackendType::struct_type2michelson_pair(&ty);
-                    format!("(contract {inner})")
-                }
-                BackendType::Operation => String::from("operation"),
-                BackendType::Ptr(_) => String::from("int"),
-                BackendType::Option(ty) => {
-                    let inner = BackendType::struct_type2michelson_pair(&ty);
-                    format!("(option {inner})")
-                }
+                BackendType::Contract(ty) => MTy::Contract {
+                    ty: Box::new(ty.struct_type2michelson_pair()),
+                },
+                BackendType::Operation => self.to_michelson_ty(),
+                BackendType::Ptr(_) => MTy::Int,
+                BackendType::Option(ty) => MTy::Option {
+                    ty: Box::new(ty.struct_type2michelson_pair()),
+                },
             },
         }
     }

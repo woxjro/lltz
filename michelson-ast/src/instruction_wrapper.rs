@@ -42,7 +42,17 @@ impl InstructionWrapper {
                     Instruction::IfNone { .. } => todo!(),
                     //ITER inster,
                     //LAMBDA ty1 ty2 instr,
-                    Instruction::Loop { .. } => todo!(),
+                    Instruction::Loop { instr } => {
+                        let label = instruction.get_label();
+                        let space = tab.repeat(depth);
+                        let space_label = " ".repeat(instruction.get_label_len());
+                        let formatted_instr = format(instr, depth + 1, tab);
+                        format!(
+                            r#"{space}{label} {{
+{formatted_instr}
+{space}{space_label} }}"#
+                        )
+                    }
                     Instruction::LoopLeft { .. } => todo!(),
                     //instr1 ; instr2,
                     //{},

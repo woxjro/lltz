@@ -4,6 +4,7 @@ use super::lltz_ir::{BackendType, Register};
 use std::collections::HashMap;
 mod backend;
 mod utils;
+use michelson_ast::formatter;
 
 ///入力として LLTZ IR プログラム Program を受け取り，
 ///その挙動をエミュレートするMichelsonコードを返す関数
@@ -92,14 +93,18 @@ pub fn compile(lltz_ir: Program) -> String {
         &memory_ty2stack_ptr,
     );
 
-    michelson_code = backend::compile_instructions(
-        michelson_code,
-        tab,
-        tab_depth,
-        &register2stack_ptr,
-        &register2ty,
-        &memory_ty2stack_ptr,
-        &smart_contract_function.instructions,
+    michelson_code = format!(
+        "{michelson_code}{}\n",
+        formatter::format(
+            &backend::compile_instructions(
+                &register2stack_ptr,
+                &register2ty,
+                &memory_ty2stack_ptr,
+                &smart_contract_function.instructions,
+            ),
+            tab_depth,
+            tab
+        )
     );
 
     michelson_code = backend::retrieve_storage_from_memory(

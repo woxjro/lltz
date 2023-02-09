@@ -1,5 +1,8 @@
-use crate::compiler::utils;
 use crate::lltz_ir::{BackendType, Register, Type};
+use michelson_ast::instruction::Instruction as MInstr;
+use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
+use michelson_ast::ty::Ty as MTy;
+use michelson_ast::val::Val as MVal;
 use std::collections::HashMap;
 
 ///@llvm.memcpyを実行する関数
@@ -10,12 +13,10 @@ pub fn exec_llvm_memcpy(
     dest: &Register,
     src: &Register,
     ty: &Type,
-    tab: &str,
-    tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
     register2ty: &HashMap<Register, BackendType>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
-) -> String {
+) -> Vec<MInstrWrapper> {
     //validation
     match register2ty.get(&dest).unwrap() {
         BackendType::Ptr(inner) => {
@@ -47,34 +48,55 @@ pub fn exec_llvm_memcpy(
         }
     }
 
-    let mut michelson_instructions = vec![format!("### llvm.memcpy {{")];
+    let mut michelson_instructions = vec![MInstrWrapper::Comment(format!("@llvm.memcpy {{",))];
     match ty {
         Type::Struct { id: _, fields } => {
             let depth = 1;
             let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
-            michelson_instructions.append(&mut vec![
-                format!("DUP {};", register2stack_ptr.len() + memory_ptr),
-                format!("CAR;"),
-                format!("DUP {};", register2stack_ptr.get(&src).unwrap() + 1),
-                format!("GET;"),
-                format!("ASSERT_SOME;"), // struct_map_instance:rest
-            ]);
+            michelson_instructions.append(
+                &mut vec![
+                    MInstr::DupN(register2stack_ptr.len() + memory_ptr),
+                    MInstr::Car,
+                    MInstr::DupN(register2stack_ptr.get(&src).unwrap() + 1),
+                    MInstr::Get,
+                    MInstr::AssertSome,
+                ]
+                .iter()
+                .map(|instr| instr.to_instruction_wrapper())
+                .collect::<Vec<_>>(),
+            );
 
             for (idx, field) in fields.iter().enumerate() {
                 //DUP big_map struct { id, fields }
                 let field_memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(field)).unwrap();
-                michelson_instructions.append(&mut vec![
-                    format!("### llvm.memcpy GET {}[{idx}] {{", Type::get_name(&ty)),
-                    format!("DUP;"),
-                    format!("PUSH int {idx};"),
-                    format!("GET;"),
-                    format!("ASSERT_SOME;"), // ptr4field:rest
-                    format!("DUP {};", register2stack_ptr.len() + field_memory_ptr + 2),
-                    format!("CAR;"),
-                    format!("SWAP;"),
-                    format!("GET;"),
-                    format!("ASSERT_SOME;"), // field_type_value:rest
-                ]);
+                michelson_instructions.append(
+                    &mut vec![
+                        vec![MInstrWrapper::Comment(format!(
+                            "### llvm.memcpy GET {}[{idx}] {{",
+                            Type::get_name(&ty)
+                        ))],
+                        vec![
+                            MInstr::Dup,
+                            MInstr::Push {
+                                ty: MTy::Int,
+                                val: MVal::Int(idx.try_into().unwrap()),
+                            },
+                            MInstr::Get,
+                            MInstr::AssertSome, // ptr4field:rest
+                            MInstr::DupN(register2stack_ptr.len() + field_memory_ptr + 2),
+                            MInstr::Car,
+                            MInstr::Swap,
+                            MInstr::Get,
+                            MInstr::AssertSome, // field_type_value:rest
+                        ]
+                        .iter()
+                        .map(|instr| instr.to_instruction_wrapper())
+                        .collect::<Vec<_>>(),
+                    ]
+                    .into_iter()
+                    .flatten()
+                    .collect::<Vec<_>>(),
+                );
 
                 let mut path = vec![(idx, ty.clone())];
                 //GET
@@ -88,20 +110,17 @@ pub fn exec_llvm_memcpy(
                     dest,
                 ));
 
-                michelson_instructions.append(&mut vec![
-                    format!("### }}"),
-                    //format!("### llvm.memcpy PUT {}[{idx}] {{", Type::get_name(&ty)),
-                ]);
+                michelson_instructions.append(&mut vec![MInstrWrapper::Comment(format!("}}",))]);
             }
-            michelson_instructions.push(format!("DROP;"));
+            michelson_instructions.push(MInstr::Drop.to_instruction_wrapper());
         }
         _ => {
             /*primitive or pointer*/
             panic!("Primitive(Pointer)型に対して@llvm.memcpyは実行出来ません.");
         }
     };
-    michelson_instructions.push(format!("### }}"));
-    utils::format(&michelson_instructions, tab, tab_depth)
+    michelson_instructions.push(MInstrWrapper::Comment(format!("}}",)));
+    michelson_instructions
 }
 
 ///@llvm.memcpyをサポートする関数
@@ -116,23 +135,31 @@ fn get_field_element(
     register2ty: &HashMap<Register, BackendType>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
     dest: &Register,
-) -> Vec<String> {
+) -> Vec<MInstrWrapper> {
     let mut res = vec![];
     match field {
         Type::Struct { id: _, fields } => {
             for (child_idx, child_field) in fields.iter().enumerate() {
                 let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(field)).unwrap();
-                res.append(&mut vec![
-                    format!("DUP;"),                  //bm:bm:rest
-                    format!("PUSH int {child_idx};"), //idx:bm:bm:rest
-                    format!("GET;"),
-                    format!("ASSERT_SOME;"), // ptr4field:bm:rest
-                    format!("DUP {};", register2stack_ptr.len() + memory_ptr + depth),
-                    format!("CAR;"),
-                    format!("SWAP;"),
-                    format!("GET;"),
-                    format!("ASSERT_SOME;"), // field_type_value:bm:rest
-                ]);
+                res.append(
+                    &mut vec![
+                        MInstr::Dup, //bm:bm:rest
+                        MInstr::Push {
+                            ty: MTy::Int,
+                            val: MVal::Int(child_idx.try_into().unwrap()),
+                        }, //idx:bm:bm:rest
+                        MInstr::Get,
+                        MInstr::AssertSome, // ptr4field:bm:rest
+                        MInstr::DupN(register2stack_ptr.len() + memory_ptr + depth),
+                        MInstr::Car,
+                        MInstr::Swap,
+                        MInstr::Get,
+                        MInstr::AssertSome,
+                    ]
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                );
                 let mut new_path = path.clone();
                 new_path.push((child_idx, field.clone()));
                 res.append(&mut self::get_field_element(
@@ -145,14 +172,13 @@ fn get_field_element(
                     dest,
                 ));
             }
-            res.append(&mut vec![format!("DROP;")]);
+            res.append(&mut vec![MInstr::Drop.to_instruction_wrapper()]);
         }
         _ => {
             /*この関数の役目は終わりPUTの処理へ*/
-            res.append(&mut vec![
-                format!("### llvm.memcpy PUT {{"),
-                //format!("DROP;"),
-            ]);
+            res.append(&mut vec![MInstrWrapper::Comment(format!(
+                "@llvm.memcpy PUT {{",
+            ))]);
             res.append(&mut self::put_field_element(
                 depth,
                 field,
@@ -161,7 +187,7 @@ fn get_field_element(
                 memory_ty2stack_ptr,
                 dest,
             ));
-            res.push(format!("### }}"));
+            res.push(MInstrWrapper::Comment(format!("}}",)));
         }
     }
 
@@ -178,8 +204,8 @@ fn put_field_element(
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
     dest: &Register,
-) -> Vec<String> {
-    let mut res = vec![format!("SOME;")];
+) -> Vec<MInstrWrapper> {
+    let mut res = vec![MInstr::Some.to_instruction_wrapper()];
     for (i, (child_idx, child_ty)) in path.iter().enumerate() {
         let memory_ptr = memory_ty2stack_ptr
             .get(&BackendType::from(child_ty))
@@ -187,45 +213,63 @@ fn put_field_element(
 
         if i == 0 {
             /* 最初はdestを使う */
-            res.append(&mut vec![
-                format!("DUP {};", register2stack_ptr.len() + memory_ptr + depth),
-                format!("CAR;"), //bm:some(v):rest
-                format!("DUP {};", register2stack_ptr.get(dest).unwrap() + depth + 1), //key:bm:some(v):rest
-                format!("GET;"),
-                format!("ASSERT_SOME;"), //struct_instance_bm:some(v)
-                format!("PUSH int {child_idx};"),
-                format!("GET;"),
-                format!("ASSERT_SOME;"), //field_ptr:some(v)
-            ]);
+            res.append(
+                &mut vec![
+                    MInstr::DupN(register2stack_ptr.len() + memory_ptr + depth),
+                    MInstr::Car, //bm:some(v):rest
+                    MInstr::DupN(register2stack_ptr.get(dest).unwrap() + depth + 1), //key:bm:some(v):rest
+                    MInstr::Get,
+                    MInstr::AssertSome, //struct_instance_bm:some(v)
+                    MInstr::Push {
+                        ty: MTy::Int,
+                        val: MVal::Int((*child_idx).try_into().unwrap()),
+                    },
+                    MInstr::Get,
+                    MInstr::AssertSome, //field_ptr:some(v)
+                ]
+                .iter()
+                .map(|instr| instr.to_instruction_wrapper())
+                .collect::<Vec<_>>(),
+            );
         } else {
-            res.append(&mut vec![
-                format!("DUP {};", register2stack_ptr.len() + memory_ptr + depth + 1),
-                format!("CAR;"),
-                format!("SWAP;"),
-                format!("GET;"),
-                format!("ASSERT_SOME;"),
-                format!("PUSH int {};", *child_idx),
-                format!("GET;"),
-                format!("ASSERT_SOME;"),
-            ]);
+            res.append(
+                &mut vec![
+                    MInstr::DupN(register2stack_ptr.len() + memory_ptr + depth + 1),
+                    MInstr::Car,
+                    MInstr::Swap,
+                    MInstr::Get,
+                    MInstr::AssertSome,
+                    MInstr::Push {
+                        ty: MTy::Int,
+                        val: MVal::Int((*child_idx).try_into().unwrap()),
+                    },
+                    MInstr::Get,
+                    MInstr::AssertSome,
+                ]
+                .iter()
+                .map(|instr| instr.to_instruction_wrapper())
+                .collect::<Vec<_>>(),
+            );
         }
     }
 
     let memory_ptr = memory_ty2stack_ptr
         .get(&BackendType::from(primitive_ty))
         .unwrap();
-    res.append(&mut vec![
-        format!("DIG {};", register2stack_ptr.len() + memory_ptr + depth),
-        format!("UNPAIR;"),
-        format!("DIG 3;"),
-        format!("DIG 3;"),
-        format!("UPDATE;"),
-        format!("PAIR;"),
-        format!(
-            "DUG {};",
-            register2stack_ptr.len() + memory_ptr + (depth - 1) - 1
-        ),
-    ]);
+    res.append(
+        &mut vec![
+            MInstr::DigN(register2stack_ptr.len() + memory_ptr + depth),
+            MInstr::Unpair,
+            MInstr::DigN(3),
+            MInstr::DigN(3),
+            MInstr::Update,
+            MInstr::Pair,
+            MInstr::DugN(register2stack_ptr.len() + memory_ptr + (depth - 1) - 1),
+        ]
+        .iter()
+        .map(|instr| instr.to_instruction_wrapper())
+        .collect::<Vec<_>>(),
+    );
 
     res
 }

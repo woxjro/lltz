@@ -1,5 +1,4 @@
 use crate::lltz_ir::{BackendType, Register, Type};
-use michelson_ast::formatter;
 use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
 use michelson_ast::ty::Ty as MTy;
@@ -11,15 +10,12 @@ use std::collections::HashMap;
 ///```llvm
 ///%ptr = alloca T;
 ///```
-///tab,tab_depthは生成するMichelsonコードをformatする際に使用する
 pub fn exec_alloca(
     ptr: &Register,
     ty: &Type,
-    tab: &str,
-    tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
-) -> String {
+) -> Vec<MInstrWrapper> {
     let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
 
     let instructions = match ty {
@@ -75,7 +71,7 @@ pub fn exec_alloca(
         .flatten()
         .collect::<Vec<_>>(),
     };
-    formatter::format(&instructions, tab_depth, tab)
+    instructions
 }
 
 ///Struct型のAllocaを実行する

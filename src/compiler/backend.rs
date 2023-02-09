@@ -6,7 +6,6 @@ mod inject;
 mod scan;
 use crate::compiler::utils;
 use crate::lltz_ir::{Arg, BackendType, Condition, Function, Instruction, Opcode, Register, Type};
-use michelson_ast::formatter;
 use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
 use std::collections::HashMap;
@@ -168,34 +167,26 @@ pub fn stack_initialization(
 ///メモリ型環境（memory_ty2stack_ptr）を参考にコンパイルしていく.
 ///tab,tab_depthはMichelsonコードのフォーマットのために使う
 pub fn compile_instructions(
-    michelson_code: String,
-    tab: &str,
-    tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
     register2ty: &HashMap<Register, BackendType>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
     instructions: &Vec<Instruction>,
-) -> String {
-    let mut michelson_code = michelson_code;
+) -> Vec<MInstrWrapper> {
+    let mut res = vec![];
     for instruction in instructions {
         match instruction {
             Instruction::Alloca { ptr, ty } => {
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    helper::alloca::exec_alloca(
-                        ptr,
-                        ty,
-                        tab,
-                        tab_depth,
-                        register2stack_ptr,
-                        memory_ty2stack_ptr
-                    )
-                );
+                res.append(&mut helper::alloca::exec_alloca(
+                    ptr,
+                    ty,
+                    register2stack_ptr,
+                    memory_ty2stack_ptr,
+                ));
             }
             Instruction::Store { ty, value, ptr } => {
                 let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
 
-                let instructions = vec![
+                let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
                         "store {} {}, {}* {} {{",
                         Type::get_name(ty),
@@ -223,15 +214,12 @@ pub fn compile_instructions(
                 .flatten()
                 .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    formatter::format(&instructions, tab_depth, tab)
-                );
+                res.append(&mut instructions);
             }
             Instruction::Load { result, ty, ptr } => {
                 let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
 
-                let instructions = vec![
+                let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
                         "{} = load {}, {}* {} {{",
                         result.get_id(),
@@ -258,10 +246,7 @@ pub fn compile_instructions(
                 .flatten()
                 .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    formatter::format(&instructions, tab_depth, tab)
-                );
+                res.append(&mut instructions);
             }
             Instruction::GetElementPtr {
                 result,
@@ -275,7 +260,7 @@ pub fn compile_instructions(
                 //              (...が, これ以外無い気がする)
                 let (_, reg) = &subsequent[1];
 
-                let instructions = vec![
+                let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
                         "{} = getElementPtr {}, {}*, {} {{",
                         result.get_id(),
@@ -305,56 +290,34 @@ pub fn compile_instructions(
                 .flatten()
                 .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    formatter::format(&instructions, tab_depth, tab)
-                );
+                res.append(&mut instructions);
             }
             Instruction::If {
                 reg,
                 code_block_t,
                 code_block_f,
             } => {
-                michelson_code = format!("{michelson_code}{tab}### if {{\n");
-                michelson_code = format!(
-                    "{michelson_code}{tab}DUP {};\n",
-                    register2stack_ptr.get(&reg).unwrap()
-                );
-                let michelson_code_block_t = compile_instructions(
-                    String::new(),
-                    tab,
-                    tab_depth + 1,
+                let instr1 = compile_instructions(
                     register2stack_ptr,
                     register2ty,
                     memory_ty2stack_ptr,
                     code_block_t,
                 );
-                let michelson_code_block_f = compile_instructions(
-                    String::new(),
-                    tab,
-                    tab_depth + 1,
+                let instr2 = compile_instructions(
                     register2stack_ptr,
                     register2ty,
                     memory_ty2stack_ptr,
                     code_block_f,
                 );
 
-                michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&vec![format!("IF {{"),], tab, tab_depth)
-                );
+                let mut instructions = vec![
+                    MInstrWrapper::Comment(format!("if {{",)),
+                    MInstr::DupN(*register2stack_ptr.get(&reg).unwrap()).to_instruction_wrapper(),
+                    MInstr::If { instr1, instr2 }.to_instruction_wrapper(),
+                    MInstrWrapper::Comment("}".to_string()),
+                ];
 
-                michelson_code = format!("{michelson_code}{michelson_code_block_t}");
-                michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&vec![format!("   }}"), format!("   {{"),], tab, tab_depth),
-                );
-
-                michelson_code = format!("{michelson_code}{michelson_code_block_f}");
-                michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&vec![format!("   }};"), format!("### }}"),], tab, tab_depth),
-                );
+                res.append(&mut instructions);
             }
             Instruction::While {
                 cond,
@@ -370,77 +333,42 @@ pub fn compile_instructions(
                  *  DUP id
                  * }
                  */
-                let michelson_cond_block = compile_instructions(
-                    String::new(),
-                    tab,
-                    tab_depth,
+                let cond_instr = compile_instructions(
                     register2stack_ptr,
                     register2ty,
                     memory_ty2stack_ptr,
                     cond_block,
                 );
 
-                // FIXME: インデントを揃えるために上とほぼ同じものを生成している
-                let michelson_cond_block_used_in_loop = compile_instructions(
-                    String::new(),
-                    tab,
-                    tab_depth + 1,
-                    register2stack_ptr,
-                    register2ty,
-                    memory_ty2stack_ptr,
-                    cond_block,
-                );
-
-                let michelson_loop_block = compile_instructions(
-                    String::new(),
-                    tab,
-                    tab_depth + 1,
+                let loop_instr = compile_instructions(
                     register2stack_ptr,
                     register2ty,
                     memory_ty2stack_ptr,
                     loop_block,
                 );
 
-                michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(&vec![format!("### while {{")], tab, tab_depth)
-                );
-                michelson_code = format!("{michelson_code}{}", michelson_cond_block);
-
-                michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(
-                        &vec![
-                            format!("DUP {};", register2stack_ptr.get(&cond).unwrap()),
-                            format!("LOOP {{"),
-                        ],
-                        tab,
-                        tab_depth
-                    )
+                let mut instr: Vec<MInstrWrapper> = vec![];
+                instr.append(&mut loop_instr.clone());
+                instr.append(&mut cond_instr.clone());
+                instr.push(
+                    MInstr::DupN(*register2stack_ptr.get(&cond).unwrap()).to_instruction_wrapper(),
                 );
 
-                michelson_code = format!("{michelson_code}{}", michelson_loop_block);
-                michelson_code = format!("{michelson_code}{}", michelson_cond_block_used_in_loop);
+                let mut instructions = vec![
+                    vec![MInstrWrapper::Comment(format!("while {{",))],
+                    cond_instr.clone(),
+                    vec![
+                        MInstr::DupN(*register2stack_ptr.get(&cond).unwrap())
+                            .to_instruction_wrapper(),
+                        MInstr::Loop { instr }.to_instruction_wrapper(),
+                    ],
+                    vec![MInstrWrapper::Comment("}".to_string())],
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(
-                        &vec![format!("DUP {};", register2stack_ptr.get(&cond).unwrap())],
-                        tab,
-                        tab_depth + 1
-                    )
-                );
-
-                michelson_code = format!(
-                    "{michelson_code}{}",
-                    utils::format(
-                        &vec![format!("     }};"), format!("### }}")],
-                        tab,
-                        tab_depth
-                    )
-                );
-
-                //];
+                res.append(&mut instructions);
             }
             Instruction::Op {
                 ty,
@@ -449,7 +377,7 @@ pub fn compile_instructions(
                 op1,
                 op2,
             } => {
-                let instructions = vec![
+                let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
                         "{} = {} {} {} {} {{",
                         result.get_id(),
@@ -479,25 +407,17 @@ pub fn compile_instructions(
                 .flatten()
                 .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    formatter::format(&instructions, tab_depth, tab)
-                );
+                res.append(&mut instructions);
             }
             Instruction::LlvmMemcpy { dest, src, ty } => {
-                michelson_code = format!(
-                    "{michelson_code}{}",
-                    helper::llvm_memcpy::exec_llvm_memcpy(
-                        dest,
-                        src,
-                        ty,
-                        tab,
-                        tab_depth,
-                        register2stack_ptr,
-                        register2ty,
-                        memory_ty2stack_ptr
-                    )
-                );
+                res.append(&mut helper::llvm_memcpy::exec_llvm_memcpy(
+                    dest,
+                    src,
+                    ty,
+                    register2stack_ptr,
+                    register2ty,
+                    memory_ty2stack_ptr,
+                ));
             }
             Instruction::Icmp {
                 result,
@@ -506,7 +426,7 @@ pub fn compile_instructions(
                 op1,
                 op2,
             } => {
-                let instructions = vec![
+                let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
                         "{} = icmp {} {} {{", //TODO: icmp -> cond.to_string()
                         result.get_id(),
@@ -549,13 +469,10 @@ pub fn compile_instructions(
                 .flatten()
                 .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    formatter::format(&instructions, tab_depth, tab)
-                );
+                res.append(&mut instructions);
             }
             Instruction::MichelsonGetAmount { result } => {
-                let instructions = vec![
+                let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
                         "{} = MichelsonGetAmount {{",
                         result.get_id()
@@ -575,13 +492,10 @@ pub fn compile_instructions(
                 .flatten()
                 .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    formatter::format(&instructions, tab_depth, tab)
-                );
+                res.append(&mut instructions);
             }
             Instruction::MichelsonGetBalance { result } => {
-                let instructions = vec![
+                let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
                         "{} = MichelsonGetBalance {{",
                         result.get_id()
@@ -601,13 +515,10 @@ pub fn compile_instructions(
                 .flatten()
                 .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    formatter::format(&instructions, tab_depth, tab)
-                );
+                res.append(&mut instructions);
             }
             Instruction::MichelsonGetTotalVotingPower { result } => {
-                let instructions = vec![
+                let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
                         "{} = MichelsonGetTotalVotingPower {{",
                         result.get_id()
@@ -627,13 +538,10 @@ pub fn compile_instructions(
                 .flatten()
                 .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    formatter::format(&instructions, tab_depth, tab)
-                );
+                res.append(&mut instructions);
             }
             Instruction::MichelsonGetLevel { result } => {
-                let instructions = vec![
+                let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
                         "{} = MichelsonGetLevel {{",
                         result.get_id()
@@ -653,13 +561,10 @@ pub fn compile_instructions(
                 .flatten()
                 .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    formatter::format(&instructions, tab_depth, tab)
-                );
+                res.append(&mut instructions);
             }
             Instruction::MichelsonGetSender { result } => {
-                let instructions = vec![
+                let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
                         "{} = MichelsonGetSender {{",
                         result.get_id()
@@ -680,13 +585,10 @@ pub fn compile_instructions(
                 .flatten()
                 .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    formatter::format(&instructions, tab_depth, tab)
-                );
+                res.append(&mut instructions);
             }
             Instruction::MichelsonGetSource { result } => {
-                let instructions = vec![
+                let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
                         "{} = MichelsonGetSource {{",
                         result.get_id()
@@ -707,13 +609,10 @@ pub fn compile_instructions(
                 .flatten()
                 .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    formatter::format(&instructions, tab_depth, tab)
-                );
+                res.append(&mut instructions);
             }
             Instruction::MichelsonGetSelfAddress { result } => {
-                let instructions = vec![
+                let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
                         "{} = MichelsonGetSelfAddress {{",
                         result.get_id()
@@ -734,13 +633,10 @@ pub fn compile_instructions(
                 .flatten()
                 .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    formatter::format(&instructions, tab_depth, tab)
-                );
+                res.append(&mut instructions);
             }
             Instruction::MichelsonGetSelf { result } => {
-                let instructions = vec![
+                let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
                         "{} = MichelsonGetSelf {{",
                         result.get_id()
@@ -761,17 +657,14 @@ pub fn compile_instructions(
                 .flatten()
                 .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    formatter::format(&instructions, tab_depth, tab)
-                );
+                res.append(&mut instructions);
             }
             Instruction::MichelsonContract {
                 result,
                 ty,
                 address,
             } => {
-                let instructions = vec![
+                let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
                         "{} = MichelsonContract {{",
                         result.get_id()
@@ -796,13 +689,10 @@ pub fn compile_instructions(
                 .flatten()
                 .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    formatter::format(&instructions, tab_depth, tab)
-                );
+                res.append(&mut instructions);
             }
             Instruction::MichelsonAssertSome { result, ty, value } => {
-                let instructions = vec![
+                let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
                         "{} = MichelsonAssertSome {} {} {{",
                         result.get_id(),
@@ -825,10 +715,7 @@ pub fn compile_instructions(
                 .flatten()
                 .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    formatter::format(&instructions, tab_depth, tab)
-                );
+                res.append(&mut instructions);
             }
             Instruction::MichelsonTransferTokens {
                 result,
@@ -836,7 +723,7 @@ pub fn compile_instructions(
                 tokens,
                 contract,
             } => {
-                let instructions = vec![
+                let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
                         "{} = MichelsonTransferTokens {} {} {} {{",
                         result.get_id(),
@@ -864,14 +751,11 @@ pub fn compile_instructions(
                 .flatten()
                 .collect::<Vec<_>>();
 
-                michelson_code = format!(
-                    "{michelson_code}{}\n",
-                    formatter::format(&instructions, tab_depth, tab)
-                );
+                res.append(&mut instructions);
             }
         };
     }
-    michelson_code
+    res
 }
 
 ///Michelsonコントラクトとして最後の返り値の準備をする段階において、

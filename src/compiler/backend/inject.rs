@@ -1,5 +1,6 @@
 use super::helper;
 use crate::lltz_ir::{Arg, BackendType, Function, Register, Type};
+use michelson_ast::formatter;
 use std::collections::HashMap;
 
 ///ここが終わった段階ではMichelson StackのTopに(Parameter, Storage)が乗っている
@@ -80,13 +81,15 @@ pub fn inject_pair(
         .unwrap();
     format!(
         "{michelson_code}{}",
-        helper::alloca::exec_alloca(
-            &pair_arg.reg,
-            &Type::deref(&pair_arg.ty),
-            tab,
+        formatter::format(
+            &helper::alloca::exec_alloca(
+                &pair_arg.reg,
+                &Type::deref(&pair_arg.ty),
+                &register2stack_ptr,
+                &memory_ty2stack_ptr,
+            ),
             tab_depth,
-            &register2stack_ptr,
-            &memory_ty2stack_ptr,
+            tab
         )
     )
 }

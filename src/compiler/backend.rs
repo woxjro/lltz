@@ -41,41 +41,29 @@ pub fn scan(
 ///スマートコントラクト引数をメモリ領域に格納する．
 pub fn inject_argument_list(
     smart_contract_function: &Function,
-    michelson_code: String,
-    tab: &str,
-    tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
-) -> String {
-    let mut michelson_code = michelson_code;
-    michelson_code = inject::inject_storage(
+) -> Vec<MInstrWrapper> {
+    let mut res = vec![];
+    res.append(&mut inject::inject_storage(
         smart_contract_function,
-        michelson_code,
-        tab,
-        tab_depth,
         register2stack_ptr,
         memory_ty2stack_ptr,
-    );
+    ));
 
-    michelson_code = inject::inject_parameter(
+    res.append(&mut inject::inject_parameter(
         smart_contract_function,
-        michelson_code,
-        tab,
-        tab_depth,
         register2stack_ptr,
         memory_ty2stack_ptr,
-    );
+    ));
 
-    michelson_code = inject::inject_pair(
+    res.append(&mut inject::inject_pair(
         smart_contract_function,
-        michelson_code,
-        tab,
-        tab_depth,
         register2stack_ptr,
         memory_ty2stack_ptr,
-    );
+    ));
 
-    michelson_code
+    res
 }
 
 ///michelson_codeを受け取り、レジスタ領域とメモリ領域を構築するMichelson命令を発行する．

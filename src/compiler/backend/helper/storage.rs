@@ -1,5 +1,4 @@
 use crate::lltz_ir::{Arg, BackendType, Register, Type};
-use michelson_ast::formatter;
 use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
 use michelson_ast::ty::Ty as MTy;
@@ -13,11 +12,9 @@ use std::collections::HashMap;
 ///output: (parameter, storage):[register region]:[memory region]
 pub fn alloca_storage_by_value(
     storage_arg: &Arg,
-    tab: &str,
-    tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
-) -> String {
+) -> Vec<MInstrWrapper> {
     let Arg { reg, ty } = storage_arg;
     let mut michelson_instructions = vec![];
     michelson_instructions.push(MInstrWrapper::Comment(format!("alloca storage {{")));
@@ -55,7 +52,7 @@ pub fn alloca_storage_by_value(
     ));
 
     michelson_instructions.push(MInstrWrapper::Comment(format!("}}")));
-    formatter::format(&michelson_instructions, tab_depth, tab)
+    michelson_instructions
 }
 
 /// Michelson引数のStorageをLLVMのメモリモデルへとデコードする関数

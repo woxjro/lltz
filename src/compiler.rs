@@ -84,13 +84,17 @@ pub fn compile(lltz_ir: Program) -> String {
         &memory_ty2stack_ptr,
     );
 
-    michelson_code = backend::inject_argument_list(
-        smart_contract_function,
-        michelson_code,
-        tab,
-        tab_depth,
-        &register2stack_ptr,
-        &memory_ty2stack_ptr,
+    michelson_code = format!(
+        "{michelson_code}{}\n",
+        formatter::format(
+            &backend::inject_argument_list(
+                smart_contract_function,
+                &register2stack_ptr,
+                &memory_ty2stack_ptr,
+            ),
+            tab_depth,
+            tab
+        )
     );
 
     michelson_code = format!(

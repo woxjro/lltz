@@ -1,17 +1,13 @@
 use super::helper;
 use crate::lltz_ir::{Arg, BackendType, Function, Register, Type};
-use michelson_ast::formatter;
+use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
 use std::collections::HashMap;
-
 ///ここが終わった段階ではMichelson StackのTopに(Parameter, Storage)が乗っている
 pub fn inject_storage(
     smart_contract_function: &Function,
-    michelson_code: String,
-    tab: &str,
-    tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
-) -> String {
+) -> Vec<MInstrWrapper> {
     let storage_arg = smart_contract_function
         .argument_list
         .iter()
@@ -20,27 +16,15 @@ pub fn inject_storage(
             _ => false,
         })
         .unwrap();
-    format!(
-        "{michelson_code}{}\n",
-        helper::storage::alloca_storage_by_value(
-            storage_arg,
-            tab,
-            tab_depth,
-            &register2stack_ptr,
-            &memory_ty2stack_ptr,
-        )
-    )
+    helper::storage::alloca_storage_by_value(storage_arg, &register2stack_ptr, &memory_ty2stack_ptr)
 }
 
 ///ここが終わった段階では(Parameter, Strorage)はもう要らないのでDROP.
 pub fn inject_parameter(
     smart_contract_function: &Function,
-    michelson_code: String,
-    tab: &str,
-    tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
-) -> String {
+) -> Vec<MInstrWrapper> {
     let parameter_arg = smart_contract_function
         .argument_list
         .iter()
@@ -49,15 +33,10 @@ pub fn inject_parameter(
             _ => false,
         })
         .unwrap();
-    format!(
-        "{michelson_code}{}\n",
-        helper::parameter::alloca_parameter_by_value(
-            parameter_arg,
-            tab,
-            tab_depth,
-            &register2stack_ptr,
-            &memory_ty2stack_ptr,
-        )
+    helper::parameter::alloca_parameter_by_value(
+        parameter_arg,
+        &register2stack_ptr,
+        &memory_ty2stack_ptr,
     )
 }
 
@@ -65,12 +44,9 @@ pub fn inject_parameter(
 ///（ここでAllocaしたPairをエンコードしてコントラクトの返り値とする）
 pub fn inject_pair(
     smart_contract_function: &Function,
-    michelson_code: String,
-    tab: &str,
-    tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
-) -> String {
+) -> Vec<MInstrWrapper> {
     let pair_arg = smart_contract_function
         .argument_list
         .iter()
@@ -79,17 +55,10 @@ pub fn inject_pair(
             _ => false,
         })
         .unwrap();
-    format!(
-        "{michelson_code}{}",
-        formatter::format(
-            &helper::alloca::exec_alloca(
-                &pair_arg.reg,
-                &Type::deref(&pair_arg.ty),
-                &register2stack_ptr,
-                &memory_ty2stack_ptr,
-            ),
-            tab_depth,
-            tab
-        )
+    helper::alloca::exec_alloca(
+        &pair_arg.reg,
+        &Type::deref(&pair_arg.ty),
+        &register2stack_ptr,
+        &memory_ty2stack_ptr,
     )
 }

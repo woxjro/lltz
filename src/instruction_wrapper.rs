@@ -39,7 +39,21 @@ impl InstructionWrapper {
                     }
                     Instruction::IfCons { .. } => todo!(),
                     Instruction::IfLeft { .. } => todo!(),
-                    Instruction::IfNone { .. } => todo!(),
+                    Instruction::IfNone { instr1, instr2 } => {
+                        let label = instruction.get_label();
+                        let space = tab.repeat(depth);
+                        let space_label = " ".repeat(instruction.get_label_len());
+                        let formatted_instr1 = format(instr1, depth + 1, tab);
+                        let formatted_instr2 = format(instr2, depth + 1, tab);
+                        format!(
+                            r#"{space}{label} {{
+{formatted_instr1}
+{space}{space_label} }}
+{space}{space_label} {{
+{formatted_instr2}
+{space}{space_label} }}"#
+                        )
+                    }
                     //ITER inster,
                     //LAMBDA ty1 ty2 instr,
                     Instruction::Loop { instr } => {
@@ -74,6 +88,9 @@ impl InstructionWrapper {
                         )
                     }
                     Instruction::GetN(n) => format!("{space}{} {}", instruction.get_label(), n),
+                    Instruction::Nil { ty } => {
+                        format!("{space}{} {}", instruction.get_label(), ty.to_string())
+                    }
                     ////////////////////////////////////////////////
                     /////////////Blockchain operations//////////////
                     ////////////////////////////////////////////////
@@ -107,6 +124,7 @@ impl InstructionWrapper {
                     Instruction::DupN(n) => format!("{space}{} {}", instruction.get_label(), n),
                     Instruction::DigN(n) => format!("{space}{} {}", instruction.get_label(), n),
                     Instruction::DugN(n) => format!("{space}{} {}", instruction.get_label(), n),
+                    Instruction::PairN(n) => format!("{space}{} {}", instruction.get_label(), n),
                     _ => format!("{space}{}", instruction.get_label()),
                 };
                 match comment {

@@ -51,12 +51,14 @@ impl Ty {
             Ty::KeyHash => "key_hash".to_string(),
             Ty::Lambda { .. } => todo!(),
             Ty::List { .. } => todo!(),
-            Ty::Map { .. } => todo!(),
+            Ty::Map { kty, vty } => {
+                format!("(map {} {})", kty.to_string(), vty.to_string())
+            }
             Ty::Mutez => "mutez".to_string(),
             Ty::Nat => "nat".to_string(),
             Ty::Never => "never".to_string(),
             Ty::Operation => "operation".to_string(),
-            Ty::Option { ty } => format!("operation {}", ty.to_string()),
+            Ty::Option { ty } => format!("(option {})", ty.to_string()),
             Ty::Or { .. } => todo!(),
             Ty::Pair { ty1, ty2 } => format!("(pair {} {})", ty1.to_string(), ty2.to_string()),
             //Sapling_state {n},

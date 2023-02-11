@@ -89,7 +89,7 @@ pub fn stack_initialization(
         .collect::<Vec<_>>();
     memory_ty2stack_ptr_sorted.sort_by(|a, b| (a.1).cmp(&b.1));
     for (ty, _v) in memory_ty2stack_ptr_sorted.iter().rev() {
-        let ty_str = ty.to_memory_string();
+        let ty_str = ty.to_memory_ty().to_string();
 
         let llvm_ty_string = ty.get_name();
         let comment = format!("memory for {llvm_ty_string}");
@@ -112,7 +112,7 @@ pub fn stack_initialization(
         } else {
             BackendType::default_value(&ty)
         };
-        let michelson_ty = ty.to_memory_string();
+        let michelson_ty = ty.to_memory_ty().to_string();
         let llvm_ty_string = ty.get_name();
 
         let comment = if Register::is_const(reg) {
@@ -132,7 +132,7 @@ pub fn stack_initialization(
             BackendType::Contract(_) => format!("{val}; # {comment}"),
             BackendType::Option(inner) => {
                 if Register::is_const(reg) {
-                    let michelson_ty = inner.to_memory_string();
+                    let michelson_ty = inner.to_memory_ty().to_string();
                     format!("PUSH {michelson_ty} {val}; SOME; # {comment}")
                 } else {
                     format!("{val}; # {comment}")
@@ -664,7 +664,7 @@ pub fn compile_instructions(
                         MInstr::DupN(*register2stack_ptr.get(&address).unwrap()),
                         MInstr::AssertSome,
                         MInstr::Contract {
-                            ty: ty.struct_type2michelson_pair(),
+                            ty: ty.to_entrypoint_ty(),
                         },
                         MInstr::Some,
                         MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
@@ -687,7 +687,7 @@ pub fn compile_instructions(
                     vec![MInstrWrapper::Comment(format!(
                         "{} = MichelsonAssertSome {} {} {{",
                         result.get_id(),
-                        BackendType::from(ty).to_string(),
+                        BackendType::from(ty).to_michelson_ty().to_string(),
                         value.get_id()
                     ))],
                     vec![
@@ -1076,7 +1076,7 @@ pub fn exit(
             _ => false,
         })
         .expect("Parameter型が宣言されていません.")
-        .struct_type2michelson_pair()
+        .to_entrypoint_ty()
         .to_string();
     let storage_michelson_ty = structure_types
         .iter()
@@ -1085,7 +1085,7 @@ pub fn exit(
             _ => false,
         })
         .expect("Storage型が宣言されていません.")
-        .struct_type2michelson_pair()
+        .to_entrypoint_ty()
         .to_string();
 
     format!(

@@ -38,7 +38,7 @@ pub fn print_michelson_initial_stack_status(
         } else {
             BackendType::default_value(&ty)
         };
-        let michelson_ty = ty.clone().to_string();
+        let michelson_ty = ty.to_michelson_ty().to_string();
         let llvm_ty_string = ty.get_name();
 
         let comment = if Register::is_const(reg) {
@@ -57,7 +57,7 @@ pub fn print_michelson_initial_stack_status(
         .collect::<Vec<_>>();
     memory_ty2stack_ptr_sorted.sort_by(|a, b| (a.1).cmp(&b.1));
     for (ty, _v) in memory_ty2stack_ptr_sorted.iter() {
-        let ty_string = ty.to_memory_string();
+        let ty_string = ty.to_memory_ty().to_string();
 
         let llvm_ty_string = ty.get_name();
         let comment = format!("memory for {llvm_ty_string}");

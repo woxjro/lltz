@@ -44,13 +44,13 @@ pub enum Type {
 impl Type {
     ///予約語Typeを受け取り, MichelsonのPairを返す.
     ///Storage, Parameter, PairなどといったMichelsonコードの引数を生成するために使う
-    pub fn struct_type2michelson_pair(&self) -> MTy {
+    pub fn to_entrypoint_ty(&self) -> MTy {
         match self {
             Type::Struct { id: _, fields } => {
                 if fields.len() >= 2 {
                     let mut es = fields
                         .iter()
-                        .map(|field| field.struct_type2michelson_pair())
+                        .map(|field| field.to_entrypoint_ty())
                         .collect::<Vec<_>>();
 
                     // CAUTION: ty2, ty1の順番はこのまま．逆にしない．
@@ -68,7 +68,7 @@ impl Type {
 
                     res
                 } else if fields.len() == 1 {
-                    fields.iter().nth(0).unwrap().struct_type2michelson_pair()
+                    fields.iter().nth(0).unwrap().to_entrypoint_ty()
                 } else {
                     MTy::Unit
                 }
@@ -77,25 +77,14 @@ impl Type {
                 size: _,
                 elementtype: _,
             } => todo!(),
-            _ => match self {
-                Type::Address => self.to_michelson_ty(),
-                Type::Array { .. } => panic!(),
-                Type::Bool => self.to_michelson_ty(),
-                Type::Mutez => self.to_michelson_ty(),
-                Type::Int => self.to_michelson_ty(),
-                Type::Nat => self.to_michelson_ty(),
-                Type::Struct { .. } => {
-                    panic!() //never occur
-                }
-                Type::Contract(ty) => MTy::Contract {
-                    ty: Box::new(ty.struct_type2michelson_pair()),
-                },
-                Type::Operation => self.to_michelson_ty(),
-                Type::Ptr(_) => MTy::Int,
-                Type::Option(ty) => MTy::Option {
-                    ty: Box::new(ty.struct_type2michelson_pair()),
-                },
+            Type::Contract(ty) => MTy::Contract {
+                ty: Box::new(ty.to_entrypoint_ty()),
             },
+            Type::Ptr(_) => MTy::Int,
+            Type::Option(ty) => MTy::Option {
+                ty: Box::new(ty.to_entrypoint_ty()),
+            },
+            _ => self.to_michelson_ty(),
         }
     }
 
@@ -209,70 +198,30 @@ impl BackendType {
         }
     }
 
-    pub fn to_string(&self) -> String {
+    pub fn to_memory_ty(&self) -> MTy {
         match self {
-            BackendType::Address => self.to_michelson_ty().to_string(),
-            BackendType::Bool => self.to_michelson_ty().to_string(),
-            BackendType::Mutez => self.to_michelson_ty().to_string(),
-            BackendType::Int => self.to_michelson_ty().to_string(),
-            BackendType::Nat => self.to_michelson_ty().to_string(),
-            BackendType::Struct { .. } => self.struct_type2michelson_pair().to_string(),
-            BackendType::Contract(child_ty) => {
-                let inner = BackendType::struct_type2michelson_pair(&**child_ty).to_string();
-                format!("(contract {inner})")
-            }
-            BackendType::Operation => self.to_michelson_ty().to_string(),
-            BackendType::Ptr(_) => self.to_michelson_ty().to_string(),
-            BackendType::Option(child_ty) => {
-                let inner = child_ty.to_string();
-                format!("(option {inner})")
-            }
-            BackendType::Array { .. } => panic!(),
-        }
-    }
-
-    pub fn to_michelson_ty(&self) -> MTy {
-        match self {
-            BackendType::Address => MTy::Address,
-            BackendType::Bool => MTy::Bool,
-            BackendType::Mutez => MTy::Mutez,
-            BackendType::Int => MTy::Int,
-            BackendType::Nat => MTy::Nat,
-            BackendType::Struct { .. } => {
-                panic!("Struct 型に対応する michelson プリミティブはありません")
-            }
-            BackendType::Contract(child_ty) => MTy::Contract {
-                ty: Box::new(child_ty.to_michelson_ty()),
+            BackendType::Struct { .. } => MTy::Map {
+                kty: Box::new(MTy::Int),
+                vty: Box::new(MTy::Int),
             },
-            BackendType::Operation => MTy::Operation,
-            BackendType::Ptr(_) => MTy::Int,
-            BackendType::Option(child_ty) => MTy::Option {
-                ty: Box::new(child_ty.to_michelson_ty()),
+            BackendType::Array { .. } => MTy::Map {
+                kty: Box::new(MTy::Int),
+                vty: Box::new(MTy::Int),
             },
-            BackendType::Array { .. } => {
-                panic!("Array 型に対応する michelson プリミティブはありません")
-            }
-        }
-    }
-
-    pub fn to_memory_string(&self) -> String {
-        match self {
-            BackendType::Struct { .. } => String::from("(map int int)"),
-            BackendType::Array { .. } => String::from("(map int int)"),
-            _ => self.to_string(),
+            _ => self.to_michelson_ty(),
         }
     }
 
     ///要らない気がする．？
     ///予約語Typeを受け取り, MichelsonのPairを返す.
     ///Storage, Parameter, PairなどといったMichelsonコードの引数を生成するために使う
-    fn struct_type2michelson_pair(&self) -> MTy {
+    fn to_entrypoint_ty(&self) -> MTy {
         match self {
             BackendType::Struct { id: _, fields } => {
                 if fields.len() >= 2 {
                     let mut es = fields
                         .iter()
-                        .map(|field| field.struct_type2michelson_pair())
+                        .map(|field| field.to_entrypoint_ty())
                         .collect::<Vec<_>>();
 
                     // CAUTION: ty2, ty1の順番はこのまま．逆にしない．
@@ -290,36 +239,44 @@ impl BackendType {
 
                     res
                 } else if fields.len() == 1 {
-                    BackendType::struct_type2michelson_pair(&fields.iter().nth(0).unwrap())
+                    BackendType::to_entrypoint_ty(&fields.iter().nth(0).unwrap())
                 } else {
                     MTy::Unit
                 }
             }
-            BackendType::Array {
-                size: _,
-                elementtype: _,
-            } => {
+            BackendType::Array { .. } => {
                 panic!()
             }
-            _ => match self {
-                BackendType::Address => self.to_michelson_ty(),
-                BackendType::Array { .. } => panic!(),
-                BackendType::Bool => self.to_michelson_ty(),
-                BackendType::Mutez => self.to_michelson_ty(),
-                BackendType::Int => self.to_michelson_ty(),
-                BackendType::Nat => self.to_michelson_ty(),
-                BackendType::Struct { .. } => {
-                    panic!() //never occur
-                }
-                BackendType::Contract(ty) => MTy::Contract {
-                    ty: Box::new(ty.struct_type2michelson_pair()),
-                },
-                BackendType::Operation => self.to_michelson_ty(),
-                BackendType::Ptr(_) => MTy::Int,
-                BackendType::Option(ty) => MTy::Option {
-                    ty: Box::new(ty.struct_type2michelson_pair()),
-                },
+            BackendType::Contract(ty) => MTy::Contract {
+                ty: Box::new(ty.to_entrypoint_ty()),
             },
+            BackendType::Ptr(_) => MTy::Int,
+            BackendType::Option(ty) => MTy::Option {
+                ty: Box::new(ty.to_entrypoint_ty()),
+            },
+            _ => self.to_michelson_ty(),
+        }
+    }
+
+    pub fn to_michelson_ty(&self) -> MTy {
+        match self {
+            BackendType::Address => MTy::Address,
+            BackendType::Bool => MTy::Bool,
+            BackendType::Mutez => MTy::Mutez,
+            BackendType::Int => MTy::Int,
+            BackendType::Nat => MTy::Nat,
+            BackendType::Struct { .. } => self.to_entrypoint_ty(),
+            BackendType::Contract(child_ty) => MTy::Contract {
+                ty: Box::new(child_ty.to_michelson_ty()),
+            },
+            BackendType::Operation => MTy::Operation,
+            BackendType::Ptr(_) => MTy::Int,
+            BackendType::Option(child_ty) => MTy::Option {
+                ty: Box::new(child_ty.to_michelson_ty()),
+            },
+            BackendType::Array { .. } => {
+                panic!("Array 型に対応する michelson プリミティブはありません")
+            }
         }
     }
 
@@ -347,7 +304,7 @@ impl BackendType {
             }
             BackendType::Ptr(_) => String::from("-1"),
             BackendType::Option(child_ty) => {
-                let inner = child_ty.clone().to_string();
+                let inner = child_ty.to_michelson_ty().to_string();
                 format!("NONE {inner}")
             }
         };

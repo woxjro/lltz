@@ -6,6 +6,7 @@ mod inject;
 mod scan;
 use crate::compiler::utils;
 use crate::lltz_ir::{Arg, BackendType, Condition, Function, Instruction, Opcode, Register, Type};
+use michelson_ast::formatter;
 use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
 use std::collections::HashMap;
@@ -1032,26 +1033,21 @@ pub fn retrieve_operations_from_memory(
 ///メモリ型環境（memory_ty2stack_ptr）に相当するMichelsonスタックをDROPする
 pub fn exit(
     michelson_code: String,
-    space: &str,
+    tab: &str,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
     structure_types: &Vec<Type>,
 ) -> String {
-    let mut new_michelson_code = michelson_code;
-    new_michelson_code = format!(
-        "{new_michelson_code}{space}DUG {}; # {}\n",
-        register2stack_ptr.len() + memory_ty2stack_ptr.len(),
-        "move a (list operation, storage) to the stack bottom"
+    let mut instructions = vec![];
+    instructions.push(
+        MInstr::DugN(register2stack_ptr.len() + memory_ty2stack_ptr.len())
+            .to_instruction_wrapper_with_comment(
+                "move a (list operation, storage) to the stack bottom",
+            ),
     );
     //後処理:レジスタ領域・メモリ領域をDROPする
-    for i in 0..(register2stack_ptr.iter().len() + memory_ty2stack_ptr.iter().len()) {
-        if i % 5 == 0 {
-            new_michelson_code = format!("{new_michelson_code}{space}DROP;");
-        } else if i % 5 == 4 {
-            new_michelson_code = format!("{new_michelson_code}DROP;\n");
-        } else {
-            new_michelson_code = format!("{new_michelson_code}DROP;");
-        }
+    for _ in 0..(register2stack_ptr.iter().len() + memory_ty2stack_ptr.iter().len()) {
+        instructions.push(MInstr::Drop.to_instruction_wrapper());
     }
 
     let parameter_michelson_ty = structure_types
@@ -1078,8 +1074,12 @@ pub fn exit(
 parameter {parameter_michelson_ty};
 storage {storage_michelson_ty};
 code {{
-{new_michelson_code}
+{}
      }}
-"
+",
+        format!(
+            "{michelson_code}{}\n",
+            formatter::format(&instructions, 1, tab)
+        )
     )
 }

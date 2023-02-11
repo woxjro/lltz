@@ -166,7 +166,7 @@ fn main() {
 
     //; Function Attrs: noinline nounwind optnone uwtable
     //define dso_local void @initial_value() #0 {
-    let initial_value: Vec<Instruction> = vec![
+    let _initial_value: Vec<Instruction> = vec![
         //  %1 = alloca %struct.Parameter, align 4
         //  %2 = alloca %struct.Storage, align 4
         //  %3 = getelementptr inbounds %struct.Parameter, %struct.Parameter* %1, Int 0, Int 0

@@ -111,22 +111,30 @@ pub fn compile(lltz_ir: Program) -> String {
         )
     );
 
-    michelson_code = backend::retrieve_storage_from_memory(
-        smart_contract_function,
-        michelson_code,
-        tab,
-        tab_depth,
-        &register2stack_ptr,
-        &memory_ty2stack_ptr,
+    michelson_code = format!(
+        "{michelson_code}{}\n",
+        formatter::format(
+            &backend::retrieve_storage_from_memory(
+                smart_contract_function,
+                &register2stack_ptr,
+                &memory_ty2stack_ptr,
+            ),
+            tab_depth,
+            tab
+        )
     );
 
-    michelson_code = backend::retrieve_operations_from_memory(
-        smart_contract_function,
-        michelson_code,
-        tab,
-        tab_depth,
-        &register2stack_ptr,
-        &memory_ty2stack_ptr,
+    michelson_code = format!(
+        "{michelson_code}{}\n",
+        formatter::format(
+            &backend::retrieve_operations_from_memory(
+                smart_contract_function,
+                &register2stack_ptr,
+                &memory_ty2stack_ptr,
+            ),
+            tab_depth,
+            tab
+        )
     );
 
     //後処理:レジスタ領域・メモリ領域をDROPする

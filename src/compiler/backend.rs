@@ -9,6 +9,8 @@ use crate::lltz_ir::{Arg, BackendType, Condition, Function, Instruction, Opcode,
 use michelson_ast::formatter;
 use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
+use michelson_ast::ty::Ty as MTy;
+use michelson_ast::val::Val as MVal;
 use std::collections::HashMap;
 
 ///Programの構造体宣言，引数リスト，命令列を受け取り，それらに現れるレジスタ，メモリや型
@@ -754,12 +756,9 @@ pub fn compile_instructions(
 ///output: encoded_storage:[register]:[memory]
 pub fn retrieve_storage_from_memory(
     smart_contract_function: &Function,
-    michelson_code: String,
-    tab: &str,
-    tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
-) -> String {
+) -> Vec<MInstrWrapper> {
     let Arg {
         reg,
         ty: pair_ty_ptr,
@@ -793,20 +792,28 @@ pub fn retrieve_storage_from_memory(
         .unwrap();
     let mut michelson_instructions = vec![];
     michelson_instructions.append(&mut vec![
-        format!("### encode Storage {{"),
-        format!("DUP {};", register2stack_ptr.len() + pair_memory_ptr),
-        format!("CAR;"),
-        format!("PUSH int {};", register2stack_ptr.get(reg).unwrap()),
-        format!("GET;"),
-        format!("ASSERT_SOME; # {}", "Pair MAP Instance"),
-        format!("PUSH int {};", 1), // StorageのIndex(=1)
-        format!("GET;"),
-        format!("ASSERT_SOME; # {}", "Storage Ptr"),
-        format!("DUP {};", register2stack_ptr.len() + storage_memory_ptr + 1),
-        format!("CAR;"),
-        format!("SWAP;"),
-        format!("GET;"),
-        format!("ASSERT_SOME; # {}", "Storage MAP Instance"),
+        MInstrWrapper::Comment(format!("encode Storage {{")),
+        MInstr::DupN(register2stack_ptr.len() + pair_memory_ptr).to_instruction_wrapper(),
+        MInstr::Car.to_instruction_wrapper(),
+        MInstr::Push {
+            ty: MTy::Int,
+            val: MVal::Int((*register2stack_ptr.get(reg).unwrap()).try_into().unwrap()),
+        }
+        .to_instruction_wrapper(),
+        MInstr::Get.to_instruction_wrapper(),
+        MInstr::AssertSome.to_instruction_wrapper(),
+        MInstr::Push {
+            ty: MTy::Int,
+            val: MVal::Int(1),
+        }
+        .to_instruction_wrapper(), // StorageのIndex(=1)
+        MInstr::Get.to_instruction_wrapper(),
+        MInstr::AssertSome.to_instruction_wrapper(), //Storage Ptr
+        MInstr::DupN(register2stack_ptr.len() + storage_memory_ptr + 1).to_instruction_wrapper(),
+        MInstr::Car.to_instruction_wrapper(),
+        MInstr::Swap.to_instruction_wrapper(),
+        MInstr::Get.to_instruction_wrapper(),
+        MInstr::AssertSome.to_instruction_wrapper(), //Storage MAP Instance
     ]);
 
     match storage_ty.clone() {
@@ -823,27 +830,26 @@ pub fn retrieve_storage_from_memory(
                     ));
                 }
                 michelson_instructions.append(&mut vec![
-                    format!("PAIR {}; # PACK Struct {{ {id} }}", fields.len()),
-                    format!("SWAP;"),
-                    format!("DROP; # Storage MAP Instance"),
+                    MInstr::PairN(fields.len())
+                        .to_instruction_wrapper_with_comment(&format!("PACK Struct {{ {id} }}")),
+                    MInstr::Swap.to_instruction_wrapper(),
+                    MInstr::Drop
+                        .to_instruction_wrapper_with_comment(&format!("Storage MAP Instance")),
                 ]);
             } else if fields.len() == 1 {
                 todo!()
             } else {
-                michelson_instructions.push(format!("DROP;"));
-                michelson_instructions.push(format!("UNIT;"));
+                michelson_instructions.push(MInstr::Drop.to_instruction_wrapper());
+                michelson_instructions.push(MInstr::Unit.to_instruction_wrapper());
             }
         }
         _ => {
             panic!("StorageがStruct型ではなくPrimitive型になっています.")
         }
     }
-    michelson_instructions.push(format!("### }}"));
+    michelson_instructions.push(MInstrWrapper::Comment("}".to_string()));
 
-    format!(
-        "{michelson_code}{}",
-        utils::format(&michelson_instructions, tab, tab_depth)
-    )
+    michelson_instructions
 }
 
 ///FIXME: 方針はあっているが少しややこしい.
@@ -853,7 +859,7 @@ fn retrieve_storage_field_from_memory(
     path: Vec<usize>,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
-) -> Vec<String> {
+) -> Vec<MInstrWrapper> {
     let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(field)).unwrap();
     match field {
         Type::Struct {
@@ -861,21 +867,25 @@ fn retrieve_storage_field_from_memory(
             fields: child_fields,
         } => {
             //TODO: child_fields.len() > 2, == 1, == 0で場合分け
-            let mut michelson_instructions = vec![
-                format!("### {{"),
-                format!("DUP {}; # MAP instance", path[path.len() - 1]),
-                format!("PUSH int {};", field_idx),
-                format!("GET;"),
-                format!("ASSERT_SOME;"),
-                format!(
-                    "DUP {}; # memory: {}",
+            let mut michelson_instructions: Vec<MInstrWrapper> = vec![
+                MInstrWrapper::Comment("{".to_string()),
+                MInstr::DupN(path[path.len() - 1])
+                    .to_instruction_wrapper_with_comment("MAP instance"),
+                MInstr::Push {
+                    ty: MTy::Int,
+                    val: MVal::Int(field_idx.try_into().unwrap()),
+                }
+                .to_instruction_wrapper(),
+                MInstr::Get.to_instruction_wrapper(),
+                MInstr::AssertSome.to_instruction_wrapper(),
+                MInstr::DupN(
                     register2stack_ptr.len() + memory_ptr + path.iter().sum::<usize>() + 1,
-                    Type::get_name(field)
-                ),
-                format!("CAR;"),
-                format!("SWAP;"),
-                format!("GET;"),
-                format!("ASSERT_SOME;"),
+                )
+                .to_instruction_wrapper_with_comment(&format!("memory: {}", Type::get_name(field))),
+                MInstr::Car.to_instruction_wrapper(),
+                MInstr::Swap.to_instruction_wrapper(),
+                MInstr::Get.to_instruction_wrapper(),
+                MInstr::AssertSome.to_instruction_wrapper(),
             ];
             for (child_field_idx, child_field) in child_fields.iter().enumerate().rev() {
                 let new_path =
@@ -889,34 +899,37 @@ fn retrieve_storage_field_from_memory(
                 ));
             }
             michelson_instructions.append(&mut vec![
-                format!(
-                    "PAIR {}; # PACK Struct {{ {child_id} }}",
-                    child_fields.len()
-                ),
-                format!("SWAP;"),
-                format!("DROP; # child field MAP Instance"),
-                format!("### }}"),
+                MInstr::PairN(child_fields.len())
+                    .to_instruction_wrapper_with_comment(&format!("PACK Struct {{ {child_id} }}")),
+                MInstr::Swap.to_instruction_wrapper(),
+                MInstr::Drop
+                    .to_instruction_wrapper_with_comment(&format!("child field MAP Instance")),
+                MInstrWrapper::Comment("}".to_string()),
             ]);
 
             michelson_instructions
         }
         _ => {
             vec![
-                format!("### {{"),
-                format!("DUP {}; # MAP instance", path[path.len() - 1]),
-                format!("PUSH int {};", field_idx),
-                format!("GET;"),
-                format!("ASSERT_SOME;"),
-                format!(
-                    "DUP {}; # memory: {}",
+                MInstrWrapper::Comment("{".to_string()),
+                MInstr::DupN(path[path.len() - 1])
+                    .to_instruction_wrapper_with_comment("MAP instance"),
+                MInstr::Push {
+                    ty: MTy::Int,
+                    val: MVal::Int(field_idx.try_into().unwrap()),
+                }
+                .to_instruction_wrapper(),
+                MInstr::Get.to_instruction_wrapper(),
+                MInstr::AssertSome.to_instruction_wrapper(),
+                MInstr::DupN(
                     register2stack_ptr.len() + memory_ptr + path.iter().sum::<usize>() + 1,
-                    Type::get_name(field)
-                ),
-                format!("CAR;"),
-                format!("SWAP;"),
-                format!("GET;"),
-                format!("ASSERT_SOME;"),
-                format!("### }}"),
+                )
+                .to_instruction_wrapper_with_comment(&format!("memory: {}", Type::get_name(field))),
+                MInstr::Car.to_instruction_wrapper(),
+                MInstr::Swap.to_instruction_wrapper(),
+                MInstr::Get.to_instruction_wrapper(),
+                MInstr::AssertSome.to_instruction_wrapper(),
+                MInstrWrapper::Comment("}".to_string()),
             ]
         }
     }
@@ -926,12 +939,9 @@ fn retrieve_storage_field_from_memory(
 ///output:  ([list operation], encoded_storage):[register]:[memory]
 pub fn retrieve_operations_from_memory(
     smart_contract_function: &Function,
-    michelson_code: String,
-    tab: &str,
-    tab_depth: usize,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
-) -> String {
+) -> Vec<MInstrWrapper> {
     let Arg {
         reg,
         ty: pair_ty_ptr,
@@ -964,25 +974,28 @@ pub fn retrieve_operations_from_memory(
         .get(&BackendType::from(operation_arr_ty))
         .unwrap();
 
-    let mut michelson_instructions = vec![
-        format!("### retrieve operations from memory {{"),
-        format!("NIL operation;"), //(nil operation) : storage : ...
-        format!("DUP {};", register2stack_ptr.len() + pair_memory_ptr + 2), // pair_memory : (nil operation) : storage : ...
-        format!("CAR;"),
-        format!("DUP {};", register2stack_ptr.get(reg).unwrap() + 3),
-        format!("GET;"),
-        format!("ASSERT_SOME;"), // pair_map_instance : (nil operation) : storage : ...
-        format!("PUSH int 0;"),  //FIXME: '0'番目に[size x operation]が入っている事を決め打ち
-        format!("GET;"),
-        format!("ASSERT_SOME;"), // [size x operation]* : (nil operation) : storage : ...
-        format!(
-            "DUP {};",
-            register2stack_ptr.len() + operation_arr_memory_ptr + 3
-        ),
-        format!("CAR;"),
-        format!("SWAP;"),
-        format!("GET;"),
-        format!("ASSERT_SOME;"), // ([size x operation] MAP instance) : (nil operation) : storage : ...
+    let mut michelson_instructions: Vec<MInstrWrapper> = vec![
+        MInstrWrapper::Comment("retrieve operations from memory {".to_string()),
+        MInstr::Nil { ty: MTy::Operation }.to_instruction_wrapper(), //(nil operation) : storage : ...
+        MInstr::DupN(register2stack_ptr.len() + pair_memory_ptr + 2)
+            .to_instruction_wrapper_with_comment("pair_memory : (nil operation) : storage : ..."),
+        MInstr::Car.to_instruction_wrapper(),
+        MInstr::DupN(register2stack_ptr.get(reg).unwrap() + 3).to_instruction_wrapper(),
+        MInstr::Get.to_instruction_wrapper(),
+        MInstr::AssertSome.to_instruction_wrapper(), // pair_map_instance : (nil operation) : storage : ...
+        MInstr::Push {
+            ty: MTy::Int,
+            val: MVal::Int(0),
+        }
+        .to_instruction_wrapper(), //FIXME: '0'番目に[size x operation]が入っている事を決め打ち
+        MInstr::Get.to_instruction_wrapper(),
+        MInstr::AssertSome.to_instruction_wrapper(), // [size x operation]* : (nil operation) : storage : ...
+        MInstr::DupN(register2stack_ptr.len() + operation_arr_memory_ptr + 3)
+            .to_instruction_wrapper(),
+        MInstr::Car.to_instruction_wrapper(),
+        MInstr::Swap.to_instruction_wrapper(),
+        MInstr::Get.to_instruction_wrapper(),
+        MInstr::AssertSome.to_instruction_wrapper(), // ([size x operation] MAP instance) : (nil operation) : storage : ...
     ];
 
     let size = *match operation_arr_ty {
@@ -1001,31 +1014,37 @@ pub fn retrieve_operations_from_memory(
     //output: ([size x operation] MAP instance) : (list operation) : encoded_storage :[register]:[memory]
     for idx in 0..size {
         michelson_instructions.append(&mut vec![
-            format!("DUP;"),
-            format!("PUSH int {idx};"),
-            format!("GET;"),
-            format!("ASSERT_SOME;"), // ptr : map-instance
-            format!(
-                "DUP {};",
-                register2stack_ptr.len() + operation_memory_ptr + 4
-            ),
-            format!("CAR;"), // operation_memory : ptr : map-instance
-            format!("SWAP;"),
-            format!("GET;"),
-            format!("ASSERT_SOME;"), // option operation : map-instance
-            format!("IF_NONE {{ }} {{ DIG 2; SWAP; CONS; DUG 1; }};"),
+            MInstr::Dup.to_instruction_wrapper(),
+            MInstr::Push {
+                ty: MTy::Int,
+                val: MVal::Int(idx.try_into().unwrap()),
+            }
+            .to_instruction_wrapper(),
+            MInstr::Get.to_instruction_wrapper(),
+            MInstr::AssertSome.to_instruction_wrapper(), // ptr : map-instance
+            MInstr::DupN(register2stack_ptr.len() + operation_memory_ptr + 4)
+                .to_instruction_wrapper(),
+            MInstr::Car.to_instruction_wrapper(), // operation_memory : ptr : map-instance
+            MInstr::Swap.to_instruction_wrapper(),
+            MInstr::Get.to_instruction_wrapper(),
+            MInstr::AssertSome.to_instruction_wrapper(), // option operation : map-instance
+            MInstr::IfNone {
+                instr1: vec![],
+                instr2: vec![MInstr::DigN(2), MInstr::Swap, MInstr::Cons, MInstr::DugN(1)]
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+            }
+            .to_instruction_wrapper(),
         ]);
     }
 
     michelson_instructions.append(&mut vec![
-        format!("DROP;"),
-        format!("PAIR;"),
-        format!("### }}"),
+        MInstr::Drop.to_instruction_wrapper(),
+        MInstr::Pair.to_instruction_wrapper(),
+        MInstrWrapper::Comment("}".to_string()),
     ]);
-    format!(
-        "{michelson_code}{}",
-        utils::format(&michelson_instructions, tab, tab_depth)
-    )
+    michelson_instructions
 }
 
 ///(将来的にはこの関数はなくなるかもしれない)

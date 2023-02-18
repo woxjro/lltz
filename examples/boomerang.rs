@@ -1,7 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{
-    Arg, Function, Instruction, Program, Register, Type,
-};
+use lltz::lltz_ir::{Arg, Function, Instruction, Program, Register, Type, Value};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -123,7 +121,7 @@ fn main() {
         //   store Address %10, Address* %4
         Instruction::Store {
             ty: Type::Address,
-            value: Register::new("%10"),
+            value: Value::Register(Register::new("%10")),
             ptr: Register::new("%4"),
         },
         //   %12 = MichelsonGetAmount()
@@ -133,7 +131,7 @@ fn main() {
         //   store Mutez %12, Mutez* %6
         Instruction::Store {
             ty: Type::Mutez,
-            value: Register::new("%12"),
+            value: Value::Register(Register::new("%12")),
             ptr: Register::new("%6"),
         },
         //   %14 = load Address, Address* %4
@@ -157,7 +155,7 @@ fn main() {
         //   store (Contract unit) %15, (Contract unit)* %8
         Instruction::Store {
             ty: Type::Contract(Box::new(parameter.clone())),
-            value: Register::new("%15"),
+            value: Value::Register(Register::new("%15")),
             ptr: Register::new("%8"),
         },
         //   %16 = load Mutez, Mutez* %6
@@ -182,7 +180,7 @@ fn main() {
         //   store Operation %18, Operation* %9
         Instruction::Store {
             ty: Type::Operation,
-            value: Register::new("%18"),
+            value: Value::Register(Register::new("%18")),
             ptr: Register::new("%9"),
         },
         //   %19 = load Operation, Operation* %9
@@ -217,7 +215,7 @@ fn main() {
         //   store Operation %19, Operation* %21
         Instruction::Store {
             ty: Type::Operation,
-            value: Register::new("%19"),
+            value: Value::Register(Register::new("%19")),
             ptr: Register::new("%21"),
         },
         //   ret void

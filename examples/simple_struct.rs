@@ -1,5 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{Arg, Function, Instruction, Program, Register, Type};
+use lltz::lltz_ir::{Arg, Const, Function, Instruction, Program, Register, Type, Value};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -63,7 +63,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("0"),
+            value: Value::Const(Const::Int(0)),
             ptr: Register::new("%1"),
         },
         //  %3 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 0
@@ -82,7 +82,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("1"),
+            value: Value::Const(Const::Int(1)),
             ptr: Register::new("%3"),
         },
         //  %4 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 1
@@ -101,7 +101,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("0"),
+            value: Value::Const(Const::Int(0)),
             ptr: Register::new("%4"),
         },
         //  %5 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 2
@@ -120,7 +120,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("700"),
+            value: Value::Const(Const::Int(700)),
             ptr: Register::new("%5"),
         },
         //}}

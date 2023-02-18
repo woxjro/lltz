@@ -3,6 +3,96 @@ use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::ty::Ty as MTy;
 use michelson_ast::val::Val as MVal;
 
+pub enum Value {
+    Register(Register),
+    Const(Const),
+}
+
+impl Value {
+    pub fn to_string(&self) -> String {
+        match self {
+            Value::Register(register) => register.get_id(),
+            Value::Const(cnst) => cnst.to_string(),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum Const {
+    Address(String),
+    //BigMap { kty: Box<Ty>, vty: Box<Ty> },
+    //Bls12_381_fr,
+    //Bls12_381_g1,
+    //Bls12_381_g2,
+    Bool(bool),
+    //Bytes,
+    //Chain_id,
+    //Contract { ty: Ty },
+    Int(i128),
+    //Key,
+    //Key_hash,
+    //Lambda { ty1: Ty, ty2: Ty },
+    //List { ty: Type },
+    //Map { kty: Ty, vty: Ty },
+    Mutez(i128),
+    Nat(u128),
+    //Never,
+    //Operation,
+    //Option { ty: Ty },
+    //Or{ ty1, ty2},
+    //Pair {ty1, ty2},
+    //Sapling_state {n},
+    //Sapling_transaction {n},
+    //Set cty,
+    //Signature,
+    String(String),
+    //Ticket cty,
+    //Timepstamp,
+    //Unit,
+}
+
+impl Const {
+    pub fn to_string(&self) -> String {
+        match self {
+            Const::Address(addr) => addr.clone(),
+            Const::Bool(b) => format!("{b}"),
+            Const::Int(i) => i.to_string(),
+            Const::Mutez(m) => m.to_string(),
+            Const::Nat(n) => n.to_string(),
+            Const::String(s) => s.to_string(),
+        }
+    }
+
+    pub fn get_push_instruction(&self) -> MInstr {
+        match self {
+            Const::Address(addr) => MInstr::Push {
+                ty: MTy::Address,
+                val: MVal::Address(addr.clone()),
+            },
+            Const::Bool(b) => MInstr::Push {
+                ty: MTy::Bool,
+                val: MVal::Bool(*b),
+            },
+            Const::Int(i) => MInstr::Push {
+                ty: MTy::Int,
+                val: MVal::Int(*i),
+            },
+            Const::Mutez(m) => MInstr::Push {
+                ty: MTy::Mutez,
+                val: MVal::Mutez(*m),
+            },
+            Const::Nat(n) => MInstr::Push {
+                ty: MTy::Nat,
+                val: MVal::Nat(*n),
+            },
+            Const::String(s) => MInstr::Push {
+                ty: MTy::String,
+                val: MVal::String(s.clone()),
+            },
+        }
+    }
+}
+
 ///レジスタ
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub struct Register {
@@ -18,7 +108,6 @@ impl Register {
             id: String::from(id),
         }
     }
-
     //本来のレジスタではなく、即値の値を入れた仮のレジスタ(const)であるか判定
     pub fn is_const(reg: &Register) -> bool {
         !reg.get_id().contains("%")
@@ -471,7 +560,7 @@ pub enum Instruction {
     },
     Store {
         ty: Type,
-        value: Register,
+        value: Value,
         ptr: Register,
     },
     GetElementPtr {

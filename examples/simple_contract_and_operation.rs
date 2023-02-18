@@ -1,7 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{
-    Arg, Function, Instruction, Program, Register, Type,
-};
+use lltz::lltz_ir::{Arg, Const, Function, Instruction, Program, Register, Type, Value};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -96,7 +94,9 @@ fn main() {
         Instruction::Store {
             ty: Type::Address,
             //value: Register::new("\"KT1Vh2yUNseYabMc1c9EKiBbtQxbyoRWAFDv\""),
-            value: Register::new("\"tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv\""),
+            value: Value::Const(Const::Address(
+                "\"tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv\"".to_string(),
+            )),
             ptr: Register::new("%4"),
         },
         Instruction::Load {
@@ -127,7 +127,7 @@ fn main() {
                 id: String::from("unit"),
                 fields: vec![],
             })),
-            value: Register::new("%200"),
+            value: Value::Register(Register::new("%200")),
             ptr: Register::new("%5"),
         },
         //  %10 = load Contract, Contract* %5, align 4, !dbg !86
@@ -149,7 +149,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Operation,
-            value: Register::new("%11"),
+            value: Value::Register(Register::new("%11")),
             ptr: Register::new("%7"),
         },
         //  %12 = load Operation, Operation* %7, align 4, !dbg !88
@@ -184,7 +184,7 @@ fn main() {
         //  store Operation %12, Operation* %14, align 4, !dbg !91
         Instruction::Store {
             ty: Type::Operation,
-            value: Register::new("%12"),
+            value: Value::Register(Register::new("%12")),
             ptr: Register::new("%14"),
         },
     ];

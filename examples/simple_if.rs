@@ -1,7 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{
-    Arg, Condition, Function, Instruction, Program, Register, Type,
-};
+use lltz::lltz_ir::{Arg, Condition, Const, Function, Instruction, Program, Register, Type, Value};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -96,12 +94,12 @@ fn main() {
         //   %4 = load int, int* %2, align 4
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("0"),
+            value: Value::Const(Const::Int(0)),
             ptr: Register::new("%1"),
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("0"),
+            value: Value::Const(Const::Int(0)),
             ptr: Register::new("%2"),
         },
         Instruction::Load {
@@ -129,12 +127,12 @@ fn main() {
             reg: Register::new("%5"),
             code_block_t: vec![Instruction::Store {
                 ty: Type::Int,
-                value: Register::new("777"),
+                value: Value::Const(Const::Int(777)),
                 ptr: Register::new("%3"),
             }],
             code_block_f: vec![Instruction::Store {
                 ty: Type::Int,
-                value: Register::new("444"),
+                value: Value::Const(Const::Int(444)),
                 ptr: Register::new("%3"),
             }],
         },

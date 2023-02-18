@@ -1,7 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{
-    Arg, Function, Instruction, Program, Register, Type,
-};
+use lltz::lltz_ir::{Arg, Const, Function, Instruction, Opcode, Program, Register, Type, Value};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -57,7 +55,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Mutez,
-            value: Register::new("31"),
+            value: Value::Const(Const::Mutez(31)),
             ptr: Register::new("%3"),
         },
         //  %4 = getelementptr inbounds [5 x Mutez], [5 x Mutez]* %2, i64 0, i64 4, !dbg !21
@@ -76,7 +74,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Mutez,
-            value: Register::new("777"),
+            value: Value::Const(Const::Mutez(777)),
             ptr: Register::new("%4"),
         },
     ];

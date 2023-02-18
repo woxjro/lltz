@@ -1,5 +1,7 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{Arg, Condition, Function, Instruction, Opcode, Program, Register, Type};
+use lltz::lltz_ir::{
+    Arg, Condition, Const, Function, Instruction, Opcode, Program, Register, Type, Value,
+};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -114,17 +116,17 @@ fn main() {
         //  store Int 1, Int* %3, align 4
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("0"),
+            value: Value::Const(Const::Int(0)),
             ptr: Register::new("%1"),
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("10"),
+            value: Value::Const(Const::Int(10)),
             ptr: Register::new("%2"),
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("1"),
+            value: Value::Const(Const::Int(1)),
             ptr: Register::new("%3"),
         },
         Instruction::While {
@@ -141,7 +143,7 @@ fn main() {
                     ptr: Register::new("%2"),
                 },
                 Instruction::Icmp {
-                    ty: Type::Bool,
+                    ty: Type::Int,
                     cond: Condition::Slt,
                     result: Register::new("%6"),
                     op1: Register::new("0"),
@@ -176,7 +178,7 @@ fn main() {
                 },
                 Instruction::Store {
                     ty: Type::Int,
-                    value: Register::new("%10"),
+                    value: Value::Register(Register::new("%10")),
                     ptr: Register::new("%3"),
                 },
                 Instruction::Load {
@@ -193,7 +195,7 @@ fn main() {
                 },
                 Instruction::Store {
                     ty: Type::Int,
-                    value: Register::new("%12"),
+                    value: Value::Register(Register::new("%12")),
                     ptr: Register::new("%2"),
                 },
             ], //  }

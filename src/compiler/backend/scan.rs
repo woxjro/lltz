@@ -1,7 +1,7 @@
 //! Programの中をコンパイル前に事前に走査し, 出てきうるレジスタ, メモリの数や型などを
 //! 洗い出しておくといった事前分析を担当するモジュール
 use super::helper;
-use crate::lltz_ir::{Arg, BackendType, Instruction, Register, Type};
+use crate::lltz_ir::{Arg, BackendType, Instruction, Register, Type, Value};
 use std::collections::HashMap;
 
 /// 構造体宣言を事前に走査し, 必要なメモリの型を洗い出しておく関数
@@ -107,21 +107,28 @@ pub fn scan_registers_and_memory(
                 helper::scan::scan_memory4alloca(ty.clone(), memory_ty2stack_ptr, memory_ptr);
             }
             Instruction::Store { ty, value, ptr } => {
-                let _ = register2stack_ptr.entry(value.clone()).or_insert_with(|| {
-                    *stack_ptr += 1;
-                    *stack_ptr
-                });
+                match value {
+                    Value::Register(register) => {
+                        let _ = register2stack_ptr
+                            .entry(register.clone())
+                            .or_insert_with(|| {
+                                *stack_ptr += 1;
+                                *stack_ptr
+                            });
+                        register2ty
+                            .entry(register.clone())
+                            .or_insert(BackendType::from(ty));
+                    }
+                    Value::Const(_) => {
+                        //nothing to do
+                    }
+                };
 
-                //即値を仮想レジスタとして扱うのでこの処理は（少なくとも今は）必要
                 //NOTE: ptrはType::Ptr(ty)のポインタ型であることに注意
                 register2ty
                     .entry(ptr.clone())
                     .or_insert(BackendType::from(&Type::Ptr(Box::new(ty.clone()))));
 
-                //即値を仮想レジスタとして扱うのでこの処理は（少なくとも今は）必要
-                register2ty
-                    .entry(value.clone())
-                    .or_insert(BackendType::from(ty));
                 let _ = register2stack_ptr.entry(ptr.clone()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
@@ -328,10 +335,17 @@ pub fn scan_registers_and_memory(
                     *stack_ptr += 1;
                     *stack_ptr
                 });
+                register2ty
+                    .entry(op1.clone())
+                    .or_insert(BackendType::from(ty));
+
                 let _ = register2stack_ptr.entry(op2.clone()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
                 });
+                register2ty
+                    .entry(op2.clone())
+                    .or_insert(BackendType::from(ty));
             }
             Instruction::MichelsonGetAmount { result } => {
                 let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {

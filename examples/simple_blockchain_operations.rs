@@ -1,7 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{
-    Arg, Function, Instruction, Program, Opcode, Register, Type,
-};
+use lltz::lltz_ir::{Arg, Function, Instruction, Opcode, Program, Register, Type, Value};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -203,7 +201,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Mutez,
-            value: Register::new("%7"),
+            value: Value::Register(Register::new("%7")),
             ptr: Register::new("%5"),
         },
         //
@@ -246,7 +244,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Mutez,
-            value: Register::new("%16"),
+            value: Value::Register(Register::new("%16")),
             ptr: Register::new("%14"),
         },
         //
@@ -288,7 +286,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Nat,
-            value: Register::new("%25"),
+            value: Value::Register(Register::new("%25")),
             ptr: Register::new("%23"),
         },
         //  %31 = getelementptr inbounds %struct.Pair, %struct.Pair* %0, i32 0, i32 1

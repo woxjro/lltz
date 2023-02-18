@@ -1,5 +1,7 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{Arg, Function, Instruction, Opcode, Program, Register, Type};
+use lltz::lltz_ir::{
+    Arg, Condition, Const, Function, Instruction, Opcode, Program, Register, Type, Value,
+};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -55,17 +57,17 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("0"),
+            value: Value::Const(Const::Int(0)),
             ptr: Register::new("%1"),
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("10"),
+            value: Value::Const(Const::Int(10)),
             ptr: Register::new("%2"),
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("20"),
+            value: Value::Const(Const::Int(20)),
             ptr: Register::new("%3"),
         },
         Instruction::Load {
@@ -87,7 +89,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("%7"),
+            value: Value::Register(Register::new("%7")),
             ptr: Register::new("%4"),
         },
     ];

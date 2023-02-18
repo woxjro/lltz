@@ -1,7 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{
-    Arg, Function, Instruction, Program, Opcode, Register, Type,
-};
+use lltz::lltz_ir::{Arg, Function, Instruction, Opcode, Program, Register, Type, Value};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -245,7 +243,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("%8"),
+            value: Value::Register(Register::new("%8")),
             ptr: Register::new("%4"),
         },
         //  %9 = getelementptr inbounds %struct.Parameter, %struct.Parameter* %1, Int 0, Int 0
@@ -267,7 +265,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("%10"),
+            value: Value::Register(Register::new("%10")),
             ptr: Register::new("%5"),
         },
         //  %11 = getelementptr inbounds %struct.Parameter, %struct.Parameter* %1, Int 0, Int 1
@@ -289,7 +287,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("%12"),
+            value: Value::Register(Register::new("%12")),
             ptr: Register::new("%6"),
         },
         //  %13 = load Int, Int* %4, align 4
@@ -325,7 +323,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("%16"),
+            value: Value::Register(Register::new("%16")),
             ptr: Register::new("%14"),
         },
         //  %17 = load Int, Int* %6, align 4
@@ -361,7 +359,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("%20"),
+            value: Value::Register(Register::new("%20")),
             ptr: Register::new("%18"),
         },
         //  %21 = load Int, Int* %5, align 4
@@ -397,7 +395,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("%24"),
+            value: Value::Register(Register::new("%24")),
             ptr: Register::new("%22"),
         },
         //  %25 = load Int, Int* %4, align 4
@@ -433,7 +431,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("%28"),
+            value: Value::Register(Register::new("%28")),
             ptr: Register::new("%26"),
         },
         //  %29 = load Int, Int* %6, align 4
@@ -469,7 +467,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("%32"),
+            value: Value::Register(Register::new("%32")),
             ptr: Register::new("%30"),
         },
         //  %33 = load Int, Int* %5, align 4
@@ -505,7 +503,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("%36"),
+            value: Value::Register(Register::new("%36")),
             ptr: Register::new("%34"),
         },
         //  %37 = getelementptr inbounds %struct.Storage, %struct.Storage* %2, Int 0, Int 4

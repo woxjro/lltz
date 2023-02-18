@@ -1,5 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{Arg, Function, Instruction, Opcode, Program, Register, Type};
+use lltz::lltz_ir::{Arg, Const, Function, Instruction, Opcode, Program, Register, Type, Value};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -70,22 +70,22 @@ fn main() {
         //  store Int** %3, Int*** %4, align 8
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("0"),
+            value: Value::Const(Const::Int(0)),
             ptr: Register::new("%1"),
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("99"),
+            value: Value::Const(Const::Int(99)),
             ptr: Register::new("%2"),
         },
         Instruction::Store {
             ty: Type::Ptr(Box::new(Type::Int)),
-            value: Register::new("%2"),
+            value: Value::Register(Register::new("%2")),
             ptr: Register::new("%3"),
         },
         Instruction::Store {
             ty: Type::Ptr(Box::new(Type::Ptr(Box::new(Type::Int)))),
-            value: Register::new("%3"),
+            value: Value::Register(Register::new("%3")),
             ptr: Register::new("%4"),
         },
         //  %5 = load Int**, Int*** %4, align 8
@@ -117,7 +117,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("%8"),
+            value: Value::Register(Register::new("%8")),
             ptr: Register::new("%6"),
         },
         //  ret Int 0

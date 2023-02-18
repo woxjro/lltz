@@ -1,7 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{
-    Arg, Function, Instruction, Program, Register, Type,
-};
+use lltz::lltz_ir::{Arg, Function, Instruction, Program, Register, Type, Value};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -186,7 +184,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Address,
-            value: Register::new("%7"),
+            value: Value::Register(Register::new("%7")),
             ptr: Register::new("%4"),
         },
         //  %8 = call i8* @get_source(), !dbg !65
@@ -196,7 +194,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Address,
-            value: Register::new("%8"),
+            value: Value::Register(Register::new("%8")),
             ptr: Register::new("%5"),
         },
         //  %9 = call i8* @get_self_address(), !dbg !68
@@ -206,7 +204,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Address,
-            value: Register::new("%9"),
+            value: Value::Register(Register::new("%9")),
             ptr: Register::new("%6"),
         },
         //  %11 = call i64 @get_level(), !dbg !73
@@ -216,7 +214,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Address,
-            value: Register::new("%101"),
+            value: Value::Register(Register::new("%101")),
             ptr: Register::new("%100"),
         },
         //  ret void, !dbg !69

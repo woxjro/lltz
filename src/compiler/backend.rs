@@ -5,7 +5,9 @@ mod helper;
 mod inject;
 mod scan;
 use crate::compiler::utils;
-use crate::lltz_ir::{Arg, BackendType, Condition, Function, Instruction, Opcode, Register, Type};
+use crate::lltz_ir::{
+    Arg, BackendType, Condition, Function, Instruction, Opcode, Register, Type, Value,
+};
 use michelson_ast::formatter;
 use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
@@ -181,12 +183,17 @@ pub fn compile_instructions(
                     vec![MInstrWrapper::Comment(format!(
                         "store {} {}, {}* {} {{",
                         Type::get_name(ty),
-                        value.get_id(),
+                        value.to_string(),
                         Type::get_name(ty),
                         ptr.get_id()
                     ))],
                     vec![
-                        MInstr::DupN(*register2stack_ptr.get(&value).unwrap()),
+                        match value {
+                            Value::Register(register) => {
+                                MInstr::DupN(*register2stack_ptr.get(&register).unwrap())
+                            }
+                            Value::Const(cnst) => cnst.get_push_instruction(),
+                        },
                         MInstr::Some,
                         MInstr::DigN(register2stack_ptr.len() + memory_ptr),
                         MInstr::Unpair,

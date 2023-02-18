@@ -1,5 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{Arg, Function, Instruction, Opcode, Program, Register, Type};
+use lltz::lltz_ir::{Arg, Const, Function, Instruction, Opcode, Program, Register, Type, Value};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -55,17 +55,17 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Mutez,
-            value: Register::new("0"),
+            value: Value::Const(Const::Mutez(0)),
             ptr: Register::new("%1"),
         },
         Instruction::Store {
             ty: Type::Mutez,
-            value: Register::new("10"),
+            value: Value::Const(Const::Mutez(10)),
             ptr: Register::new("%2"),
         },
         Instruction::Store {
             ty: Type::Mutez,
-            value: Register::new("20"),
+            value: Value::Const(Const::Mutez(20)),
             ptr: Register::new("%3"),
         },
         Instruction::Load {
@@ -87,7 +87,7 @@ fn main() {
         },
         Instruction::Store {
             ty: Type::Mutez,
-            value: Register::new("%7"),
+            value: Value::Register(Register::new("%7")),
             ptr: Register::new("%4"),
         },
     ];

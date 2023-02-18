@@ -1,5 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{Arg, Function, Instruction, Program, Register, Type};
+use lltz::lltz_ir::{Arg, Const, Function, Instruction, Program, Register, Type, Value};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -110,7 +110,7 @@ fn main() {
         //  store Int 0, Int* %1, align 4
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("0"),
+            value: Value::Const(Const::Int(0)),
             ptr: Register::new("%1"),
         },
         //  %4 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 0
@@ -126,7 +126,7 @@ fn main() {
         //  store Int 1, Int* %4, align 4
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("1"),
+            value: Value::Const(Const::Int(1)),
             ptr: Register::new("%4"),
         },
         //  %5 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 1
@@ -142,7 +142,7 @@ fn main() {
         //  store Int 30, Int* %5, align 4
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("30"),
+            value: Value::Const(Const::Int(30)),
             ptr: Register::new("%5"),
         },
         //  %6 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 2
@@ -158,7 +158,7 @@ fn main() {
         //  store Int 800, Int* %6, align 4
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("800"),
+            value: Value::Const(Const::Int(800)),
             ptr: Register::new("%6"),
         },
         //  %7 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 3
@@ -184,7 +184,7 @@ fn main() {
         //  store Int 2, Int* %8, align 4
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("2"),
+            value: Value::Const(Const::Int(2)),
             ptr: Register::new("%8"),
         },
         //  %9 = getelementptr inbounds %struct.Fish, %struct.Fish* %2, Int 0, Int 3
@@ -210,7 +210,7 @@ fn main() {
         //  store Int 8800000, Int* %10, align 4
         Instruction::Store {
             ty: Type::Int,
-            value: Register::new("8800000"),
+            value: Value::Const(Const::Int(8800000)),
             ptr: Register::new("%10"),
         },
         ////%11 = bitcast %struct.Fish* %3 to i8*

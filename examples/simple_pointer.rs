@@ -112,8 +112,8 @@ fn main() {
             ty: Type::Int,
             opcode: Opcode::Add,
             result: Register::new("%8"),
-            op1: Register::new("%7"),
-            op2: Register::new("33"),
+            op1: Value::Register(Register::new("%7")),
+            op2: Value::Const(Const::Int(33)),
         },
         Instruction::Store {
             ty: Type::Int,

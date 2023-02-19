@@ -173,8 +173,8 @@ fn main() {
                     ty: Type::Int,
                     opcode: Opcode::Mul,
                     result: Register::new("%10"),
-                    op1: Register::new("%9"),
-                    op2: Register::new("%8"),
+                    op1: Value::Register(Register::new("%9")),
+                    op2: Value::Register(Register::new("%8")),
                 },
                 Instruction::Store {
                     ty: Type::Int,
@@ -190,8 +190,8 @@ fn main() {
                     ty: Type::Int,
                     opcode: Opcode::Sub,
                     result: Register::new("%12"),
-                    op1: Register::new("%11"),
-                    op2: Register::new("1"),
+                    op1: Value::Register(Register::new("%11")),
+                    op2: Value::Const(Const::Int(1)),
                 },
                 Instruction::Store {
                     ty: Type::Int,

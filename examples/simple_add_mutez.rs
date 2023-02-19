@@ -82,8 +82,8 @@ fn main() {
             ty: Type::Mutez,
             opcode: Opcode::Add,
             result: Register::new("%7"),
-            op1: Register::new("%5"),
-            op2: Register::new("%6"),
+            op1: Value::Register(Register::new("%5")),
+            op2: Value::Register(Register::new("%6")),
         },
         Instruction::Store {
             ty: Type::Mutez,

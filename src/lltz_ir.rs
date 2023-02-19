@@ -586,8 +586,8 @@ pub enum Instruction {
         result: Register,
         ty: Type,
         opcode: Opcode,
-        op1: Register,
-        op2: Register,
+        op1: Value,
+        op2: Value,
     },
     Icmp {
         result: Register,

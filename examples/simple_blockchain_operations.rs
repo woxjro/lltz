@@ -196,8 +196,8 @@ fn main() {
             ty: Type::Mutez,
             opcode: Opcode::Add,
             result: Register::new("%7"),
-            op1: Register::new("%6"),
-            op2: Register::new("%4"),
+            op1: Value::Register(Register::new("%6")),
+            op2: Value::Register(Register::new("%4")),
         },
         Instruction::Store {
             ty: Type::Mutez,
@@ -239,8 +239,8 @@ fn main() {
             ty: Type::Mutez,
             opcode: Opcode::Add,
             result: Register::new("%16"),
-            op1: Register::new("%15"),
-            op2: Register::new("%13"),
+            op1: Value::Register(Register::new("%15")),
+            op2: Value::Register(Register::new("%13")),
         },
         Instruction::Store {
             ty: Type::Mutez,
@@ -281,8 +281,8 @@ fn main() {
             ty: Type::Nat,
             opcode: Opcode::Add,
             result: Register::new("%25"),
-            op1: Register::new("%24"),
-            op2: Register::new("%22"),
+            op1: Value::Register(Register::new("%24")),
+            op2: Value::Register(Register::new("%22")),
         },
         Instruction::Store {
             ty: Type::Nat,

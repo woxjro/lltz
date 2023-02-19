@@ -381,12 +381,22 @@ pub fn compile_instructions(
                         result.get_id(),
                         opcode.to_string(),
                         Type::get_name(ty),
-                        op1.get_id(),
-                        op2.get_id(),
+                        op1.to_string(),
+                        op2.to_string(),
                     ))],
                     vec![
-                        MInstr::DupN(*register2stack_ptr.get(&op2).unwrap()),
-                        MInstr::DupN(*register2stack_ptr.get(&op1).unwrap() + 1),
+                        match op2 {
+                            Value::Register(register) => {
+                                MInstr::DupN(*register2stack_ptr.get(&register).unwrap())
+                            }
+                            Value::Const(cnst) => cnst.get_push_instruction(),
+                        },
+                        match op1 {
+                            Value::Register(register) => {
+                                MInstr::DupN(*register2stack_ptr.get(&register).unwrap() + 1)
+                            }
+                            Value::Const(cnst) => cnst.get_push_instruction(),
+                        },
                         match opcode {
                             Opcode::Add => MInstr::Add,
                             Opcode::Sub => MInstr::Sub,

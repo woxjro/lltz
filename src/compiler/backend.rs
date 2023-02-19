@@ -187,13 +187,22 @@ pub fn compile_instructions(
                         Type::get_name(ty),
                         ptr.get_id()
                     ))],
-                    vec![
-                        match value {
-                            Value::Register(register) => {
-                                MInstr::DupN(*register2stack_ptr.get(&register).unwrap())
+                    match value {
+                        Value::Register(register) => {
+                            vec![MInstr::DupN(*register2stack_ptr.get(&register).unwrap())]
+                        }
+                        Value::Const(cnst) => {
+                            if cnst.has_default_value() {
+                                vec![cnst.get_push_instruction()]
+                            } else {
+                                vec![cnst.get_push_instruction(), MInstr::Some]
                             }
-                            Value::Const(cnst) => cnst.get_push_instruction(),
-                        },
+                        }
+                    }
+                    .iter()
+                    .map(|instr| instr.to_instruction_wrapper())
+                    .collect::<Vec<_>>(),
+                    vec![
                         MInstr::Some,
                         MInstr::DigN(register2stack_ptr.len() + memory_ptr),
                         MInstr::Unpair,
@@ -752,13 +761,18 @@ pub fn compile_instructions(
                         "{} = MichelsonTransferTokens {} {} {} {{",
                         result.get_id(),
                         init.get_id(),
-                        tokens.get_id(),
+                        tokens.to_string(),
                         contract.get_id()
                     ))],
                     vec![
                         MInstr::DupN(*register2stack_ptr.get(&contract).unwrap()),
                         MInstr::AssertSome,
-                        MInstr::DupN(register2stack_ptr.get(&tokens).unwrap() + 1),
+                        match tokens {
+                            Value::Register(register) => {
+                                MInstr::DupN(register2stack_ptr.get(&register).unwrap() + 1)
+                            }
+                            Value::Const(cnst) => cnst.get_push_instruction(),
+                        },
                         MInstr::Unit, // FIXME: unit しか対応していない...
                         MInstr::TransferTokens,
                         MInstr::Some,

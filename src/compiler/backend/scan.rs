@@ -610,14 +610,23 @@ pub fn scan_registers_and_memory(
                 tokens,
                 contract: _,
             } => {
-                let _ = register2stack_ptr.entry(tokens.clone()).or_insert_with(|| {
-                    *stack_ptr += 1;
-                    *stack_ptr
-                });
+                match tokens {
+                    Value::Register(register) => {
+                        let _ = register2stack_ptr
+                            .entry(register.clone())
+                            .or_insert_with(|| {
+                                *stack_ptr += 1;
+                                *stack_ptr
+                            });
 
-                register2ty
-                    .entry(tokens.clone())
-                    .or_insert(BackendType::from(&Type::Mutez));
+                        register2ty
+                            .entry(register.clone())
+                            .or_insert(BackendType::from(&Type::Mutez));
+                    }
+                    Value::Const(_) => {
+                        //nothing to do
+                    }
+                };
 
                 let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
                     *stack_ptr += 1;

@@ -1,7 +1,7 @@
 use super::ty::Ty;
 use super::val::Val;
 use crate::instruction_wrapper::InstructionWrapper;
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Instruction {
     Comment(String),
     ////////////////////////////////////////////////
@@ -206,7 +206,7 @@ impl Instruction {
             Instruction::Mem => "MEM".to_string(),
             Instruction::Never => "NEVER".to_string(),
             Instruction::Nil { .. } => "NIL".to_string(),
-            //NONE ty,
+            Instruction::None { .. } => "NONE".to_string(),
             Instruction::Pack => "PACK".to_string(),
             Instruction::Pair => "PAIR".to_string(),
             Instruction::PairN(_) => "PAIR".to_string(),
@@ -303,7 +303,7 @@ impl Instruction {
             /////////////      Macro       /////////////////
             ////////////////////////////////////////////////
             Instruction::AssertSome => "ASSERT_SOME".to_string(),
-            _ => todo!(),
+            e => todo!("{:?} is not implemented", e),
         }
     }
 

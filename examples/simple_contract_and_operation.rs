@@ -144,7 +144,7 @@ fn main() {
         Instruction::MichelsonTransferTokens {
             result: Register::new("%11"),
             init: Register::new("%100"), //FIXME, TODO とりあえずいまは動く
-            tokens: Register::new("100"),
+            tokens: Value::Const(Const::Mutez(100)),
             contract: Register::new("%10"),
         },
         Instruction::Store {

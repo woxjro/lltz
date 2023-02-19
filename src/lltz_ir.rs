@@ -91,6 +91,17 @@ impl Const {
             },
         }
     }
+
+    pub fn has_default_value(&self) -> bool {
+        match self {
+            Const::Address(_) => false,
+            Const::Bool(_) => true,
+            Const::Int(_) => true,
+            Const::Mutez(_) => true,
+            Const::Nat(_) => true,
+            Const::String(_) => true,
+        }
+    }
 }
 
 ///レジスタ
@@ -649,7 +660,7 @@ pub enum Instruction {
     MichelsonTransferTokens {
         result: Register,
         init: Register,
-        tokens: Register,
+        tokens: Value,
         contract: Register,
     },
 }

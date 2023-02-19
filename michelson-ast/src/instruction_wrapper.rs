@@ -1,6 +1,6 @@
 use crate::formatter::format;
 use crate::instruction::Instruction;
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum InstructionWrapper {
     Comment(String),
     Instruction {
@@ -43,8 +43,8 @@ impl InstructionWrapper {
                         let label = instruction.get_label();
                         let space = tab.repeat(depth);
                         let space_label = " ".repeat(instruction.get_label_len());
-                        let formatted_instr1 = format(instr1, depth + 1, tab);
-                        let formatted_instr2 = format(instr2, depth + 1, tab);
+                        let formatted_instr1 = format(instr1, depth + 1, "          ");
+                        let formatted_instr2 = format(instr2, depth + 1, "          ");
                         format!(
                             r#"{space}{label} {{
 {formatted_instr1}
@@ -86,6 +86,9 @@ impl InstructionWrapper {
                             kty.to_string(),
                             vty.to_string()
                         )
+                    }
+                    Instruction::None { ty } => {
+                        format!("{space}{} {}", instruction.get_label(), ty.to_string())
                     }
                     Instruction::GetN(n) => format!("{space}{} {}", instruction.get_label(), n),
                     Instruction::Nil { ty } => {

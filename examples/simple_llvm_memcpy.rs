@@ -119,8 +119,8 @@ fn main() {
             ty: struct_fish.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
-                (Type::Int, Register::new("0")),
-                (Type::Int, Register::new("0")),
+                (Type::Int, Value::Const(Const::Int(0))),
+                (Type::Int, Value::Const(Const::Int(0))),
             ],
         },
         //  store Int 1, Int* %4, align 4
@@ -135,8 +135,8 @@ fn main() {
             ty: struct_fish.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
-                (Type::Int, Register::new("0")),
-                (Type::Int, Register::new("1")),
+                (Type::Int, Value::Const(Const::Int(0))),
+                (Type::Int, Value::Const(Const::Int(1))),
             ],
         },
         //  store Int 30, Int* %5, align 4
@@ -151,8 +151,8 @@ fn main() {
             ty: struct_fish.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
-                (Type::Int, Register::new("0")),
-                (Type::Int, Register::new("2")),
+                (Type::Int, Value::Const(Const::Int(0))),
+                (Type::Int, Value::Const(Const::Int(2))),
             ],
         },
         //  store Int 800, Int* %6, align 4
@@ -167,8 +167,8 @@ fn main() {
             ty: struct_fish.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
-                (Type::Int, Register::new("0")),
-                (Type::Int, Register::new("3")),
+                (Type::Int, Value::Const(Const::Int(0))),
+                (Type::Int, Value::Const(Const::Int(3))),
             ],
         },
         //  %8 = getelementptr inbounds %struct.Prefecture, %struct.Prefecture* %7, Int 0, Int 0
@@ -177,8 +177,8 @@ fn main() {
             ty: struct_prefecture.clone(),
             ptrval: Register::new("%7"),
             subsequent: vec![
-                (Type::Int, Register::new("0")),
-                (Type::Int, Register::new("0")),
+                (Type::Int, Value::Const(Const::Int(0))),
+                (Type::Int, Value::Const(Const::Int(0))),
             ],
         },
         //  store Int 2, Int* %8, align 4
@@ -193,8 +193,8 @@ fn main() {
             ty: struct_fish.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
-                (Type::Int, Register::new("0")),
-                (Type::Int, Register::new("3")),
+                (Type::Int, Value::Const(Const::Int(0))),
+                (Type::Int, Value::Const(Const::Int(3))),
             ],
         },
         //  %10 = getelementptr inbounds %struct.Prefecture, %struct.Prefecture* %9, Int 0, Int 1
@@ -203,8 +203,8 @@ fn main() {
             ty: struct_prefecture.clone(),
             ptrval: Register::new("%9"),
             subsequent: vec![
-                (Type::Int, Register::new("0")),
-                (Type::Int, Register::new("1")),
+                (Type::Int, Value::Const(Const::Int(0))),
+                (Type::Int, Value::Const(Const::Int(1))),
             ],
         },
         //  store Int 8800000, Int* %10, align 4

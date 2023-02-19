@@ -76,8 +76,8 @@ fn main() {
             },
             ptrval: Register::new("%2"),
             subsequent: vec![
-                (Type::Int, Register::new("0")),
-                (Type::Int, Register::new("0")),
+                (Type::Int, Value::Const(Const::Int(0))),
+                (Type::Int, Value::Const(Const::Int(0))),
             ],
         },
         Instruction::Store {
@@ -95,8 +95,8 @@ fn main() {
             },
             ptrval: Register::new("%2"),
             subsequent: vec![
-                (Type::Int, Register::new("0")),
-                (Type::Int, Register::new("1")),
+                (Type::Int, Value::Const(Const::Int(0))),
+                (Type::Int, Value::Const(Const::Int(1))),
             ],
         },
         Instruction::Store {
@@ -114,8 +114,8 @@ fn main() {
             },
             ptrval: Register::new("%2"),
             subsequent: vec![
-                (Type::Int, Register::new("0")),
-                (Type::Int, Register::new("2")),
+                (Type::Int, Value::Const(Const::Int(0))),
+                (Type::Int, Value::Const(Const::Int(2))),
             ],
         },
         Instruction::Store {

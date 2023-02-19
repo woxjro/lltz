@@ -570,7 +570,7 @@ pub enum Instruction {
         //inboudns
         ty: Type,
         ptrval: Register,
-        subsequent: Vec<(Type, Register)>,
+        subsequent: Vec<(Type, Value)>,
     },
     If {
         reg: Register,

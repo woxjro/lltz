@@ -164,8 +164,8 @@ fn main() {
             ty: pair.clone(),
             ptrval: Register::new("%0"),
             subsequent: vec![
-                (Type::Int, Register::new("0")),
-                (Type::Int, Register::new("0")),
+                (Type::Int, Value::Const(Const::Int(0))),
+                (Type::Int, Value::Const(Const::Int(0))),
             ],
         },
         //  %14 = getelementptr inbounds [3 x Operation], [3 x Operation]* %13, i64 0, i64 1, !dbg !90
@@ -177,8 +177,8 @@ fn main() {
             },
             ptrval: Register::new("%13"),
             subsequent: vec![
-                (Type::Int, Register::new("0")),
-                (Type::Int, Register::new("1")),
+                (Type::Int, Value::Const(Const::Int(0))),
+                (Type::Int, Value::Const(Const::Int(1))),
             ],
         },
         //  store Operation %12, Operation* %14, align 4, !dbg !91

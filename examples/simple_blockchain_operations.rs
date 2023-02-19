@@ -1,5 +1,5 @@
 use lltz::compiler::compile;
-use lltz::lltz_ir::{Arg, Function, Instruction, Opcode, Program, Register, Type, Value};
+use lltz::lltz_ir::{Arg, Const, Function, Instruction, Opcode, Program, Register, Type, Value};
 use std::fs::File;
 use std::io::prelude::*;
 fn main() {
@@ -183,8 +183,8 @@ fn main() {
             ty: storage.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
-                (Type::Int, Register::new("0")),
-                (Type::Int, Register::new("0")),
+                (Type::Int, Value::Const(Const::Int(0))),
+                (Type::Int, Value::Const(Const::Int(0))),
             ],
         },
         Instruction::Load {
@@ -226,8 +226,8 @@ fn main() {
             ty: storage.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
-                (Type::Int, Register::new("0")),
-                (Type::Int, Register::new("1")),
+                (Type::Int, Value::Const(Const::Int(0))),
+                (Type::Int, Value::Const(Const::Int(1))),
             ],
         },
         Instruction::Load {
@@ -268,8 +268,8 @@ fn main() {
             ty: storage.clone(),
             ptrval: Register::new("%2"),
             subsequent: vec![
-                (Type::Int, Register::new("0")),
-                (Type::Int, Register::new("2")),
+                (Type::Int, Value::Const(Const::Int(0))),
+                (Type::Int, Value::Const(Const::Int(2))),
             ],
         },
         Instruction::Load {
@@ -295,8 +295,8 @@ fn main() {
             ty: pair.clone(),
             ptrval: Register::new("%0"),
             subsequent: vec![
-                (Type::Int, Register::new("0")),
-                (Type::Int, Register::new("1")),
+                (Type::Int, Value::Const(Const::Int(0))),
+                (Type::Int, Value::Const(Const::Int(1))),
             ],
         },
         //  %32 = bitcast %struct.Storage* %31 to i8*

@@ -1,7 +1,7 @@
 //! Programの中をコンパイル前に事前に走査し, 出てきうるレジスタ, メモリの数や型などを
 //! 洗い出しておくといった事前分析を担当するモジュール
 use super::helper;
-use crate::lltz_ir::{Arg, BackendType, Instruction, Register, Type, Value};
+use crate::lltz_ir::{Arg, BackendType, Const, Instruction, Register, Type, Value};
 use std::collections::HashMap;
 
 /// 構造体宣言を事前に走査し, 必要なメモリの型を洗い出しておく関数
@@ -160,10 +160,6 @@ pub fn scan_registers_and_memory(
                 ptrval,
                 subsequent,
             } => {
-                //result: Register
-                //ty: Type,
-                //ptrval: Register,
-                //subsequent: Vec<(Type, Register)>,
                 let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {
                     *stack_ptr += 1;
                     *stack_ptr
@@ -182,16 +178,30 @@ pub fn scan_registers_and_memory(
                 // => とりあえず、SubsequentにはConstしか来ないと仮定してParse
                 match ty {
                     Type::Struct { id: _, fields } => {
-                        let idx = subsequent[1].1.get_id().parse::<usize>().unwrap();
-                        let t = fields.iter().nth(idx).unwrap();
-                        register2ty
-                            .entry(result.clone())
-                            .or_insert(BackendType::from(&Type::Ptr(Box::new(t.clone()))));
+                        // 構造体に対するGEPのindexはconstしか来ない．
+                        match &subsequent[1].1 {
+                            Value::Const(cnst) => {
+                                let idx = match cnst {
+                                    Const::Int(i) => (*i).try_into().unwrap(),
+                                    _ => panic!(
+                                        "GetElementPtr の idx に int 型以外の型は使えません．"
+                                    ),
+                                };
+                                let ty = fields.iter().nth(idx).unwrap();
+                                register2ty
+                                    .entry(result.clone())
+                                    .or_insert(BackendType::from(&Type::Ptr(Box::new(ty.clone()))));
+                            }
+                            Value::Register(_) => {
+                                panic!("GetElementPtr の idx に register は使えません．")
+                            }
+                        };
                     }
                     Type::Array {
                         size: _,
                         elementtype,
                     } => {
+                        // 配列に対するGEPのindexはconst, registerの両方がありえる
                         register2ty
                             .entry(result.clone())
                             .or_insert(BackendType::from(&Type::Ptr(elementtype.clone())));
@@ -207,14 +217,24 @@ pub fn scan_registers_and_memory(
                     }
                 }
 
-                for (ty, reg) in subsequent {
-                    let _ = register2stack_ptr.entry(reg.clone()).or_insert_with(|| {
-                        *stack_ptr += 1;
-                        *stack_ptr
-                    });
-                    register2ty
-                        .entry(reg.clone())
-                        .or_insert(BackendType::from(ty));
+                for (ty, value) in subsequent {
+                    match value {
+                        Value::Register(register) => {
+                            let _ =
+                                register2stack_ptr
+                                    .entry(register.clone())
+                                    .or_insert_with(|| {
+                                        *stack_ptr += 1;
+                                        *stack_ptr
+                                    });
+                            register2ty
+                                .entry(register.clone())
+                                .or_insert(BackendType::from(ty));
+                        }
+                        Value::Const(_) => {
+                            //nothing to do
+                        }
+                    }
                 }
             }
             Instruction::If {

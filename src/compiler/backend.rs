@@ -256,7 +256,7 @@ pub fn compile_instructions(
 
                 // FIXME TODO: subsequent[1]で決め打ちで取得しているので直したい.
                 //              (...が, これ以外無い気がする)
-                let (_, reg) = &subsequent[1];
+                let (_, value) = &subsequent[1];
 
                 let mut instructions = vec![
                     vec![MInstrWrapper::Comment(format!(
@@ -272,7 +272,13 @@ pub fn compile_instructions(
                         MInstr::DupN(register2stack_ptr.get(&ptrval).unwrap() + 1),
                         MInstr::Get,        //some(map)
                         MInstr::AssertSome, //map
-                        MInstr::DupN(register2stack_ptr.get(&reg).unwrap() + 1), //int:map
+                        match value {
+                            Value::Register(register) => {
+                                MInstr::DupN(register2stack_ptr.get(&register).unwrap() + 1)
+                                //int:map
+                            }
+                            Value::Const(cnst) => cnst.get_push_instruction(),
+                        },
                         MInstr::Get,
                         MInstr::AssertSome, //ptr
                         MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),

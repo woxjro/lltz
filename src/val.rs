@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Val {
     Address(String),
     //BigMap { kty: Box<Ty>, vty: Box<Ty> },
@@ -35,11 +35,12 @@ pub enum Val {
 impl Val {
     pub fn to_string(&self) -> String {
         match self {
+            Val::Address(addr) => addr.clone(),
             Val::Bool(b) => b.to_string(),
             Val::Int(i) => i.to_string(),
             Val::Mutez(m) => m.to_string(),
             Val::Nat(n) => n.to_string(),
-            _ => todo!(),
+            v => todo!("{:?} is not implemented", v),
         }
     }
 }

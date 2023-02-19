@@ -2,19 +2,6 @@
 use crate::lltz_ir::{BackendType, Register};
 use std::collections::HashMap;
 
-///Michelson Codeのformatter
-pub fn format(michelson_instructions: &Vec<String>, tab: &str, tab_depth: usize) -> String {
-    let mut indent = String::new();
-    for _ in 0..tab_depth {
-        indent.push_str(tab);
-    }
-
-    michelson_instructions
-        .iter()
-        .map(|e| format!("{indent}{e}\n"))
-        .collect::<String>()
-}
-
 /// デバッグ用にMichelsonのスタックの初期状態を出力する
 pub fn print_michelson_initial_stack_status(
     register2stack_ptr: &HashMap<Register, usize>,
@@ -32,21 +19,11 @@ pub fn print_michelson_initial_stack_status(
 
     for (reg, _ptr) in register2stack_ptr_sorted.iter() {
         let ty = register2ty.get(reg).unwrap();
-        let val = if Register::is_const(reg) {
-            //reg.parse::<i32>().unwrap()
-            reg.get_id()
-        } else {
-            BackendType::default_value(&ty)
-        };
+        let val = BackendType::default_value(&ty);
         let michelson_ty = ty.to_michelson_ty().to_string();
         let llvm_ty_string = ty.get_name();
 
-        let comment = if Register::is_const(reg) {
-            format!("for const {val} : {llvm_ty_string}")
-        } else {
-            let id = reg.get_id();
-            format!("for reg {id} : {llvm_ty_string}")
-        };
+        let comment = format!("for reg {id} : {llvm_ty_string}", id = reg.get_id());
         rows.push(format!("{michelson_ty} {val} # {comment}"));
     }
 

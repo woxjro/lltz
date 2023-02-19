@@ -76,12 +76,13 @@ pub fn compile(lltz_ir: Program) -> String {
         )
     );
 
-    michelson_code = backend::stack_initialization(
-        michelson_code,
-        tab,
-        &register2stack_ptr,
-        &register2ty,
-        &memory_ty2stack_ptr,
+    michelson_code = format!(
+        "{michelson_code}{}\n",
+        formatter::format(
+            &backend::stack_initialization(&register2stack_ptr, &register2ty, &memory_ty2stack_ptr,),
+            tab_depth,
+            tab
+        )
     );
 
     michelson_code = format!(

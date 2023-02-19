@@ -4,7 +4,6 @@
 mod helper;
 mod inject;
 mod scan;
-use crate::compiler::utils;
 use crate::lltz_ir::{
     Arg, BackendType, Condition, Function, Instruction, Opcode, Register, Type, Value,
 };
@@ -77,12 +76,10 @@ pub fn inject_argument_list(
 /// before:                               (storage, parameter)
 /// after:  (storage, parameter):[register area]:[memory area]
 pub fn stack_initialization(
-    michelson_code: String,
-    tab: &str,
     register2stack_ptr: &HashMap<Register, usize>,
     register2ty: &HashMap<Register, BackendType>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
-) -> String {
+) -> Vec<MInstrWrapper> {
     let mut michelson_instructions = vec![];
     let memory_ty2stack_ptr = memory_ty2stack_ptr.clone();
     let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr
@@ -91,15 +88,20 @@ pub fn stack_initialization(
         .collect::<Vec<_>>();
     memory_ty2stack_ptr_sorted.sort_by(|a, b| (a.1).cmp(&b.1));
     for (ty, _v) in memory_ty2stack_ptr_sorted.iter().rev() {
-        let ty_str = ty.to_memory_ty().to_string();
-
-        let llvm_ty_string = ty.get_name();
-        let comment = format!("memory for {llvm_ty_string}");
+        let comment = format!("memory for {lltz_ty_name}", lltz_ty_name = ty.get_name());
 
         michelson_instructions.append(&mut vec![
-            format!("PUSH int 0;"),
-            format!("EMPTY_MAP int {ty_str}; # {comment}"),
-            format!("PAIR;"),
+            MInstr::Push {
+                ty: MTy::Int,
+                val: MVal::Int(0),
+            }
+            .to_instruction_wrapper(),
+            MInstr::EmptyMap {
+                kty: MTy::Int,
+                vty: ty.to_memory_ty(),
+            }
+            .to_instruction_wrapper_with_comment(&comment),
+            MInstr::Pair.to_instruction_wrapper(),
         ]);
     }
 
@@ -108,50 +110,31 @@ pub fn stack_initialization(
 
     for (reg, _ptr) in register2stack_ptr_sorted {
         let ty = register2ty.get(reg).unwrap();
-        let val = if Register::is_const(reg) {
-            //reg.parse::<i32>().unwrap()
-            reg.get_id()
-        } else {
-            BackendType::default_value(&ty)
-        };
-        let michelson_ty = ty.to_memory_ty().to_string();
-        let llvm_ty_string = ty.get_name();
 
-        let comment = if Register::is_const(reg) {
-            let val = if val.len() >= 6 {
-                let sval = &val[1..5];
-                format!("{sval}..")
-            } else {
-                val.clone()
-            };
-            format!("for const {val} : {llvm_ty_string}")
-        } else {
-            let id = reg.get_id();
-            format!("for reg {id} : {llvm_ty_string}")
-        };
-        michelson_instructions.push(match ty {
-            BackendType::Operation => format!("{val}; # {comment}"),
-            BackendType::Contract(_) => format!("{val}; # {comment}"),
-            BackendType::Option(inner) => {
-                if Register::is_const(reg) {
-                    let michelson_ty = inner.to_memory_ty().to_string();
-                    format!("PUSH {michelson_ty} {val}; SOME; # {comment}")
-                } else {
-                    format!("{val}; # {comment}")
-                }
+        let comment = format!(
+            "for reg {id} : {lltz_ty_name}",
+            lltz_ty_name = ty.get_name(),
+            id = reg.get_id()
+        );
+
+        match ty {
+            BackendType::Option(_inner) => {
+                michelson_instructions.push(
+                    BackendType::default_value_instruction(&ty)
+                        .to_instruction_wrapper_with_comment(&comment),
+                );
             }
-            _ => format!("PUSH {michelson_ty} {val}; # {comment}"),
-        });
+            _ => michelson_instructions.push(
+                BackendType::default_value_instruction(&ty)
+                    .to_instruction_wrapper_with_comment(&comment),
+            ),
+        };
     }
     //(param, storage)を一番上に持ってくる
-    michelson_instructions.push(format!(
-        "DIG {};",
-        register2stack_ptr.len() + memory_ty2stack_ptr.len()
-    ));
-    format!(
-        "{michelson_code}{}",
-        utils::format(&michelson_instructions, tab, 1)
-    )
+    michelson_instructions.push(
+        MInstr::DigN(register2stack_ptr.len() + memory_ty2stack_ptr.len()).to_instruction_wrapper(),
+    );
+    michelson_instructions
 }
 
 ///LLTZ IRの命令列instructionsを受け取り，それらの挙動をエミュレートする

@@ -428,12 +428,22 @@ pub fn compile_instructions(
                     vec![MInstrWrapper::Comment(format!(
                         "{} = icmp {} {} {{", //TODO: icmp -> cond.to_string()
                         result.get_id(),
-                        op1.get_id(),
-                        op2.get_id(),
+                        op1.to_string(),
+                        op2.to_string(),
                     ))],
                     vec![
-                        MInstr::DupN(*register2stack_ptr.get(&op1).unwrap()),
-                        MInstr::DupN(register2stack_ptr.get(&op2).unwrap() + 1),
+                        match op1 {
+                            Value::Register(register) => {
+                                MInstr::DupN(*register2stack_ptr.get(&register).unwrap())
+                            }
+                            Value::Const(cnst) => cnst.get_push_instruction(),
+                        },
+                        match op2 {
+                            Value::Register(register) => {
+                                MInstr::DupN(register2stack_ptr.get(&register).unwrap() + 1)
+                            }
+                            Value::Const(cnst) => cnst.get_push_instruction(),
+                        },
                     ]
                     .iter()
                     .map(|instr| instr.to_instruction_wrapper())

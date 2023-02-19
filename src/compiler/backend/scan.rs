@@ -330,22 +330,41 @@ pub fn scan_registers_and_memory(
                 });
                 register2ty
                     .entry(result.clone())
-                    .or_insert(BackendType::from(ty));
-                let _ = register2stack_ptr.entry(op1.clone()).or_insert_with(|| {
-                    *stack_ptr += 1;
-                    *stack_ptr
-                });
-                register2ty
-                    .entry(op1.clone())
-                    .or_insert(BackendType::from(ty));
+                    .or_insert(BackendType::Bool);
 
-                let _ = register2stack_ptr.entry(op2.clone()).or_insert_with(|| {
-                    *stack_ptr += 1;
-                    *stack_ptr
-                });
-                register2ty
-                    .entry(op2.clone())
-                    .or_insert(BackendType::from(ty));
+                match op1 {
+                    Value::Register(register) => {
+                        let _ = register2stack_ptr
+                            .entry(register.clone())
+                            .or_insert_with(|| {
+                                *stack_ptr += 1;
+                                *stack_ptr
+                            });
+                        register2ty
+                            .entry(register.clone())
+                            .or_insert(BackendType::from(ty));
+                    }
+                    Value::Const(_) => {
+                        //nothing to do
+                    }
+                };
+
+                match op2 {
+                    Value::Register(register) => {
+                        let _ = register2stack_ptr
+                            .entry(register.clone())
+                            .or_insert_with(|| {
+                                *stack_ptr += 1;
+                                *stack_ptr
+                            });
+                        register2ty
+                            .entry(register.clone())
+                            .or_insert(BackendType::from(ty));
+                    }
+                    Value::Const(_) => {
+                        //nothing to do
+                    }
+                };
             }
             Instruction::MichelsonGetAmount { result } => {
                 let _ = register2stack_ptr.entry(result.clone()).or_insert_with(|| {

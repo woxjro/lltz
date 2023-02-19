@@ -593,8 +593,8 @@ pub enum Instruction {
         result: Register,
         cond: Condition,
         ty: Type,
-        op1: Register,
-        op2: Register,
+        op1: Value,
+        op2: Value,
     },
     //Structなどのポインタを受け取り, srcからdstへと再帰的にコピーする
     //%5 = bitcast %struct.Storage* %4 to i8*

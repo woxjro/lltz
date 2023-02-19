@@ -120,8 +120,8 @@ fn main() {
             ty: Type::Int,
             cond: Condition::Eq,
             result: Register::new("%5"),
-            op1: Register::new("%4"),
-            op2: Register::new("0"),
+            op1: Value::Register(Register::new("%4")),
+            op2: Value::Const(Const::Int(0)),
         },
         Instruction::If {
             reg: Register::new("%5"),

@@ -146,8 +146,8 @@ fn main() {
                     ty: Type::Int,
                     cond: Condition::Slt,
                     result: Register::new("%6"),
-                    op1: Register::new("0"),
-                    op2: Register::new("%5"),
+                    op1: Value::Const(Const::Int(0)),
+                    op2: Value::Register(Register::new("%5")),
                 },
             ],
             // {

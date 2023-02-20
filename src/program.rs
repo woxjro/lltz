@@ -9,7 +9,7 @@ pub struct Program {
 }
 
 impl Program {
-    pub fn format(&self) -> String {
+    pub fn to_string(&self) -> String {
         format!(
             r#"storage {};
 parameter {};
@@ -18,7 +18,7 @@ code {{
      }}"#,
             self.storage.to_string(),
             self.parameter.to_string(),
-            format(&self.code, 1, "      ")
+            format(&self.code, 7)
         )
     }
 }
@@ -67,7 +67,7 @@ mod tests {
             ],
         };
 
-        let result = program.format();
+        let result = program.to_string();
         println!("{}", result);
         assert_eq!(result, String::from(""));
     }

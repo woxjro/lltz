@@ -10,10 +10,10 @@ pub enum InstructionWrapper {
 }
 
 impl InstructionWrapper {
-    pub fn to_formatted_string(&self, depth: usize, tab: &str) -> String {
-        let space = tab.repeat(depth);
+    pub fn to_formatted_string(&self, accumulation: usize) -> String {
+        let indent = " ".repeat(accumulation);
         match self {
-            InstructionWrapper::Comment(cmt) => format!("{space}# {}", cmt),
+            InstructionWrapper::Comment(cmt) => format!("{indent}# {}", cmt),
             InstructionWrapper::Instruction {
                 instruction,
                 comment,
@@ -24,47 +24,49 @@ impl InstructionWrapper {
                     ////////////////////////////////////////////////
                     Instruction::If { instr1, instr2 } => {
                         let label = instruction.get_label();
-                        let space = tab.repeat(depth);
                         let space_label = " ".repeat(instruction.get_label_len());
-                        let formatted_instr1 = format(instr1, depth + 1, tab);
-                        let formatted_instr2 = format(instr2, depth + 1, tab);
+                        let formatted_instr1 =
+                            format(instr1, accumulation + instruction.get_label_len() + 3);
+                        let formatted_instr2 =
+                            format(instr2, accumulation + instruction.get_label_len() + 3);
                         format!(
-                            r#"{space}{label} {{
+                            r#"{indent}{label} {{
 {formatted_instr1}
-{space}{space_label} }}
-{space}{space_label} {{
+{indent}{space_label} }}
+{indent}{space_label} {{
 {formatted_instr2}
-{space}{space_label} }}"#
+{indent}{space_label} }}"#
                         )
                     }
                     Instruction::IfCons { .. } => todo!(),
                     Instruction::IfLeft { .. } => todo!(),
                     Instruction::IfNone { instr1, instr2 } => {
                         let label = instruction.get_label();
-                        let space = tab.repeat(depth);
                         let space_label = " ".repeat(instruction.get_label_len());
-                        let formatted_instr1 = format(instr1, depth + 1, "          ");
-                        let formatted_instr2 = format(instr2, depth + 1, "          ");
+                        let formatted_instr1 =
+                            format(instr1, accumulation + instruction.get_label_len() + 3);
+                        let formatted_instr2 =
+                            format(instr2, accumulation + instruction.get_label_len() + 3);
                         format!(
-                            r#"{space}{label} {{
+                            r#"{indent}{label} {{
 {formatted_instr1}
-{space}{space_label} }}
-{space}{space_label} {{
+{indent}{space_label} }}
+{indent}{space_label} {{
 {formatted_instr2}
-{space}{space_label} }}"#
+{indent}{space_label} }}"#
                         )
                     }
                     //ITER inster,
                     //LAMBDA ty1 ty2 instr,
                     Instruction::Loop { instr } => {
                         let label = instruction.get_label();
-                        let space = tab.repeat(depth);
                         let space_label = " ".repeat(instruction.get_label_len());
-                        let formatted_instr = format(instr, depth + 1, tab);
+                        let formatted_instr =
+                            format(instr, accumulation + instruction.get_label_len() + 3);
                         format!(
-                            r#"{space}{label} {{
+                            r#"{indent}{label} {{
 {formatted_instr}
-{space}{space_label} }}"#
+{indent}{space_label} }}"#
                         )
                     }
                     Instruction::LoopLeft { .. } => todo!(),
@@ -74,32 +76,32 @@ impl InstructionWrapper {
                     //////////Operations on data structures/////////
                     ////////////////////////////////////////////////
                     Instruction::EmptyBigMap { kty, vty } => format!(
-                        "{space}{} {} {}",
+                        "{indent}{} {} {}",
                         instruction.get_label(),
                         kty.to_string(),
                         vty.to_string()
                     ),
                     Instruction::EmptyMap { kty, vty } => {
                         format!(
-                            "{space}{} {} {}",
+                            "{indent}{} {} {}",
                             instruction.get_label(),
                             kty.to_string(),
                             vty.to_string()
                         )
                     }
                     Instruction::None { ty } => {
-                        format!("{space}{} {}", instruction.get_label(), ty.to_string())
+                        format!("{indent}{} {}", instruction.get_label(), ty.to_string())
                     }
-                    Instruction::GetN(n) => format!("{space}{} {}", instruction.get_label(), n),
+                    Instruction::GetN(n) => format!("{indent}{} {}", instruction.get_label(), n),
                     Instruction::Nil { ty } => {
-                        format!("{space}{} {}", instruction.get_label(), ty.to_string())
+                        format!("{indent}{} {}", instruction.get_label(), ty.to_string())
                     }
                     ////////////////////////////////////////////////
                     /////////////Blockchain operations//////////////
                     ////////////////////////////////////////////////
                     //CREATE_CONTRACT { parameter ty1; storage ty2; code instr1 },
                     Instruction::Contract { ty } => {
-                        format!("{space}{} {}", instruction.get_label(), ty.to_string())
+                        format!("{indent}{} {}", instruction.get_label(), ty.to_string())
                     }
                     ////////////////////////////////////////////////
                     ////////////Operations on tickets///////////////
@@ -118,17 +120,17 @@ impl InstructionWrapper {
                     ////////////////////////////////////////////////
                     Instruction::Push { ty, val } => {
                         format!(
-                            "{space}{} {} {}",
+                            "{indent}{} {} {}",
                             instruction.get_label(),
                             ty.to_string(),
                             val.to_string()
                         )
                     }
-                    Instruction::DupN(n) => format!("{space}{} {}", instruction.get_label(), n),
-                    Instruction::DigN(n) => format!("{space}{} {}", instruction.get_label(), n),
-                    Instruction::DugN(n) => format!("{space}{} {}", instruction.get_label(), n),
-                    Instruction::PairN(n) => format!("{space}{} {}", instruction.get_label(), n),
-                    _ => format!("{space}{}", instruction.get_label()),
+                    Instruction::DupN(n) => format!("{indent}{} {}", instruction.get_label(), n),
+                    Instruction::DigN(n) => format!("{indent}{} {}", instruction.get_label(), n),
+                    Instruction::DugN(n) => format!("{indent}{} {}", instruction.get_label(), n),
+                    Instruction::PairN(n) => format!("{indent}{} {}", instruction.get_label(), n),
+                    _ => format!("{indent}{}", instruction.get_label()),
                 };
                 match comment {
                     Some(s) => format!("{formatted_string}; # {s}"),

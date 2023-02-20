@@ -1,10 +1,10 @@
 //! LLTZ IR を Michelson へのコンパイルする module
 use super::lltz_ir::Program;
-use super::lltz_ir::{BackendType, Register};
+use crate::lltz_ir::{BackendType, Register, Type};
 use std::collections::HashMap;
 mod backend;
 mod utils;
-use michelson_ast::formatter;
+use michelson_ast::program;
 
 ///入力として LLTZ IR プログラム Program を受け取り，
 ///その挙動をエミュレートするMichelsonコードを返す関数
@@ -40,10 +40,6 @@ pub fn compile(lltz_ir: Program) -> String {
      */
     let mut memory_ptr = 0;
 
-    let mut michelson_code = String::new();
-    let tab = "       ";
-    let tab_depth = 1;
-
     let smart_contract_function = lltz_ir
         .functions
         .iter()
@@ -76,75 +72,68 @@ pub fn compile(lltz_ir: Program) -> String {
         )
     );
 
-    michelson_code = format!(
-        "{michelson_code}{}\n",
-        formatter::format(
-            &backend::stack_initialization(&register2stack_ptr, &register2ty, &memory_ty2stack_ptr,),
-            tab_depth,
-            tab
-        )
-    );
+    let mut code = vec![];
+    code.append(&mut backend::stack_initialization(
+        &register2stack_ptr,
+        &register2ty,
+        &memory_ty2stack_ptr,
+    ));
 
-    michelson_code = format!(
-        "{michelson_code}{}\n",
-        formatter::format(
-            &backend::inject_argument_list(
-                smart_contract_function,
-                &register2stack_ptr,
-                &memory_ty2stack_ptr,
-            ),
-            tab_depth,
-            tab
-        )
-    );
-
-    michelson_code = format!(
-        "{michelson_code}{}\n",
-        formatter::format(
-            &backend::compile_instructions(
-                &register2stack_ptr,
-                &register2ty,
-                &memory_ty2stack_ptr,
-                &smart_contract_function.instructions,
-            ),
-            tab_depth,
-            tab
-        )
-    );
-
-    michelson_code = format!(
-        "{michelson_code}{}\n",
-        formatter::format(
-            &backend::retrieve_storage_from_memory(
-                smart_contract_function,
-                &register2stack_ptr,
-                &memory_ty2stack_ptr,
-            ),
-            tab_depth,
-            tab
-        )
-    );
-
-    michelson_code = format!(
-        "{michelson_code}{}\n",
-        formatter::format(
-            &backend::retrieve_operations_from_memory(
-                smart_contract_function,
-                &register2stack_ptr,
-                &memory_ty2stack_ptr,
-            ),
-            tab_depth,
-            tab
-        )
-    );
-
-    //後処理:レジスタ領域・メモリ領域をDROPする
-    michelson_code = backend::exit(
-        michelson_code,
-        tab,
+    code.append(&mut backend::inject_argument_list(
+        smart_contract_function,
         &register2stack_ptr,
         &memory_ty2stack_ptr,
-        &lltz_ir.structure_types,
-    );
-    michelson_code
+    ));
+
+    code.append(&mut backend::compile_instructions(
+        &register2stack_ptr,
+        &register2ty,
+        &memory_ty2stack_ptr,
+        &smart_contract_function.instructions,
+    ));
+
+    code.append(&mut backend::retrieve_storage_from_memory(
+        smart_contract_function,
+        &register2stack_ptr,
+        &memory_ty2stack_ptr,
+    ));
+
+    code.append(&mut backend::retrieve_operations_from_memory(
+        smart_contract_function,
+        &register2stack_ptr,
+        &memory_ty2stack_ptr,
+    ));
+
+    code.append(&mut backend::exit(
+        &register2stack_ptr,
+        &memory_ty2stack_ptr,
+    ));
+
+    let parameter = lltz_ir
+        .structure_types
+        .iter()
+        .find(|ty| match ty {
+            Type::Struct { id, fields: _ } => id == &String::from("Parameter"),
+            _ => false,
+        })
+        .expect("Parameter型が宣言されていません.")
+        .to_entrypoint_ty();
+
+    let storage = lltz_ir
+        .structure_types
+        .iter()
+        .find(|ty| match ty {
+            Type::Struct { id, fields: _ } => id == &String::from("Storage"),
+            _ => false,
+        })
+        .expect("Storage型が宣言されていません.")
+        .to_entrypoint_ty();
+
+    let michelson_program = program::Program {
+        parameter,
+        storage,
+        code,
+    };
+
+    michelson_program.format()
 }

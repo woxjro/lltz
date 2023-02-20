@@ -18,7 +18,7 @@ code {{
      }}"#,
             self.storage.to_string(),
             self.parameter.to_string(),
-            format(&self.code, 1, "     ")
+            format(&self.code, 1, "      ")
         )
     }
 }

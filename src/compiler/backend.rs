@@ -7,7 +7,6 @@ mod scan;
 use crate::lltz_ir::{
     Arg, BackendType, Condition, Function, Instruction, Opcode, Register, Type, Value,
 };
-use michelson_ast::formatter;
 use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
 use michelson_ast::ty::Ty as MTy;
@@ -1081,12 +1080,9 @@ pub fn retrieve_operations_from_memory(
 ///レジスタ型環境（register2ty（これは今回は無し）, register2stack_ptr）と
 ///メモリ型環境（memory_ty2stack_ptr）に相当するMichelsonスタックをDROPする
 pub fn exit(
-    michelson_code: String,
-    tab: &str,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
-    structure_types: &Vec<Type>,
-) -> String {
+) -> Vec<MInstrWrapper> {
     let mut instructions = vec![];
     instructions.push(
         MInstr::DugN(register2stack_ptr.len() + memory_ty2stack_ptr.len())
@@ -1099,36 +1095,5 @@ pub fn exit(
         instructions.push(MInstr::Drop.to_instruction_wrapper());
     }
 
-    let parameter_michelson_ty = structure_types
-        .iter()
-        .find(|ty| match ty {
-            Type::Struct { id, fields: _ } => id == &String::from("Parameter"),
-            _ => false,
-        })
-        .expect("Parameter型が宣言されていません.")
-        .to_entrypoint_ty()
-        .to_string();
-    let storage_michelson_ty = structure_types
-        .iter()
-        .find(|ty| match ty {
-            Type::Struct { id, fields: _ } => id == &String::from("Storage"),
-            _ => false,
-        })
-        .expect("Storage型が宣言されていません.")
-        .to_entrypoint_ty()
-        .to_string();
-
-    format!(
-        "
-parameter {parameter_michelson_ty};
-storage {storage_michelson_ty};
-code {{
-{}
-     }}
-",
-        format!(
-            "{michelson_code}{}\n",
-            formatter::format(&instructions, 1, tab)
-        )
-    )
+    instructions
 }

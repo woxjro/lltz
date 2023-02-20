@@ -135,5 +135,5 @@ pub fn compile(lltz_ir: Program) -> String {
         code,
     };
 
-    michelson_program.format()
+    michelson_program.to_string()
 }

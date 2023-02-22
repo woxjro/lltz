@@ -23,53 +23,93 @@ impl InstructionWrapper {
                     ////////////////Control Structures//////////////
                     ////////////////////////////////////////////////
                     Instruction::If { instr1, instr2 } => {
-                        let label = instruction.get_label();
-                        let space_label = " ".repeat(instruction.get_label_len());
-                        let formatted_instr1 =
-                            format(instr1, accumulation + instruction.get_label_len() + 3);
-                        let formatted_instr2 =
-                            format(instr2, accumulation + instruction.get_label_len() + 3);
                         format!(
                             r#"{indent}{label} {{
 {formatted_instr1}
 {indent}{space_label} }}
 {indent}{space_label} {{
 {formatted_instr2}
-{indent}{space_label} }}"#
+{indent}{space_label} }}"#,
+                            label = instruction.get_label(),
+                            space_label = " ".repeat(instruction.get_label_len()),
+                            formatted_instr1 =
+                                format(instr1, accumulation + instruction.get_label_len() + 3),
+                            formatted_instr2 =
+                                format(instr2, accumulation + instruction.get_label_len() + 3)
                         )
                     }
-                    Instruction::IfCons { .. } => todo!(),
-                    Instruction::IfLeft { .. } => todo!(),
-                    Instruction::IfNone { instr1, instr2 } => {
-                        let label = instruction.get_label();
-                        let space_label = " ".repeat(instruction.get_label_len());
-                        let formatted_instr1 =
-                            format(instr1, accumulation + instruction.get_label_len() + 3);
-                        let formatted_instr2 =
-                            format(instr2, accumulation + instruction.get_label_len() + 3);
+                    Instruction::IfCons { instr1, instr2 } => {
                         format!(
                             r#"{indent}{label} {{
 {formatted_instr1}
 {indent}{space_label} }}
 {indent}{space_label} {{
 {formatted_instr2}
-{indent}{space_label} }}"#
+{indent}{space_label} }}"#,
+                            label = instruction.get_label(),
+                            space_label = " ".repeat(instruction.get_label_len()),
+                            formatted_instr1 =
+                                format(instr1, accumulation + instruction.get_label_len() + 3),
+                            formatted_instr2 =
+                                format(instr2, accumulation + instruction.get_label_len() + 3)
+                        )
+                    }
+                    Instruction::IfLeft { instr1, instr2 } => {
+                        format!(
+                            r#"{indent}{label} {{
+{formatted_instr1}
+{indent}{space_label} }}
+{indent}{space_label} {{
+{formatted_instr2}
+{indent}{space_label} }}"#,
+                            label = instruction.get_label(),
+                            space_label = " ".repeat(instruction.get_label_len()),
+                            formatted_instr1 =
+                                format(instr1, accumulation + instruction.get_label_len() + 3),
+                            formatted_instr2 =
+                                format(instr2, accumulation + instruction.get_label_len() + 3)
+                        )
+                    }
+                    Instruction::IfNone { instr1, instr2 } => {
+                        format!(
+                            r#"{indent}{label} {{
+{formatted_instr1}
+{indent}{space_label} }}
+{indent}{space_label} {{
+{formatted_instr2}
+{indent}{space_label} }}"#,
+                            label = instruction.get_label(),
+                            space_label = " ".repeat(instruction.get_label_len()),
+                            formatted_instr1 =
+                                format(instr1, accumulation + instruction.get_label_len() + 3),
+                            formatted_instr2 =
+                                format(instr2, accumulation + instruction.get_label_len() + 3)
                         )
                     }
                     //ITER inster,
                     //LAMBDA ty1 ty2 instr,
                     Instruction::Loop { instr } => {
-                        let label = instruction.get_label();
-                        let space_label = " ".repeat(instruction.get_label_len());
-                        let formatted_instr =
-                            format(instr, accumulation + instruction.get_label_len() + 3);
                         format!(
                             r#"{indent}{label} {{
 {formatted_instr}
-{indent}{space_label} }}"#
+{indent}{space_label} }}"#,
+                            label = instruction.get_label(),
+                            space_label = " ".repeat(instruction.get_label_len()),
+                            formatted_instr =
+                                format(instr, accumulation + instruction.get_label_len() + 3)
                         )
                     }
-                    Instruction::LoopLeft { .. } => todo!(),
+                    Instruction::LoopLeft { instr } => {
+                        format!(
+                            r#"{indent}{label} {{
+{formatted_instr}
+{indent}{space_label} }}"#,
+                            label = instruction.get_label(),
+                            space_label = " ".repeat(instruction.get_label_len()),
+                            formatted_instr =
+                                format(instr, accumulation + instruction.get_label_len() + 3)
+                        )
+                    }
                     //instr1 ; instr2,
                     //{},
                     ////////////////////////////////////////////////
@@ -126,10 +166,10 @@ impl InstructionWrapper {
                             val.to_string()
                         )
                     }
-                    Instruction::DupN(n) => format!("{indent}{} {}", instruction.get_label(), n),
-                    Instruction::DigN(n) => format!("{indent}{} {}", instruction.get_label(), n),
-                    Instruction::DugN(n) => format!("{indent}{} {}", instruction.get_label(), n),
-                    Instruction::PairN(n) => format!("{indent}{} {}", instruction.get_label(), n),
+                    Instruction::DupN(n) => format!("{indent}{} {n}", instruction.get_label()),
+                    Instruction::DigN(n) => format!("{indent}{} {n}", instruction.get_label()),
+                    Instruction::DugN(n) => format!("{indent}{} {n}", instruction.get_label()),
+                    Instruction::PairN(n) => format!("{indent}{} {n}", instruction.get_label()),
                     _ => format!("{indent}{}", instruction.get_label()),
                 };
                 match comment {

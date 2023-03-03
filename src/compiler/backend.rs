@@ -1016,7 +1016,7 @@ pub fn retrieve_operations_from_memory(
             ty: MTy::Int,
             val: MVal::Int(0),
         }
-        .to_instruction_wrapper(), //FIXME: '0'番目に[size x operation]が入っている事を決め打ち
+        .to_instruction_wrapper(), //FIXME? NOTE: '0'番目に[size x operation]が入っている事を決め打ち
         MInstr::Get.to_instruction_wrapper(),
         MInstr::AssertSome.to_instruction_wrapper(), // [size x operation]* : (nil operation) : storage : ...
         MInstr::DupN(register2stack_ptr.len() + operation_arr_memory_ptr + 3)

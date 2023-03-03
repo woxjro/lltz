@@ -44,7 +44,7 @@ pub fn compile(lltz_ir: Program) -> String {
         .functions
         .iter()
         .find(|f| f.function_name == String::from("smart_contract"))
-        .unwrap();
+        .expect("A `smart_contract` function corresponding to your smart contract entry point is not defined.");
 
     backend::scan(
         &lltz_ir.structure_types,
@@ -116,7 +116,7 @@ pub fn compile(lltz_ir: Program) -> String {
             Type::Struct { id, fields: _ } => id == &String::from("Parameter"),
             _ => false,
         })
-        .expect("Parameter型が宣言されていません.")
+        .expect("A structure `Parameter` corresponding to your smart contract argument `parameter` is not defined.")
         .to_entrypoint_ty();
 
     let storage = lltz_ir
@@ -126,7 +126,7 @@ pub fn compile(lltz_ir: Program) -> String {
             Type::Struct { id, fields: _ } => id == &String::from("Storage"),
             _ => false,
         })
-        .expect("Storage型が宣言されていません.")
+        .expect("A structure `Storage` corresponding to your smart contract argument `storage` is not defined.")
         .to_entrypoint_ty();
 
     let michelson_program = program::Program {

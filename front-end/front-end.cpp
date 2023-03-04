@@ -174,9 +174,9 @@ bool ReconstructCFGPass::runOnLoop(llvm::Loop *L, llvm::LPPassManager &LPM) {
 
     JLoop = LoopToJson(L);
 
-    const auto FuncName = llvm::sys::path::filename(L->getName());
+    //const auto FuncName = llvm::sys::path::filename(L->getName());
     llvm::SmallString<32> Filename(OutDir.c_str());
-    llvm::sys::path::append(Filename, "cfg." + FuncName + ".json");
+    llvm::sys::path::append(Filename, "reconstructed_cfg.json");
     llvm::errs() << "Writing loop'" << L->getName() << "' to '" << Filename
                  << "'...";
 
@@ -422,10 +422,10 @@ bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
         JFunc["name"] = getNameOrAsOperand(&F);
         JFunc["entry"] = getBBLabel(&F.getEntryBlock());
         JFunc["blocks"] = JBlocks;
-        JFunc["edges"] = JEdges;
-        JFunc["calls"] = JCalls;
-        JFunc["returns"] = JReturns;
-        JFunc["unresolved_calls"] = JUnresolvedCalls;
+        //JFunc["edges"] = JEdges;
+        //JFunc["calls"] = JCalls;
+        //JFunc["returns"] = JReturns;
+        //JFunc["unresolved_calls"] = JUnresolvedCalls;
         JFuncs.append(JFunc);
     }
 
@@ -434,9 +434,9 @@ bool ReconstructMichelsonPrimitivePass::runOnModule(llvm::Module &M) {
     JMod["module"] = M.getName().str();
     JMod["functions"] = JFuncs;
 
-    const auto ModName = llvm::sys::path::filename(M.getName());
+    //const auto ModName = llvm::sys::path::filename(M.getName());
     llvm::SmallString<32> Filename(OutDir.c_str());
-    llvm::sys::path::append(Filename, "metadata." + ModName + ".json");
+    llvm::sys::path::append(Filename, "lltz_ir_instructions.json");
     llvm::errs() << "Writing module '" << M.getName() << "' to '" << Filename
                  << "'...";
 

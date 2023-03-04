@@ -1,3 +1,4 @@
+/*
 use lltz::compiler::compile;
 use lltz::lltz_ir::{Arg, Function, Instruction, Program, Register, Type, Value};
 use std::fs::File;
@@ -258,3 +259,4 @@ fn main() {
     let mut file = File::create(format!("examples/out/{file_name}.tz")).unwrap();
     file.write_all(contents.as_bytes()).unwrap();
 }
+*/

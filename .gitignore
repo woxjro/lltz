@@ -1,2 +1,3 @@
 target/
 examples/out/*
+compile_commands.json

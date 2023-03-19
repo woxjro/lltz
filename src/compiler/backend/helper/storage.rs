@@ -17,7 +17,8 @@ pub fn alloca_storage_by_value(
 ) -> Vec<MInstrWrapper> {
     let Arg { reg, ty } = storage_arg;
     let mut michelson_instructions = vec![];
-    michelson_instructions.push(MInstrWrapper::Comment(format!("alloca storage {{")));
+    michelson_instructions
+        .push(MInstr::Comment(format!("alloca storage {{")).to_instruction_wrapper());
 
     //Step 0.(parameter, storage)をスタックの一番下に入れる
     michelson_instructions.push(
@@ -51,7 +52,7 @@ pub fn alloca_storage_by_value(
         memory_ty2stack_ptr,
     ));
 
-    michelson_instructions.push(MInstrWrapper::Comment(format!("}}")));
+    michelson_instructions.push(MInstr::Comment(format!("}}")).to_instruction_wrapper());
     michelson_instructions
 }
 
@@ -162,7 +163,7 @@ fn decode_storage_field_from_input(
         _ => {
             /* primitiveの値がスタックの上に乗っているのでそれを使って,Memoryに入れる */
             michelson_instructions.append(&mut vec![
-                MInstrWrapper::Comment(format!("PUT {{")),
+                MInstr::Comment(format!("PUT {{")).to_instruction_wrapper(),
                 MInstr::Some.to_instruction_wrapper(),
             ]);
             for (i, (child_idx, child_ty)) in path.iter().enumerate() {
@@ -234,7 +235,7 @@ fn decode_storage_field_from_input(
             if is_last_field {
                 michelson_instructions.push(MInstr::Drop.to_instruction_wrapper())
             }
-            michelson_instructions.push(MInstrWrapper::Comment(format!("}}")));
+            michelson_instructions.push(MInstr::Comment(format!("}}")).to_instruction_wrapper());
         }
     }
     michelson_instructions

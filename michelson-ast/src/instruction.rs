@@ -172,6 +172,7 @@ pub enum Instruction {
 impl Instruction {
     pub fn get_label(&self) -> String {
         match self {
+            Instruction::Comment(comment) => comment.clone(),
             ////////////////////////////////////////////////
             ////////////////Control Structures//////////////
             ////////////////////////////////////////////////
@@ -312,14 +313,14 @@ impl Instruction {
     }
 
     pub fn to_instruction_wrapper(&self) -> InstructionWrapper {
-        InstructionWrapper::Instruction {
+        InstructionWrapper {
             comment: None,
             instruction: self.clone(),
         }
     }
 
     pub fn to_instruction_wrapper_with_comment(&self, comment: &str) -> InstructionWrapper {
-        InstructionWrapper::Instruction {
+        InstructionWrapper {
             comment: Some(comment.to_string()),
             instruction: self.clone(),
         }

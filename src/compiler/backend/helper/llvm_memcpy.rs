@@ -48,7 +48,8 @@ pub fn exec_llvm_memcpy(
         }
     }
 
-    let mut michelson_instructions = vec![MInstrWrapper::Comment(format!("@llvm.memcpy {{",))];
+    let mut michelson_instructions =
+        vec![MInstr::Comment(format!("@llvm.memcpy {{",)).to_instruction_wrapper()];
     match ty {
         Type::Struct { id: _, fields } => {
             let depth = 1;
@@ -71,10 +72,11 @@ pub fn exec_llvm_memcpy(
                 let field_memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(field)).unwrap();
                 michelson_instructions.append(
                     &mut vec![
-                        vec![MInstrWrapper::Comment(format!(
+                        vec![MInstr::Comment(format!(
                             "### llvm.memcpy GET {}[{idx}] {{",
                             Type::get_name(&ty)
-                        ))],
+                        ))
+                        .to_instruction_wrapper()],
                         vec![
                             MInstr::Dup,
                             MInstr::Push {
@@ -110,7 +112,9 @@ pub fn exec_llvm_memcpy(
                     dest,
                 ));
 
-                michelson_instructions.append(&mut vec![MInstrWrapper::Comment(format!("}}",))]);
+                michelson_instructions.append(&mut vec![
+                    MInstr::Comment(format!("}}")).to_instruction_wrapper()
+                ]);
             }
             michelson_instructions.push(MInstr::Drop.to_instruction_wrapper());
         }
@@ -119,7 +123,7 @@ pub fn exec_llvm_memcpy(
             panic!("Primitive(Pointer)型に対して@llvm.memcpyは実行出来ません.");
         }
     };
-    michelson_instructions.push(MInstrWrapper::Comment(format!("}}",)));
+    michelson_instructions.push(MInstr::Comment(format!("}}")).to_instruction_wrapper());
     michelson_instructions
 }
 
@@ -176,9 +180,9 @@ fn get_field_element(
         }
         _ => {
             /*この関数の役目は終わりPUTの処理へ*/
-            res.append(&mut vec![MInstrWrapper::Comment(format!(
-                "@llvm.memcpy PUT {{",
-            ))]);
+            res.append(&mut vec![
+                MInstr::Comment(format!("@llvm.memcpy PUT {{")).to_instruction_wrapper()
+            ]);
             res.append(&mut self::put_field_element(
                 depth,
                 field,
@@ -187,7 +191,7 @@ fn get_field_element(
                 memory_ty2stack_ptr,
                 dest,
             ));
-            res.push(MInstrWrapper::Comment(format!("}}",)));
+            res.push(MInstr::Comment(format!("}}")).to_instruction_wrapper());
         }
     }
 

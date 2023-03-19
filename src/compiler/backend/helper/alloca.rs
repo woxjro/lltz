@@ -30,45 +30,40 @@ pub fn exec_alloca(
             exec_aggregate_type_alloca(ty, ptr, register2stack_ptr, memory_ty2stack_ptr)
         }
         _ => vec![
-            vec![MInstrWrapper::Comment(format!(
+            MInstr::Comment(format!(
                 "{} = alloca {} {{",
                 ptr.get_id(),
                 Type::get_name(ty)
-            ))],
-            vec![
-                MInstr::DigN(register2stack_ptr.len() + memory_ptr - 1),
-                MInstr::Unpair,
-                MInstr::Swap,
-                MInstr::Push {
-                    ty: MTy::Int,
-                    val: MVal::Int(1),
-                },
-                MInstr::Add,
-                MInstr::Dup,
-                MInstr::Dup,
-                MInstr::DigN(3),
-                MInstr::Swap,
-                match BackendType::from(ty) {
-                    BackendType::Contract(_) => panic!("起こりえない"),
-                    BackendType::Operation => panic!("起こりえない"),
-                    _ => BackendType::default_value_instruction(&BackendType::from(ty)),
-                },
-                MInstr::Some,
-                MInstr::Swap,
-                MInstr::Update,
-                MInstr::Pair,
-                MInstr::DugN(register2stack_ptr.len() + memory_ptr),
-                MInstr::DigN(*register2stack_ptr.get(&ptr).unwrap()),
-                MInstr::Drop,
-                MInstr::DugN(register2stack_ptr.get(&ptr).unwrap() - 1),
-            ]
-            .iter()
-            .map(|instr| instr.to_instruction_wrapper())
-            .collect::<Vec<_>>(),
-            vec![MInstrWrapper::Comment(format!("}}"))],
+            )),
+            MInstr::DigN(register2stack_ptr.len() + memory_ptr - 1),
+            MInstr::Unpair,
+            MInstr::Swap,
+            MInstr::Push {
+                ty: MTy::Int,
+                val: MVal::Int(1),
+            },
+            MInstr::Add,
+            MInstr::Dup,
+            MInstr::Dup,
+            MInstr::DigN(3),
+            MInstr::Swap,
+            match BackendType::from(ty) {
+                BackendType::Contract(_) => panic!("起こりえない"),
+                BackendType::Operation => panic!("起こりえない"),
+                _ => BackendType::default_value_instruction(&BackendType::from(ty)),
+            },
+            MInstr::Some,
+            MInstr::Swap,
+            MInstr::Update,
+            MInstr::Pair,
+            MInstr::DugN(register2stack_ptr.len() + memory_ptr),
+            MInstr::DigN(*register2stack_ptr.get(&ptr).unwrap()),
+            MInstr::Drop,
+            MInstr::DugN(register2stack_ptr.get(&ptr).unwrap() - 1),
+            MInstr::Comment(format!("}}")),
         ]
-        .into_iter()
-        .flatten()
+        .iter()
+        .map(|instr| instr.to_instruction_wrapper())
         .collect::<Vec<_>>(),
     };
     instructions
@@ -91,7 +86,7 @@ pub fn exec_aggregate_type_alloca(
         .get(&BackendType::from(aggregate_ty))
         .unwrap();
     let mut res = vec![
-        MInstrWrapper::Comment(format!(
+        MInstr::Comment(format!(
             "{} = alloca {} {{",
             ptr.get_id(),
             Type::get_name(&aggregate_ty)
@@ -99,8 +94,7 @@ pub fn exec_aggregate_type_alloca(
         MInstr::EmptyMap {
             kty: MTy::Int,
             vty: MTy::Int,
-        }
-        .to_instruction_wrapper(),
+        },
     ];
 
     let fields = match aggregate_ty {
@@ -116,7 +110,7 @@ pub fn exec_aggregate_type_alloca(
     };
 
     for (idx, field) in fields.iter().enumerate() {
-        res.append(&mut vec![MInstrWrapper::Comment(format!(
+        res.append(&mut vec![MInstr::Comment(format!(
             "{}[{idx}] = alloca {} {{",
             Type::get_name(&aggregate_ty),
             Type::get_name(field),
@@ -129,44 +123,36 @@ pub fn exec_aggregate_type_alloca(
             register2stack_ptr,
             memory_ty2stack_ptr,
         ));
-        res.append(&mut vec![MInstrWrapper::Comment(format!("}}",))]);
+        res.append(&mut vec![MInstr::Comment(format!("}}",))]);
     }
 
-    res.append(
-        &mut vec![
-            vec![
-                MInstr::Some, //some(map)
-                MInstr::DigN(register2stack_ptr.len() + memory_ptr),
-                MInstr::Unpair, //bm:ptr:some(map)
-                MInstr::Swap,   //ptr:bm:some(map)
-                MInstr::Push {
-                    ty: MTy::Int,
-                    val: MVal::Int(1),
-                },
-                MInstr::Add,
-                MInstr::Dup,
-                MInstr::Dup,     //ptr:ptr:ptr:bm:some(map)
-                MInstr::DigN(3), //bm:ptr:ptr:ptr:some(map)
-                MInstr::DigN(4), //some(map):bm:ptr:ptr:ptr
-                MInstr::DigN(2),
-                MInstr::Update, //bm:ptr:ptr
-                MInstr::Pair,   //(bm,ptr):ptr
-                MInstr::DugN(register2stack_ptr.len() + memory_ptr),
-                MInstr::DigN(*register2stack_ptr.get(&ptr).unwrap()),
-                MInstr::Drop,
-                MInstr::DugN(register2stack_ptr.get(&ptr).unwrap() - 1),
-            ]
-            .iter()
-            .map(|instr| instr.to_instruction_wrapper())
-            .collect::<Vec<_>>(),
-            vec![MInstrWrapper::Comment(format!("}}"))],
-        ]
-        .into_iter()
-        .flatten()
-        .collect::<Vec<_>>(),
-    );
+    res.append(&mut vec![
+        MInstr::Some, //some(map)
+        MInstr::DigN(register2stack_ptr.len() + memory_ptr),
+        MInstr::Unpair, //bm:ptr:some(map)
+        MInstr::Swap,   //ptr:bm:some(map)
+        MInstr::Push {
+            ty: MTy::Int,
+            val: MVal::Int(1),
+        },
+        MInstr::Add,
+        MInstr::Dup,
+        MInstr::Dup,     //ptr:ptr:ptr:bm:some(map)
+        MInstr::DigN(3), //bm:ptr:ptr:ptr:some(map)
+        MInstr::DigN(4), //some(map):bm:ptr:ptr:ptr
+        MInstr::DigN(2),
+        MInstr::Update, //bm:ptr:ptr
+        MInstr::Pair,   //(bm,ptr):ptr
+        MInstr::DugN(register2stack_ptr.len() + memory_ptr),
+        MInstr::DigN(*register2stack_ptr.get(&ptr).unwrap()),
+        MInstr::Drop,
+        MInstr::DugN(register2stack_ptr.get(&ptr).unwrap() - 1),
+        MInstr::Comment(format!("}}")),
+    ]);
 
-    res
+    res.iter()
+        .map(|instr| instr.to_instruction_wrapper())
+        .collect::<Vec<_>>()
 }
 
 ///Struct型のメンバー型も再帰的にAllocaする
@@ -183,17 +169,16 @@ fn exec_struct_field_alloca(
     memory_ptr: &usize,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MInstr> {
     let field_memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(field)).unwrap();
     match field {
         Type::Struct { id: _, fields } => {
             let mut res = vec![MInstr::EmptyMap {
                 kty: MTy::Int,
                 vty: MTy::Int,
-            }
-            .to_instruction_wrapper()];
+            }];
             for (child_field_idx, child_field) in fields.iter().enumerate() {
-                res.append(&mut vec![MInstrWrapper::Comment(format!(
+                res.append(&mut vec![MInstr::Comment(format!(
                     "alloca for field No.{child_field_idx} {{"
                 ))]);
                 res.append(&mut self::exec_struct_field_alloca(
@@ -204,43 +189,38 @@ fn exec_struct_field_alloca(
                     register2stack_ptr,
                     memory_ty2stack_ptr,
                 ));
-                res.append(&mut vec![MInstrWrapper::Comment(format!("}}"))]);
+                res.append(&mut vec![MInstr::Comment(format!("}}"))]);
             }
             //TODO: MAP int int をUPDATEでどっかに入れる必要がある
             //child_map:parent_map
             //があったとして、child_mapをchild_mapのbig_mapにいれて返ってきた
             //ptrをparent_mapにkey:idx, value:ptrとして入れる
-            res.append(
-                &mut vec![
-                    MInstr::Some, //some(map)
-                    MInstr::DigN(register2stack_ptr.len() + field_memory_ptr + depth),
-                    MInstr::Unpair, //bm:ptr:child_map
-                    MInstr::Swap,
-                    MInstr::Push {
-                        ty: MTy::Int,
-                        val: MVal::Int(1),
-                    },
-                    MInstr::Add,
-                    MInstr::Dup,
-                    MInstr::Dup,
-                    MInstr::DigN(3), //bm:ptr:ptr:ptr:some(child_map)
-                    MInstr::Swap,    //ptr:bm:ptr:ptr:some(child_map)
-                    MInstr::DigN(4), //some(child_map):ptr:bm:ptr:ptr
-                    MInstr::Swap,    //ptr:some(child_map):bm:ptr:ptr
-                    MInstr::Update,  //bm:ptr:ptr:parent_map
-                    MInstr::Pair,    //(bm,ptr):ptr:parent_map
-                    MInstr::DugN(register2stack_ptr.len() + field_memory_ptr + depth), //ptr:parent_map
-                    MInstr::Some,
-                    MInstr::Push {
-                        ty: MTy::Int,
-                        val: MVal::Int(idx.try_into().unwrap()),
-                    },
-                    MInstr::Update,
-                ]
-                .iter()
-                .map(|instr| instr.to_instruction_wrapper())
-                .collect::<Vec<_>>(),
-            );
+            res.append(&mut vec![
+                MInstr::Some, //some(map)
+                MInstr::DigN(register2stack_ptr.len() + field_memory_ptr + depth),
+                MInstr::Unpair, //bm:ptr:child_map
+                MInstr::Swap,
+                MInstr::Push {
+                    ty: MTy::Int,
+                    val: MVal::Int(1),
+                },
+                MInstr::Add,
+                MInstr::Dup,
+                MInstr::Dup,
+                MInstr::DigN(3), //bm:ptr:ptr:ptr:some(child_map)
+                MInstr::Swap,    //ptr:bm:ptr:ptr:some(child_map)
+                MInstr::DigN(4), //some(child_map):ptr:bm:ptr:ptr
+                MInstr::Swap,    //ptr:some(child_map):bm:ptr:ptr
+                MInstr::Update,  //bm:ptr:ptr:parent_map
+                MInstr::Pair,    //(bm,ptr):ptr:parent_map
+                MInstr::DugN(register2stack_ptr.len() + field_memory_ptr + depth), //ptr:parent_map
+                MInstr::Some,
+                MInstr::Push {
+                    ty: MTy::Int,
+                    val: MVal::Int(idx.try_into().unwrap()),
+                },
+                MInstr::Update,
+            ]);
             res
         }
         Type::Array { size, elementtype } => {
@@ -253,10 +233,9 @@ fn exec_struct_field_alloca(
             let mut res = vec![MInstr::EmptyMap {
                 kty: MTy::Int,
                 vty: MTy::Int,
-            }
-            .to_instruction_wrapper()];
+            }];
             for (child_field_idx, child_field) in fields.iter().enumerate() {
-                res.append(&mut vec![MInstrWrapper::Comment(format!(
+                res.append(&mut vec![MInstr::Comment(format!(
                     "alloca for field No.{child_field_idx} {{"
                 ))]);
                 res.append(&mut self::exec_struct_field_alloca(
@@ -267,43 +246,38 @@ fn exec_struct_field_alloca(
                     register2stack_ptr,
                     memory_ty2stack_ptr,
                 ));
-                res.append(&mut vec![MInstrWrapper::Comment(format!("}}"))]);
+                res.append(&mut vec![MInstr::Comment(format!("}}"))]);
             }
             //TODO: MAP int int をUPDATEでどっかに入れる必要がある
             //child_map:parent_map
             //があったとして、child_mapをchild_mapのbig_mapにいれて返ってきた
             //ptrをparent_mapにkey:idx, value:ptrとして入れる
-            res.append(
-                &mut vec![
-                    MInstr::Some, //some(map)
-                    MInstr::DigN(register2stack_ptr.len() + field_memory_ptr + depth),
-                    MInstr::Unpair, //bm:ptr:child_map
-                    MInstr::Swap,
-                    MInstr::Push {
-                        ty: MTy::Int,
-                        val: MVal::Int(1),
-                    },
-                    MInstr::Add,
-                    MInstr::Dup,     //ptr:ptr:bm:some(child_map)
-                    MInstr::Dup,     //ptr:ptr:ptr:bm:some(child_map)
-                    MInstr::DigN(3), //bm:ptr:ptr:ptr:some(child_map)
-                    MInstr::Swap,    //ptr:bm:ptr:ptr:some(child_map)
-                    MInstr::DigN(4), //some(child_map):ptr:bm:ptr:ptr
-                    MInstr::Swap,    //ptr:some(child_map):bm:ptr:ptr
-                    MInstr::Update,  //bm:ptr:ptr:parent_map
-                    MInstr::Pair,    //(bm,ptr):ptr:parent_map
-                    MInstr::DugN(register2stack_ptr.len() + field_memory_ptr + depth), //ptr:parent_map
-                    MInstr::Some,
-                    MInstr::Push {
-                        ty: MTy::Int,
-                        val: MVal::Int(idx.try_into().unwrap()),
-                    },
-                    MInstr::Update,
-                ]
-                .iter()
-                .map(|instr| instr.to_instruction_wrapper())
-                .collect::<Vec<_>>(),
-            );
+            res.append(&mut vec![
+                MInstr::Some, //some(map)
+                MInstr::DigN(register2stack_ptr.len() + field_memory_ptr + depth),
+                MInstr::Unpair, //bm:ptr:child_map
+                MInstr::Swap,
+                MInstr::Push {
+                    ty: MTy::Int,
+                    val: MVal::Int(1),
+                },
+                MInstr::Add,
+                MInstr::Dup,     //ptr:ptr:bm:some(child_map)
+                MInstr::Dup,     //ptr:ptr:ptr:bm:some(child_map)
+                MInstr::DigN(3), //bm:ptr:ptr:ptr:some(child_map)
+                MInstr::Swap,    //ptr:bm:ptr:ptr:some(child_map)
+                MInstr::DigN(4), //some(child_map):ptr:bm:ptr:ptr
+                MInstr::Swap,    //ptr:some(child_map):bm:ptr:ptr
+                MInstr::Update,  //bm:ptr:ptr:parent_map
+                MInstr::Pair,    //(bm,ptr):ptr:parent_map
+                MInstr::DugN(register2stack_ptr.len() + field_memory_ptr + depth), //ptr:parent_map
+                MInstr::Some,
+                MInstr::Push {
+                    ty: MTy::Int,
+                    val: MVal::Int(idx.try_into().unwrap()),
+                },
+                MInstr::Update,
+            ]);
             res
         }
         _ => {
@@ -340,9 +314,6 @@ fn exec_struct_field_alloca(
                 }, //idx:some(ptr):map
                 MInstr::Update, //map
             ]
-            .iter()
-            .map(|instr| instr.to_instruction_wrapper())
-            .collect::<Vec<_>>()
         }
     }
 }

@@ -36,25 +36,28 @@ mod tests {
             storage: Ty::Mutez,
             parameter: Ty::Nat,
             code: vec![
-                InstructionWrapper::Comment("### Comment ###".to_string()),
-                InstructionWrapper::Instruction {
+                InstructionWrapper {
+                    comment: None,
+                    instruction: Instruction::Comment("### Comment ###".to_string()),
+                },
+                InstructionWrapper {
                     comment: Some("This is a comment".to_string()),
                     instruction: Instruction::Push {
                         ty: Ty::Mutez,
                         val: Val::Mutez(999),
                     },
                 },
-                InstructionWrapper::Instruction {
+                InstructionWrapper {
                     comment: Some("This is a comment".to_string()),
                     instruction: Instruction::Push {
                         ty: Ty::Nat,
                         val: Val::Nat(999),
                     },
                 },
-                InstructionWrapper::Instruction {
+                InstructionWrapper {
                     comment: None,
                     instruction: Instruction::If {
-                        instr1: vec![InstructionWrapper::Instruction {
+                        instr1: vec![InstructionWrapper {
                             comment: Some("This is a comment".to_string()),
                             instruction: Instruction::Push {
                                 ty: Ty::Mutez,

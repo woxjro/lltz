@@ -2,7 +2,11 @@
 name = "michelson-ast"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+homepage = "https://github.com/woxjro/michelson-ast"
+repository = "https://github.com/woxjro/michelson-ast"
+license = "MIT"
+description = "An AST for Michelson, a Tezos smart contract language"
+keywords = ["ast", "tezos", "michelson","blockchain"]
+readme = "README.md"
 
 [dependencies]

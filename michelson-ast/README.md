@@ -5,7 +5,7 @@ michelson-ast-rs is a Rust library for generating Michelson code. This library c
 
 ## Usage
 To generate Michelson code using this library, you can write a program like the following:
-``rust
+```rust
 use michelson_ast::instruction::Instruction;
 use michelson_ast::instruction_with_comment::InstructionWithComment;
 use michelson_ast::program::Program;

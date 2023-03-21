@@ -957,37 +957,40 @@ pub fn retrieve_operations_from_memory(
     // input: ([size x operation] MAP instance) : (list operation) : encoded_storage :[register]:[memory]
     //output: ([size x operation] MAP instance) : (list operation) : encoded_storage :[register]:[memory]
     for idx in 0..size {
-        michelson_instructions.append(&mut vec![
-            MInstr::Dup.to_instruction_wrapper(),
-            MInstr::Push {
-                ty: MTy::Int,
-                val: MVal::Int(idx.try_into().unwrap()),
-            }
-            .to_instruction_wrapper(),
-            MInstr::Get.to_instruction_wrapper(),
-            MInstr::AssertSome.to_instruction_wrapper(), // ptr : map-instance
-            MInstr::DupN(register2stack_ptr.len() + operation_memory_ptr + 4)
-                .to_instruction_wrapper(),
-            MInstr::Car.to_instruction_wrapper(), // operation_memory : ptr : map-instance
-            MInstr::Swap.to_instruction_wrapper(),
-            MInstr::Get.to_instruction_wrapper(),
-            MInstr::AssertSome.to_instruction_wrapper(), // option operation : map-instance
-            MInstr::IfNone {
-                instr1: vec![],
-                instr2: vec![MInstr::DigN(2), MInstr::Swap, MInstr::Cons, MInstr::DugN(1)]
-                    .iter()
-                    .map(|instr| instr.to_instruction_wrapper())
-                    .collect::<Vec<_>>(),
-            }
-            .to_instruction_wrapper(),
-        ]);
+        michelson_instructions.append(
+            &mut vec![
+                MInstr::Dup,
+                MInstr::Push {
+                    ty: MTy::Int,
+                    val: MVal::Int(idx.try_into().unwrap()),
+                },
+                MInstr::Get,
+                MInstr::AssertSome, // ptr : map-instance
+                MInstr::DupN(register2stack_ptr.len() + operation_memory_ptr + 4),
+                MInstr::Car, // operation_memory : ptr : map-instance
+                MInstr::Swap,
+                MInstr::Get,
+                MInstr::AssertSome, // option operation : map-instance
+                MInstr::IfNone {
+                    instr1: vec![],
+                    instr2: vec![MInstr::DigN(2), MInstr::Swap, MInstr::Cons, MInstr::DugN(1)]
+                        .iter()
+                        .map(|instr| instr.to_instruction_wrapper())
+                        .collect::<Vec<_>>(),
+                },
+            ]
+            .iter()
+            .map(|instr| instr.to_instruction_wrapper())
+            .collect::<Vec<_>>(),
+        );
     }
 
-    michelson_instructions.append(&mut vec![
-        MInstr::Drop.to_instruction_wrapper(),
-        MInstr::Pair.to_instruction_wrapper(),
-        MInstr::Comment("}".to_string()).to_instruction_wrapper(),
-    ]);
+    michelson_instructions.append(
+        &mut vec![MInstr::Drop, MInstr::Pair, MInstr::Comment("}".to_string())]
+            .iter()
+            .map(|instr| instr.to_instruction_wrapper())
+            .collect::<Vec<_>>(),
+    );
     michelson_instructions
 }
 

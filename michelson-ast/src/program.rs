@@ -33,45 +33,26 @@ mod tests {
     #[test]
     fn it_works() {
         let program = Program {
-            storage: Ty::Mutez,
-            parameter: Ty::Nat,
+            storage: Ty::Unit,
+            parameter: Ty::Unit,
             code: vec![
                 InstructionWithComment {
-                    comment: None,
-                    instruction: Instruction::Comment("### Comment ###".to_string()),
+                    comment: Some("=> Unit".to_string()),
+                    instruction: Instruction::Cdr,
                 },
                 InstructionWithComment {
-                    comment: Some("This is a comment".to_string()),
-                    instruction: Instruction::Push {
-                        ty: Ty::Mutez,
-                        val: Val::Mutez(999),
-                    },
+                    comment: Some("=> {} : Unit".to_string()),
+                    instruction: Instruction::Nil { ty: Ty::Operation },
                 },
                 InstructionWithComment {
-                    comment: Some("This is a comment".to_string()),
-                    instruction: Instruction::Push {
-                        ty: Ty::Nat,
-                        val: Val::Nat(999),
-                    },
-                },
-                InstructionWithComment {
-                    comment: None,
-                    instruction: Instruction::If {
-                        instr1: vec![InstructionWithComment {
-                            comment: Some("This is a comment".to_string()),
-                            instruction: Instruction::Push {
-                                ty: Ty::Mutez,
-                                val: Val::Mutez(999),
-                            },
-                        }],
-                        instr2: vec![],
-                    },
+                    comment: Some("=> (Pair {} Unit)".to_string()),
+                    instruction: Instruction::Pair,
                 },
             ],
         };
 
         let result = program.to_string();
         println!("{}", result);
-        assert_eq!(result, String::from(""));
+        assert_eq!(result, String::from("storage unit;\nparameter unit;\ncode {\n       CDR; # => Unit\n       NIL operation; # => {} : Unit\n       PAIR; # => (Pair {} Unit)\n     }"));
     }
 }

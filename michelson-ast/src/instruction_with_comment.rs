@@ -1,12 +1,30 @@
 use crate::formatter::format;
 use crate::instruction::Instruction;
+
+#[macro_export]
+macro_rules! instruction_row {
+    ($instruction:expr) => {{
+        michelson_ast::instruction_with_comment::InstructionWithComment {
+            instruction: $instruction,
+            comment: None,
+        }
+    }};
+
+    ($instruction:expr, $comment:expr) => {{
+        michelson_ast::instruction_with_comment::InstructionWithComment {
+            instruction: $instruction,
+            comment: Some($comment),
+        }
+    }};
+}
+
 #[derive(Clone, Debug)]
-pub struct InstructionWrapper {
+pub struct InstructionWithComment {
     pub instruction: Instruction,
     pub comment: Option<String>,
 }
 
-impl InstructionWrapper {
+impl InstructionWithComment {
     pub fn to_formatted_string(&self, accumulation: usize) -> String {
         let indent = " ".repeat(accumulation);
         let instruction = &self.instruction;

@@ -1,11 +1,11 @@
 use crate::formatter::format;
-use crate::instruction_wrapper::InstructionWrapper;
+use crate::instruction_with_comment::InstructionWithComment;
 use crate::ty::Ty;
 
 pub struct Program {
     pub storage: Ty,
     pub parameter: Ty,
-    pub code: Vec<InstructionWrapper>,
+    pub code: Vec<InstructionWithComment>,
 }
 
 impl Program {
@@ -26,7 +26,7 @@ code {{
 #[cfg(test)]
 mod tests {
     use crate::instruction::Instruction;
-    use crate::instruction_wrapper::InstructionWrapper;
+    use crate::instruction_with_comment::InstructionWithComment;
     use crate::program::Program;
     use crate::ty::Ty;
     use crate::val::Val;
@@ -36,28 +36,28 @@ mod tests {
             storage: Ty::Mutez,
             parameter: Ty::Nat,
             code: vec![
-                InstructionWrapper {
+                InstructionWithComment {
                     comment: None,
                     instruction: Instruction::Comment("### Comment ###".to_string()),
                 },
-                InstructionWrapper {
+                InstructionWithComment {
                     comment: Some("This is a comment".to_string()),
                     instruction: Instruction::Push {
                         ty: Ty::Mutez,
                         val: Val::Mutez(999),
                     },
                 },
-                InstructionWrapper {
+                InstructionWithComment {
                     comment: Some("This is a comment".to_string()),
                     instruction: Instruction::Push {
                         ty: Ty::Nat,
                         val: Val::Nat(999),
                     },
                 },
-                InstructionWrapper {
+                InstructionWithComment {
                     comment: None,
                     instruction: Instruction::If {
-                        instr1: vec![InstructionWrapper {
+                        instr1: vec![InstructionWithComment {
                             comment: Some("This is a comment".to_string()),
                             instruction: Instruction::Push {
                                 ty: Ty::Mutez,

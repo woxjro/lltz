@@ -1,6 +1,6 @@
 use super::ty::Ty;
 use super::val::Val;
-use crate::instruction_wrapper::InstructionWrapper;
+use crate::instruction_with_comment::InstructionWithComment;
 #[derive(Clone, Debug)]
 pub enum Instruction {
     Comment(String),
@@ -11,29 +11,29 @@ pub enum Instruction {
     Exec,
     Failwith,
     If {
-        instr1: Vec<InstructionWrapper>,
-        instr2: Vec<InstructionWrapper>,
+        instr1: Vec<InstructionWithComment>,
+        instr2: Vec<InstructionWithComment>,
     },
     IfCons {
-        instr1: Vec<InstructionWrapper>,
-        instr2: Vec<InstructionWrapper>,
+        instr1: Vec<InstructionWithComment>,
+        instr2: Vec<InstructionWithComment>,
     },
     IfLeft {
-        instr1: Vec<InstructionWrapper>,
-        instr2: Vec<InstructionWrapper>,
+        instr1: Vec<InstructionWithComment>,
+        instr2: Vec<InstructionWithComment>,
     },
     IfNone {
-        instr1: Vec<InstructionWrapper>,
-        instr2: Vec<InstructionWrapper>,
+        instr1: Vec<InstructionWithComment>,
+        instr2: Vec<InstructionWithComment>,
     },
     //ITER inster,
     //LAMBDA ty1 ty2 instr,
     //LOOP instr,
     Loop {
-        instr: Vec<InstructionWrapper>,
+        instr: Vec<InstructionWithComment>,
     },
     LoopLeft {
-        instr: Vec<InstructionWrapper>,
+        instr: Vec<InstructionWithComment>,
     },
     //instr1 ; instr2,
     //{},
@@ -312,16 +312,9 @@ impl Instruction {
         self.get_label().len()
     }
 
-    pub fn to_instruction_wrapper(&self) -> InstructionWrapper {
-        InstructionWrapper {
+    pub fn to_instruction_with_comment(&self) -> InstructionWithComment {
+        InstructionWithComment {
             comment: None,
-            instruction: self.clone(),
-        }
-    }
-
-    pub fn to_instruction_wrapper_with_comment(&self, comment: &str) -> InstructionWrapper {
-        InstructionWrapper {
-            comment: Some(comment.to_string()),
             instruction: self.clone(),
         }
     }

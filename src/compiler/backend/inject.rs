@@ -1,6 +1,6 @@
 use super::helper;
 use crate::lltz_ir::{Arg, BackendType, Function, Register, Type};
-use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
+use michelson_ast::instruction_with_comment::InstructionWithComment as MInstrWrapper;
 use std::collections::HashMap;
 ///ここが終わった段階ではMichelson StackのTopに(Parameter, Storage)が乗っている
 pub fn inject_storage(

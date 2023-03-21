@@ -8,7 +8,8 @@ use crate::lltz_ir::{
     Arg, BackendType, Condition, Function, Instruction, Opcode, Register, Type, Value,
 };
 use michelson_ast::instruction::Instruction as MInstr;
-use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
+use michelson_ast::instruction_row;
+use michelson_ast::instruction_with_comment::InstructionWithComment as MInstrWrapper;
 use michelson_ast::ty::Ty as MTy;
 use michelson_ast::val::Val as MVal;
 use std::collections::HashMap;
@@ -94,13 +95,15 @@ pub fn stack_initialization(
                 ty: MTy::Int,
                 val: MVal::Int(0),
             }
-            .to_instruction_wrapper(),
-            MInstr::EmptyMap {
-                kty: MTy::Int,
-                vty: ty.to_memory_ty(),
-            }
-            .to_instruction_wrapper_with_comment(&comment),
-            MInstr::Pair.to_instruction_wrapper(),
+            .to_instruction_with_comment(),
+            instruction_row!(
+                MInstr::EmptyMap {
+                    kty: MTy::Int,
+                    vty: ty.to_memory_ty(),
+                },
+                comment
+            ),
+            MInstr::Pair.to_instruction_with_comment(),
         ]);
     }
 
@@ -118,20 +121,21 @@ pub fn stack_initialization(
 
         match ty {
             BackendType::Option(_inner) => {
-                michelson_instructions.push(
-                    BackendType::default_value_instruction(&ty)
-                        .to_instruction_wrapper_with_comment(&comment),
-                );
+                michelson_instructions.push(instruction_row!(
+                    BackendType::default_value_instruction(&ty),
+                    comment
+                ));
             }
-            _ => michelson_instructions.push(
-                BackendType::default_value_instruction(&ty)
-                    .to_instruction_wrapper_with_comment(&comment),
-            ),
+            _ => michelson_instructions.push(instruction_row!(
+                BackendType::default_value_instruction(&ty),
+                comment
+            )),
         };
     }
     //(param, storage)を一番上に持ってくる
     michelson_instructions.push(
-        MInstr::DigN(register2stack_ptr.len() + memory_ty2stack_ptr.len()).to_instruction_wrapper(),
+        MInstr::DigN(register2stack_ptr.len() + memory_ty2stack_ptr.len())
+            .to_instruction_with_comment(),
     );
     michelson_instructions
 }
@@ -170,7 +174,7 @@ pub fn compile_instructions(
                         ptr.get_id()
                     ))]
                     .iter()
-                    .map(|instr| instr.to_instruction_wrapper())
+                    .map(|instr| instr.to_instruction_with_comment())
                     .collect::<Vec<_>>(),
                     match value {
                         Value::Register(register) => {
@@ -185,7 +189,7 @@ pub fn compile_instructions(
                         }
                     }
                     .iter()
-                    .map(|instr| instr.to_instruction_wrapper())
+                    .map(|instr| instr.to_instruction_with_comment())
                     .collect::<Vec<_>>(),
                     vec![
                         MInstr::Some,
@@ -199,7 +203,7 @@ pub fn compile_instructions(
                         MInstr::Comment("}".to_string()),
                     ]
                     .iter()
-                    .map(|instr| instr.to_instruction_wrapper())
+                    .map(|instr| instr.to_instruction_with_comment())
                     .collect::<Vec<_>>(),
                 ]
                 .into_iter()
@@ -230,7 +234,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_wrapper())
+                .map(|instr| instr.to_instruction_with_comment())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -275,7 +279,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_wrapper())
+                .map(|instr| instr.to_instruction_with_comment())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -305,7 +309,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_wrapper())
+                .map(|instr| instr.to_instruction_with_comment())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -342,18 +346,19 @@ pub fn compile_instructions(
                 instr.append(&mut loop_instr.clone());
                 instr.append(&mut cond_instr.clone());
                 instr.push(
-                    MInstr::DupN(*register2stack_ptr.get(&cond).unwrap()).to_instruction_wrapper(),
+                    MInstr::DupN(*register2stack_ptr.get(&cond).unwrap())
+                        .to_instruction_with_comment(),
                 );
 
                 let mut instructions = vec![
-                    vec![MInstr::Comment(format!("while {{",)).to_instruction_wrapper()],
+                    vec![MInstr::Comment(format!("while {{",)).to_instruction_with_comment()],
                     cond_instr.clone(),
                     vec![
                         MInstr::DupN(*register2stack_ptr.get(&cond).unwrap())
-                            .to_instruction_wrapper(),
-                        MInstr::Loop { instr }.to_instruction_wrapper(),
+                            .to_instruction_with_comment(),
+                        MInstr::Loop { instr }.to_instruction_with_comment(),
                     ],
-                    vec![MInstr::Comment("}".to_string()).to_instruction_wrapper()],
+                    vec![MInstr::Comment("}".to_string()).to_instruction_with_comment()],
                 ]
                 .into_iter()
                 .flatten()
@@ -400,7 +405,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_wrapper())
+                .map(|instr| instr.to_instruction_with_comment())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -444,7 +449,7 @@ pub fn compile_instructions(
                         },
                     ]
                     .iter()
-                    .map(|instr| instr.to_instruction_wrapper())
+                    .map(|instr| instr.to_instruction_with_comment())
                     .collect::<Vec<_>>(),
                     // TODO: 他のConditionについても実装
                     match cond {
@@ -459,7 +464,7 @@ pub fn compile_instructions(
                         }
                     }
                     .iter()
-                    .map(|instr| instr.to_instruction_wrapper())
+                    .map(|instr| instr.to_instruction_with_comment())
                     .collect::<Vec<_>>(),
                     vec![
                         MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
@@ -467,9 +472,9 @@ pub fn compile_instructions(
                         MInstr::DugN(register2stack_ptr.get(&result).unwrap() - 1),
                     ]
                     .iter()
-                    .map(|instr| instr.to_instruction_wrapper())
+                    .map(|instr| instr.to_instruction_with_comment())
                     .collect::<Vec<_>>(),
-                    vec![MInstr::Comment("}".to_string()).to_instruction_wrapper()],
+                    vec![MInstr::Comment("}".to_string()).to_instruction_with_comment()],
                 ]
                 .into_iter()
                 .flatten()
@@ -487,7 +492,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_wrapper())
+                .map(|instr| instr.to_instruction_with_comment())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -502,7 +507,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_wrapper())
+                .map(|instr| instr.to_instruction_with_comment())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -520,7 +525,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_wrapper())
+                .map(|instr| instr.to_instruction_with_comment())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -535,7 +540,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_wrapper())
+                .map(|instr| instr.to_instruction_with_comment())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -551,7 +556,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_wrapper())
+                .map(|instr| instr.to_instruction_with_comment())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -567,7 +572,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_wrapper())
+                .map(|instr| instr.to_instruction_with_comment())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -583,7 +588,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_wrapper())
+                .map(|instr| instr.to_instruction_with_comment())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -599,7 +604,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_wrapper())
+                .map(|instr| instr.to_instruction_with_comment())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -623,7 +628,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_wrapper())
+                .map(|instr| instr.to_instruction_with_comment())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -644,7 +649,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_wrapper())
+                .map(|instr| instr.to_instruction_with_comment())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -680,7 +685,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_wrapper())
+                .map(|instr| instr.to_instruction_with_comment())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -756,7 +761,7 @@ pub fn retrieve_storage_from_memory(
             MInstr::AssertSome, //Storage MAP Instance
         ]
         .iter()
-        .map(|instr| instr.to_instruction_wrapper())
+        .map(|instr| instr.to_instruction_with_comment())
         .collect::<Vec<_>>(),
     );
 
@@ -774,24 +779,25 @@ pub fn retrieve_storage_from_memory(
                     ));
                 }
                 michelson_instructions.append(&mut vec![
-                    MInstr::PairN(fields.len())
-                        .to_instruction_wrapper_with_comment(&format!("PACK Struct {{ {id} }}")),
-                    MInstr::Swap.to_instruction_wrapper(),
-                    MInstr::Drop
-                        .to_instruction_wrapper_with_comment(&format!("Storage MAP Instance")),
+                    instruction_row!(
+                        MInstr::PairN(fields.len()),
+                        format!("PACK Struct {{ {id} }}")
+                    ),
+                    MInstr::Swap.to_instruction_with_comment(),
+                    instruction_row!(MInstr::Drop, format!("Storage MAP Instance")),
                 ]);
             } else if fields.len() == 1 {
                 todo!()
             } else {
-                michelson_instructions.push(MInstr::Drop.to_instruction_wrapper());
-                michelson_instructions.push(MInstr::Unit.to_instruction_wrapper());
+                michelson_instructions.push(MInstr::Drop.to_instruction_with_comment());
+                michelson_instructions.push(MInstr::Unit.to_instruction_with_comment());
             }
         }
         _ => {
             panic!("StorageがStruct型ではなくPrimitive型になっています.")
         }
     }
-    michelson_instructions.push(MInstr::Comment("}".to_string()).to_instruction_wrapper());
+    michelson_instructions.push(MInstr::Comment("}".to_string()).to_instruction_with_comment());
 
     michelson_instructions
 }
@@ -812,24 +818,25 @@ fn retrieve_storage_field_from_memory(
         } => {
             //TODO: child_fields.len() > 2, == 1, == 0で場合分け
             let mut michelson_instructions: Vec<MInstrWrapper> = vec![
-                MInstr::Comment("{".to_string()).to_instruction_wrapper(),
-                MInstr::DupN(path[path.len() - 1])
-                    .to_instruction_wrapper_with_comment("MAP instance"),
+                MInstr::Comment("{".to_string()).to_instruction_with_comment(),
+                instruction_row!(MInstr::DupN(path[path.len() - 1]), format!("MAP instance")),
                 MInstr::Push {
                     ty: MTy::Int,
                     val: MVal::Int(field_idx.try_into().unwrap()),
                 }
-                .to_instruction_wrapper(),
-                MInstr::Get.to_instruction_wrapper(),
-                MInstr::AssertSome.to_instruction_wrapper(),
-                MInstr::DupN(
-                    register2stack_ptr.len() + memory_ptr + path.iter().sum::<usize>() + 1,
-                )
-                .to_instruction_wrapper_with_comment(&format!("memory: {}", Type::get_name(field))),
-                MInstr::Car.to_instruction_wrapper(),
-                MInstr::Swap.to_instruction_wrapper(),
-                MInstr::Get.to_instruction_wrapper(),
-                MInstr::AssertSome.to_instruction_wrapper(),
+                .to_instruction_with_comment(),
+                MInstr::Get.to_instruction_with_comment(),
+                MInstr::AssertSome.to_instruction_with_comment(),
+                instruction_row!(
+                    MInstr::DupN(
+                        register2stack_ptr.len() + memory_ptr + path.iter().sum::<usize>() + 1,
+                    ),
+                    format!("memory: {}", Type::get_name(field))
+                ),
+                MInstr::Car.to_instruction_with_comment(),
+                MInstr::Swap.to_instruction_with_comment(),
+                MInstr::Get.to_instruction_with_comment(),
+                MInstr::AssertSome.to_instruction_with_comment(),
             ];
             for (child_field_idx, child_field) in child_fields.iter().enumerate().rev() {
                 let new_path =
@@ -843,37 +850,39 @@ fn retrieve_storage_field_from_memory(
                 ));
             }
             michelson_instructions.append(&mut vec![
-                MInstr::PairN(child_fields.len())
-                    .to_instruction_wrapper_with_comment(&format!("PACK Struct {{ {child_id} }}")),
-                MInstr::Swap.to_instruction_wrapper(),
-                MInstr::Drop
-                    .to_instruction_wrapper_with_comment(&format!("child field MAP Instance")),
-                MInstr::Comment("}".to_string()).to_instruction_wrapper(),
+                instruction_row!(
+                    MInstr::PairN(child_fields.len()),
+                    format!("PACK Struct {{ {child_id} }}")
+                ),
+                MInstr::Swap.to_instruction_with_comment(),
+                instruction_row!(MInstr::Drop, format!("child field MAP Instance")),
+                MInstr::Comment("}".to_string()).to_instruction_with_comment(),
             ]);
 
             michelson_instructions
         }
         _ => {
             vec![
-                MInstr::Comment("{".to_string()).to_instruction_wrapper(),
-                MInstr::DupN(path[path.len() - 1])
-                    .to_instruction_wrapper_with_comment("MAP instance"),
+                MInstr::Comment("{".to_string()).to_instruction_with_comment(),
+                instruction_row!(MInstr::DupN(path[path.len() - 1]), format!("MAP instance")),
                 MInstr::Push {
                     ty: MTy::Int,
                     val: MVal::Int(field_idx.try_into().unwrap()),
                 }
-                .to_instruction_wrapper(),
-                MInstr::Get.to_instruction_wrapper(),
-                MInstr::AssertSome.to_instruction_wrapper(),
-                MInstr::DupN(
-                    register2stack_ptr.len() + memory_ptr + path.iter().sum::<usize>() + 1,
-                )
-                .to_instruction_wrapper_with_comment(&format!("memory: {}", Type::get_name(field))),
-                MInstr::Car.to_instruction_wrapper(),
-                MInstr::Swap.to_instruction_wrapper(),
-                MInstr::Get.to_instruction_wrapper(),
-                MInstr::AssertSome.to_instruction_wrapper(),
-                MInstr::Comment("}".to_string()).to_instruction_wrapper(),
+                .to_instruction_with_comment(),
+                MInstr::Get.to_instruction_with_comment(),
+                MInstr::AssertSome.to_instruction_with_comment(),
+                instruction_row!(
+                    MInstr::DupN(
+                        register2stack_ptr.len() + memory_ptr + path.iter().sum::<usize>() + 1,
+                    ),
+                    format!("memory: {}", Type::get_name(field))
+                ),
+                MInstr::Car.to_instruction_with_comment(),
+                MInstr::Swap.to_instruction_with_comment(),
+                MInstr::Get.to_instruction_with_comment(),
+                MInstr::AssertSome.to_instruction_with_comment(),
+                instruction_row!(MInstr::Comment("}".to_string())),
             ]
         }
     }
@@ -892,7 +901,7 @@ pub fn retrieve_operations_from_memory(
     } = smart_contract_function
         .argument_list
         .iter()
-        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+        .find(|Arg { reg: _, ty }| match Type::deref(&ty) {
             Type::Struct { id, fields: _ } => id == String::from("Pair"),
             _ => false,
         })
@@ -919,27 +928,30 @@ pub fn retrieve_operations_from_memory(
         .unwrap();
 
     let mut michelson_instructions: Vec<MInstrWrapper> = vec![
-        MInstr::Comment("retrieve operations from memory {".to_string()).to_instruction_wrapper(),
-        MInstr::Nil { ty: MTy::Operation }.to_instruction_wrapper(), //(nil operation) : storage : ...
-        MInstr::DupN(register2stack_ptr.len() + pair_memory_ptr + 2)
-            .to_instruction_wrapper_with_comment("pair_memory : (nil operation) : storage : ..."),
-        MInstr::Car.to_instruction_wrapper(),
-        MInstr::DupN(register2stack_ptr.get(reg).unwrap() + 3).to_instruction_wrapper(),
-        MInstr::Get.to_instruction_wrapper(),
-        MInstr::AssertSome.to_instruction_wrapper(), // pair_map_instance : (nil operation) : storage : ...
+        MInstr::Comment("retrieve operations from memory {".to_string())
+            .to_instruction_with_comment(),
+        MInstr::Nil { ty: MTy::Operation }.to_instruction_with_comment(), //(nil operation) : storage : ...
+        instruction_row!(
+            MInstr::DupN(register2stack_ptr.len() + pair_memory_ptr + 2),
+            format!("pair_memory : (nil operation) : storage : ...",)
+        ),
+        MInstr::Car.to_instruction_with_comment(),
+        MInstr::DupN(register2stack_ptr.get(&reg).unwrap() + 3).to_instruction_with_comment(),
+        MInstr::Get.to_instruction_with_comment(),
+        MInstr::AssertSome.to_instruction_with_comment(), // pair_map_instance : (nil operation) : storage : ...
         MInstr::Push {
             ty: MTy::Int,
             val: MVal::Int(0),
         }
-        .to_instruction_wrapper(), //FIXME? NOTE: '0'番目に[size x operation]が入っている事を決め打ち
-        MInstr::Get.to_instruction_wrapper(),
-        MInstr::AssertSome.to_instruction_wrapper(), // [size x operation]* : (nil operation) : storage : ...
+        .to_instruction_with_comment(), //FIXME? NOTE: '0'番目に[size x operation]が入っている事を決め打ち
+        MInstr::Get.to_instruction_with_comment(),
+        MInstr::AssertSome.to_instruction_with_comment(), // [size x operation]* : (nil operation) : storage : ...
         MInstr::DupN(register2stack_ptr.len() + operation_arr_memory_ptr + 3)
-            .to_instruction_wrapper(),
-        MInstr::Car.to_instruction_wrapper(),
-        MInstr::Swap.to_instruction_wrapper(),
-        MInstr::Get.to_instruction_wrapper(),
-        MInstr::AssertSome.to_instruction_wrapper(), // ([size x operation] MAP instance) : (nil operation) : storage : ...
+            .to_instruction_with_comment(),
+        MInstr::Car.to_instruction_with_comment(),
+        MInstr::Swap.to_instruction_with_comment(),
+        MInstr::Get.to_instruction_with_comment(),
+        MInstr::AssertSome.to_instruction_with_comment(), // ([size x operation] MAP instance) : (nil operation) : storage : ...
     ];
 
     let size = *match operation_arr_ty {
@@ -975,12 +987,12 @@ pub fn retrieve_operations_from_memory(
                     instr1: vec![],
                     instr2: vec![MInstr::DigN(2), MInstr::Swap, MInstr::Cons, MInstr::DugN(1)]
                         .iter()
-                        .map(|instr| instr.to_instruction_wrapper())
+                        .map(|instr| instr.to_instruction_with_comment())
                         .collect::<Vec<_>>(),
                 },
             ]
             .iter()
-            .map(|instr| instr.to_instruction_wrapper())
+            .map(|instr| instr.to_instruction_with_comment())
             .collect::<Vec<_>>(),
         );
     }
@@ -988,7 +1000,7 @@ pub fn retrieve_operations_from_memory(
     michelson_instructions.append(
         &mut vec![MInstr::Drop, MInstr::Pair, MInstr::Comment("}".to_string())]
             .iter()
-            .map(|instr| instr.to_instruction_wrapper())
+            .map(|instr| instr.to_instruction_with_comment())
             .collect::<Vec<_>>(),
     );
     michelson_instructions
@@ -1002,15 +1014,13 @@ pub fn exit(
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> Vec<MInstrWrapper> {
     let mut instructions = vec![];
-    instructions.push(
-        MInstr::DugN(register2stack_ptr.len() + memory_ty2stack_ptr.len())
-            .to_instruction_wrapper_with_comment(
-                "move a (list operation, storage) to the stack bottom",
-            ),
-    );
+    instructions.push(instruction_row!(
+        MInstr::DugN(register2stack_ptr.len() + memory_ty2stack_ptr.len()),
+        format!("move a (list operation, storage) to the stack bottom")
+    ));
     //後処理:レジスタ領域・メモリ領域をDROPする
     for _ in 0..(register2stack_ptr.iter().len() + memory_ty2stack_ptr.iter().len()) {
-        instructions.push(MInstr::Drop.to_instruction_wrapper());
+        instructions.push(MInstr::Drop.to_instruction_with_comment());
     }
 
     instructions

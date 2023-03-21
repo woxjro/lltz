@@ -1,6 +1,7 @@
 use crate::lltz_ir::{Arg, BackendType, Register, Type};
 use michelson_ast::instruction::Instruction as MInstr;
-use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
+use michelson_ast::instruction_row;
+use michelson_ast::instruction_with_comment::InstructionWithComment as MInstrWrapper;
 use michelson_ast::ty::Ty as MTy;
 use michelson_ast::val::Val as MVal;
 use std::collections::HashMap;
@@ -18,11 +19,12 @@ pub fn alloca_parameter_by_value(
     let Arg { reg, ty } = parameter_arg;
     let mut michelson_instructions = vec![];
     michelson_instructions
-        .push(MInstr::Comment(format!("alloca parameter {{")).to_instruction_wrapper());
+        .push(MInstr::Comment(format!("alloca parameter {{")).to_instruction_with_comment());
 
     //Step 0.(parameter, storage)をスタックの一番下に入れる
     michelson_instructions.push(
-        MInstr::DugN(register2stack_ptr.len() + memory_ty2stack_ptr.len()).to_instruction_wrapper(),
+        MInstr::DugN(register2stack_ptr.len() + memory_ty2stack_ptr.len())
+            .to_instruction_with_comment(),
     );
 
     //Step 1.普通のallocaをする（parameterの場所を確保するため）
@@ -42,7 +44,8 @@ pub fn alloca_parameter_by_value(
 
     //Step 2.(parameter, storage)を上に持ってきた後,
     michelson_instructions.push(
-        MInstr::DigN(register2stack_ptr.len() + memory_ty2stack_ptr.len()).to_instruction_wrapper(),
+        MInstr::DigN(register2stack_ptr.len() + memory_ty2stack_ptr.len())
+            .to_instruction_with_comment(),
     );
 
     //Step 3.LLVMのメモリモデルへとデコードして値を入れていく
@@ -53,9 +56,11 @@ pub fn alloca_parameter_by_value(
         memory_ty2stack_ptr,
     ));
 
-    michelson_instructions.push(MInstr::Comment(format!("}}")).to_instruction_wrapper());
-    michelson_instructions
-        .push(MInstr::Drop.to_instruction_wrapper_with_comment("DROP (Paramter, Storage)"));
+    michelson_instructions.push(MInstr::Comment(format!("}}")).to_instruction_with_comment());
+    michelson_instructions.push(instruction_row!(
+        MInstr::Drop,
+        format!("DROP (Paramter, Storage)")
+    ));
     michelson_instructions
 }
 
@@ -75,14 +80,14 @@ fn decode_parameter_from_input(
         MInstr::Car, //storage を破棄
     ]
     .iter()
-    .map(|instr| instr.to_instruction_wrapper())
+    .map(|instr| instr.to_instruction_with_comment())
     .collect::<Vec<_>>();
     match Type::deref(ty) {
         Type::Struct { id: _, fields } => {
             if fields.len() == 0 {
                 // unit
                 // do nothing
-                michelson_instructions.push(MInstr::Drop.to_instruction_wrapper());
+                michelson_instructions.push(MInstr::Drop.to_instruction_with_comment());
             } else if fields.len() == 1 {
                 // ty
                 todo!()
@@ -134,7 +139,7 @@ fn decode_parameter_field_from_input(
         MInstr::GetN(get_n_idx), //PairからStructの子fieldに対応する部分を取得
     ]
     .iter()
-    .map(|instr| instr.to_instruction_wrapper())
+    .map(|instr| instr.to_instruction_with_comment())
     .collect::<Vec<_>>();
 
     match ty {
@@ -165,14 +170,14 @@ fn decode_parameter_field_from_input(
             //最後の要素だった場合は後処理
             //Struct { .. }から出るときは後処理が必要。入る時にDUPしている為.
             if is_last_field {
-                michelson_instructions.push(MInstr::Drop.to_instruction_wrapper());
+                michelson_instructions.push(MInstr::Drop.to_instruction_with_comment());
             }
         }
         _ => {
             /* primitiveの値がスタックの上に乗っているのでそれを使って,Memoryに入れる */
             michelson_instructions.append(&mut vec![
-                MInstr::Comment(format!("PUT {{")).to_instruction_wrapper(),
-                MInstr::Some.to_instruction_wrapper(),
+                MInstr::Comment(format!("PUT {{")).to_instruction_with_comment(),
+                MInstr::Some.to_instruction_with_comment(),
             ]);
             for (i, (child_idx, child_ty)) in path.iter().enumerate() {
                 let memory_ptr = memory_ty2stack_ptr
@@ -196,7 +201,7 @@ fn decode_parameter_field_from_input(
                             MInstr::AssertSome, //field_ptr:some(v)
                         ]
                         .iter()
-                        .map(|instr| instr.to_instruction_wrapper())
+                        .map(|instr| instr.to_instruction_with_comment())
                         .collect::<Vec<_>>(),
                     );
                 } else {
@@ -215,7 +220,7 @@ fn decode_parameter_field_from_input(
                             MInstr::AssertSome, //field_ptr:some(v)
                         ]
                         .iter()
-                        .map(|instr| instr.to_instruction_wrapper())
+                        .map(|instr| instr.to_instruction_with_comment())
                         .collect::<Vec<_>>(),
                     );
                 }
@@ -236,15 +241,16 @@ fn decode_parameter_field_from_input(
                     MInstr::DugN(register2stack_ptr.len() + (memory_ptr - 1) + (depth + 1)),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_wrapper())
+                .map(|instr| instr.to_instruction_with_comment())
                 .collect::<Vec<_>>(),
             );
             //最後の要素だった場合は後処理
             //Struct { .. }から出るときは後処理が必要。入る時にDUPしている為.
             if is_last_field {
-                michelson_instructions.push(MInstr::Drop.to_instruction_wrapper());
+                michelson_instructions.push(MInstr::Drop.to_instruction_with_comment());
             }
-            michelson_instructions.push(MInstr::Comment(format!("}}")).to_instruction_wrapper());
+            michelson_instructions
+                .push(MInstr::Comment(format!("}}")).to_instruction_with_comment());
         }
     }
     michelson_instructions

@@ -1,6 +1,6 @@
 use crate::lltz_ir::{BackendType, Register, Type};
 use michelson_ast::instruction::Instruction as MInstr;
-use michelson_ast::instruction_wrapper::InstructionWrapper as MInstrWrapper;
+use michelson_ast::instruction_with_comment::InstructionWithComment as MInstrWrapper;
 use michelson_ast::ty::Ty as MTy;
 use michelson_ast::val::Val as MVal;
 use std::collections::HashMap;
@@ -63,7 +63,7 @@ pub fn exec_alloca(
             MInstr::Comment(format!("}}")),
         ]
         .iter()
-        .map(|instr| instr.to_instruction_wrapper())
+        .map(|instr| instr.to_instruction_with_comment())
         .collect::<Vec<_>>(),
     };
     instructions
@@ -151,7 +151,7 @@ pub fn exec_aggregate_type_alloca(
     ]);
 
     res.iter()
-        .map(|instr| instr.to_instruction_wrapper())
+        .map(|instr| instr.to_instruction_with_comment())
         .collect::<Vec<_>>()
 }
 

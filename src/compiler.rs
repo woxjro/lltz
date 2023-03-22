@@ -2,7 +2,7 @@
 use super::lltz_ir::Program;
 use crate::lltz_ir::{InnerType, Register, Type};
 use std::collections::HashMap;
-mod backend;
+mod michelify;
 mod utils;
 use michelson_ast::program;
 
@@ -46,7 +46,7 @@ pub fn compile(lltz_ir: Program) -> String {
         .find(|f| f.function_name == String::from("smart_contract"))
         .expect("A `smart_contract` function corresponding to your smart contract entry point is not defined.");
 
-    backend::scan(
+    michelify::scan(
         &lltz_ir.structure_types,
         &smart_contract_function.argument_list,
         &smart_contract_function.instructions,
@@ -76,7 +76,7 @@ pub fn compile(lltz_ir: Program) -> String {
 
     /* スタックの初期化 */
     let mut stack_initialization_instructions =
-        backend::stack_initialization(&register2stack_ptr, &register2ty, &memory_ty2stack_ptr);
+        michelify::stack_initialization(&register2stack_ptr, &register2ty, &memory_ty2stack_ptr);
     let stack_initialization_sum = stack_initialization_instructions
         .iter()
         .map(|instr| instr.count())
@@ -84,7 +84,7 @@ pub fn compile(lltz_ir: Program) -> String {
     code.append(&mut stack_initialization_instructions);
 
     /* 引数をメモリ領域に挿入 */
-    let mut inject_argument_list_instructions = backend::inject_argument_list(
+    let mut inject_argument_list_instructions = michelify::inject_argument_list(
         smart_contract_function,
         &register2stack_ptr,
         &memory_ty2stack_ptr,
@@ -97,7 +97,7 @@ pub fn compile(lltz_ir: Program) -> String {
     code.append(&mut inject_argument_list_instructions);
 
     /* 各命令を模倣するMichelsonコードを発行 */
-    let mut compiled_instruction = backend::compile_instructions(
+    let mut compiled_instruction = michelify::compile_instructions(
         &register2stack_ptr,
         &register2ty,
         &memory_ty2stack_ptr,
@@ -111,7 +111,7 @@ pub fn compile(lltz_ir: Program) -> String {
     code.append(&mut compiled_instruction);
 
     /* 返り値 storage を構築 */
-    let mut retrieve_storage_from_memory_instructions = backend::retrieve_storage_from_memory(
+    let mut retrieve_storage_from_memory_instructions = michelify::retrieve_storage_from_memory(
         smart_contract_function,
         &register2stack_ptr,
         &memory_ty2stack_ptr,
@@ -124,11 +124,12 @@ pub fn compile(lltz_ir: Program) -> String {
     code.append(&mut retrieve_storage_from_memory_instructions);
 
     /* 返り値 operation list を構築 */
-    let mut retrieve_operations_from_memory_instructions = backend::retrieve_operations_from_memory(
-        smart_contract_function,
-        &register2stack_ptr,
-        &memory_ty2stack_ptr,
-    );
+    let mut retrieve_operations_from_memory_instructions =
+        michelify::retrieve_operations_from_memory(
+            smart_contract_function,
+            &register2stack_ptr,
+            &memory_ty2stack_ptr,
+        );
     let retrieve_operations_from_memory_instructions_sum =
         retrieve_operations_from_memory_instructions
             .iter()
@@ -138,7 +139,7 @@ pub fn compile(lltz_ir: Program) -> String {
     code.append(&mut retrieve_operations_from_memory_instructions);
 
     /* スタックの処理 */
-    let mut exit_instructions = backend::exit(&register2stack_ptr, &memory_ty2stack_ptr);
+    let mut exit_instructions = michelify::exit(&register2stack_ptr, &memory_ty2stack_ptr);
     let exit_instructions_sum = exit_instructions
         .iter()
         .map(|instr| instr.count())

@@ -1,4 +1,4 @@
-//! 以下のコンパイルフローにおけるLLTZ IRからMichelsonへのコンパイル（Backend）を担当するモジュール
+//! 以下のコンパイルフローにおけるLLTZ IRからMichelsonへのコンパイル（michelify）を担当するモジュール
 //! LLVM IR ---> LLTZ IR ---> Michelson
 
 mod helper;

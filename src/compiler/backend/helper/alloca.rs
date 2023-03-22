@@ -1,4 +1,4 @@
-use crate::lltz_ir::{BackendType, Register, Type};
+use crate::lltz_ir::{InnerType, Register, Type};
 use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::instruction_with_comment::InstructionWithComment as MInstrWrapper;
 use michelson_ast::ty::Ty as MTy;
@@ -14,9 +14,9 @@ pub fn exec_alloca(
     ptr: &Register,
     ty: &Type,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MInstrWrapper> {
-    let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
+    let memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(ty)).unwrap();
 
     let instructions = match ty {
         Type::Struct { .. } => {
@@ -47,10 +47,10 @@ pub fn exec_alloca(
             MInstr::Dup,
             MInstr::DigN(3),
             MInstr::Swap,
-            match BackendType::from(ty) {
-                BackendType::Contract(_) => panic!("起こりえない"),
-                BackendType::Operation => panic!("起こりえない"),
-                _ => BackendType::default_value_instruction(&BackendType::from(ty)),
+            match InnerType::from(ty) {
+                InnerType::Contract(_) => panic!("起こりえない"),
+                InnerType::Operation => panic!("起こりえない"),
+                _ => InnerType::default_value_instruction(&InnerType::from(ty)),
             },
             MInstr::Some,
             MInstr::Swap,
@@ -78,12 +78,12 @@ pub fn exec_aggregate_type_alloca(
     aggregate_ty: &Type,
     ptr: &Register,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MInstrWrapper> {
     //Struct { id, fields }型のメモリ領域のスタック上の相対ポインタ
 
     let memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::from(aggregate_ty))
+        .get(&InnerType::from(aggregate_ty))
         .unwrap();
     let mut res = vec![
         MInstr::Comment(format!(
@@ -168,9 +168,9 @@ fn exec_struct_field_alloca(
     depth: usize,
     memory_ptr: &usize,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MInstr> {
-    let field_memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(field)).unwrap();
+    let field_memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(field)).unwrap();
     match field {
         Type::Struct { id: _, fields } => {
             let mut res = vec![MInstr::EmptyMap {
@@ -297,10 +297,10 @@ fn exec_struct_field_alloca(
                 MInstr::Dup,     //ptr:ptr:ptr:bm:map
                 MInstr::DigN(3), //bm:ptr:ptr:ptr:map
                 MInstr::Swap,    //ptr:bm:ptr:ptr:map
-                match BackendType::from(field) {
-                    BackendType::Contract(_) => panic!("起こりえない"),
-                    BackendType::Operation => panic!("起こりえない"),
-                    _ => BackendType::default_value_instruction(&BackendType::from(field)),
+                match InnerType::from(field) {
+                    InnerType::Contract(_) => panic!("起こりえない"),
+                    InnerType::Operation => panic!("起こりえない"),
+                    _ => InnerType::default_value_instruction(&InnerType::from(field)),
                 },
                 MInstr::Some,
                 MInstr::Swap,   //ptr:some(-1):bm:ptr:ptr:map

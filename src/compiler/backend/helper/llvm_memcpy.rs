@@ -1,4 +1,4 @@
-use crate::lltz_ir::{BackendType, Register, Type};
+use crate::lltz_ir::{InnerType, Register, Type};
 use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::instruction_with_comment::InstructionWithComment as MInstrWrapper;
 use michelson_ast::ty::Ty as MTy;
@@ -14,17 +14,17 @@ pub fn exec_llvm_memcpy(
     src: &Register,
     ty: &Type,
     register2stack_ptr: &HashMap<Register, usize>,
-    register2ty: &HashMap<Register, BackendType>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    register2ty: &HashMap<Register, InnerType>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MInstrWrapper> {
     //validation
     match register2ty.get(&dest).unwrap() {
-        BackendType::Ptr(inner) => {
-            if **inner != BackendType::from(ty) {
+        InnerType::Ptr(inner) => {
+            if **inner != InnerType::from(ty) {
                 panic!(
                     "@llvm.memcpyでdestの指す先の型:{}がty:{}と一致していません.",
                     inner.get_name(),
-                    BackendType::from(ty).get_name()
+                    InnerType::from(ty).get_name()
                 );
             }
         }
@@ -34,12 +34,12 @@ pub fn exec_llvm_memcpy(
     }
 
     match register2ty.get(&src).unwrap() {
-        BackendType::Ptr(inner) => {
-            if **inner != BackendType::from(ty) {
+        InnerType::Ptr(inner) => {
+            if **inner != InnerType::from(ty) {
                 panic!(
                     "@llvm.memcpyでsrcの指す先の型:{}がty:{}と一致していません.",
                     inner.get_name(),
-                    BackendType::from(ty).get_name()
+                    InnerType::from(ty).get_name()
                 );
             }
         }
@@ -53,7 +53,7 @@ pub fn exec_llvm_memcpy(
     match ty {
         Type::Struct { id: _, fields } => {
             let depth = 1;
-            let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
+            let memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(ty)).unwrap();
             michelson_instructions.append(
                 &mut vec![
                     MInstr::DupN(register2stack_ptr.len() + memory_ptr),
@@ -69,7 +69,7 @@ pub fn exec_llvm_memcpy(
 
             for (idx, field) in fields.iter().enumerate() {
                 //DUP big_map struct { id, fields }
-                let field_memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(field)).unwrap();
+                let field_memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(field)).unwrap();
                 michelson_instructions.append(
                     &mut vec![
                         vec![MInstr::Comment(format!(
@@ -136,15 +136,15 @@ fn get_field_element(
     field: &Type,
     path: &mut Vec<(usize, Type)>,
     register2stack_ptr: &HashMap<Register, usize>,
-    register2ty: &HashMap<Register, BackendType>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    register2ty: &HashMap<Register, InnerType>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
     dest: &Register,
 ) -> Vec<MInstrWrapper> {
     let mut res = vec![];
     match field {
         Type::Struct { id: _, fields } => {
             for (child_idx, child_field) in fields.iter().enumerate() {
-                let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(field)).unwrap();
+                let memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(field)).unwrap();
                 res.append(
                     &mut vec![
                         MInstr::Dup, //bm:bm:rest
@@ -206,14 +206,12 @@ fn put_field_element(
     primitive_ty: &Type,
     path: &Vec<(usize, Type)>,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
     dest: &Register,
 ) -> Vec<MInstrWrapper> {
     let mut res = vec![MInstr::Some.to_instruction_with_comment()];
     for (i, (child_idx, child_ty)) in path.iter().enumerate() {
-        let memory_ptr = memory_ty2stack_ptr
-            .get(&BackendType::from(child_ty))
-            .unwrap();
+        let memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(child_ty)).unwrap();
 
         if i == 0 {
             /* 最初はdestを使う */
@@ -258,7 +256,7 @@ fn put_field_element(
     }
 
     let memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::from(primitive_ty))
+        .get(&InnerType::from(primitive_ty))
         .unwrap();
     res.append(
         &mut vec![

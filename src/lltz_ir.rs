@@ -246,61 +246,61 @@ impl Type {
 /// Michelson のスタック上で構築するレジスタ領域及びメモリ領域で使用する型．
 /// LLTZ IR に出てくる型を，初期値などを扱いやすくするために，この型へと変換する必要がある．
 #[derive(Clone, Hash, Eq, PartialEq, Debug)]
-pub enum BackendType {
+pub enum InnerType {
     Address,
     Bool,
     Int,
     Mutez,
     Nat,
-    Contract(Box<BackendType>),
+    Contract(Box<InnerType>),
     Operation,
-    Option(Box<BackendType>),
-    Ptr(Box<BackendType>),
+    Option(Box<InnerType>),
+    Ptr(Box<InnerType>),
     Struct {
         id: String,
-        fields: Vec<BackendType>,
+        fields: Vec<InnerType>,
     },
     Array {
         size: u32,
-        elementtype: Box<BackendType>,
+        elementtype: Box<InnerType>,
     },
 }
 
-impl BackendType {
-    pub fn from(ty: &Type) -> BackendType {
+impl InnerType {
+    pub fn from(ty: &Type) -> InnerType {
         match ty {
-            Type::Address => BackendType::Option(Box::new(BackendType::Address)),
-            Type::Bool => BackendType::Bool,
-            Type::Int => BackendType::Int,
-            Type::Mutez => BackendType::Mutez,
-            Type::Nat => BackendType::Nat,
-            Type::Ptr(inner) => BackendType::Ptr(Box::new(BackendType::from(inner))),
-            Type::Struct { id, fields } => BackendType::Struct {
+            Type::Address => InnerType::Option(Box::new(InnerType::Address)),
+            Type::Bool => InnerType::Bool,
+            Type::Int => InnerType::Int,
+            Type::Mutez => InnerType::Mutez,
+            Type::Nat => InnerType::Nat,
+            Type::Ptr(inner) => InnerType::Ptr(Box::new(InnerType::from(inner))),
+            Type::Struct { id, fields } => InnerType::Struct {
                 id: id.clone(),
                 fields: fields
                     .iter()
-                    .map(|field| BackendType::from(field))
-                    .collect::<Vec<BackendType>>(),
+                    .map(|field| InnerType::from(field))
+                    .collect::<Vec<InnerType>>(),
             },
-            Type::Operation => BackendType::Option(Box::new(BackendType::Operation)),
-            Type::Contract(child_ty) => BackendType::Option(Box::new(BackendType::Contract(
-                Box::new(BackendType::from(child_ty)),
-            ))), //child_tyはStruct型
-            Type::Option(child_ty) => BackendType::Option(Box::new(BackendType::from(child_ty))),
-            Type::Array { size, elementtype } => BackendType::Array {
+            Type::Operation => InnerType::Option(Box::new(InnerType::Operation)),
+            Type::Contract(child_ty) => InnerType::Option(Box::new(InnerType::Contract(Box::new(
+                InnerType::from(child_ty),
+            )))), //child_tyはStruct型
+            Type::Option(child_ty) => InnerType::Option(Box::new(InnerType::from(child_ty))),
+            Type::Array { size, elementtype } => InnerType::Array {
                 size: *size,
-                elementtype: Box::new(BackendType::from(elementtype)),
+                elementtype: Box::new(InnerType::from(elementtype)),
             },
         }
     }
 
     pub fn to_memory_ty(&self) -> MTy {
         match self {
-            BackendType::Struct { .. } => MTy::Map {
+            InnerType::Struct { .. } => MTy::Map {
                 kty: Box::new(MTy::Int),
                 vty: Box::new(MTy::Int),
             },
-            BackendType::Array { .. } => MTy::Map {
+            InnerType::Array { .. } => MTy::Map {
                 kty: Box::new(MTy::Int),
                 vty: Box::new(MTy::Int),
             },
@@ -313,7 +313,7 @@ impl BackendType {
     ///Storage, Parameter, PairなどといったMichelsonコードの引数を生成するために使う
     fn to_entrypoint_ty(&self) -> MTy {
         match self {
-            BackendType::Struct { id: _, fields } => {
+            InnerType::Struct { id: _, fields } => {
                 if fields.len() >= 2 {
                     let mut es = fields
                         .iter()
@@ -335,19 +335,19 @@ impl BackendType {
 
                     res
                 } else if fields.len() == 1 {
-                    BackendType::to_entrypoint_ty(&fields.iter().nth(0).unwrap())
+                    InnerType::to_entrypoint_ty(&fields.iter().nth(0).unwrap())
                 } else {
                     MTy::Unit
                 }
             }
-            BackendType::Array { .. } => {
+            InnerType::Array { .. } => {
                 panic!()
             }
-            BackendType::Contract(ty) => MTy::Contract {
+            InnerType::Contract(ty) => MTy::Contract {
                 ty: Box::new(ty.to_entrypoint_ty()),
             },
-            BackendType::Ptr(_) => MTy::Int,
-            BackendType::Option(ty) => MTy::Option {
+            InnerType::Ptr(_) => MTy::Int,
+            InnerType::Option(ty) => MTy::Option {
                 ty: Box::new(ty.to_entrypoint_ty()),
             },
             _ => self.to_michelson_ty(),
@@ -356,50 +356,50 @@ impl BackendType {
 
     pub fn to_michelson_ty(&self) -> MTy {
         match self {
-            BackendType::Address => MTy::Address,
-            BackendType::Bool => MTy::Bool,
-            BackendType::Mutez => MTy::Mutez,
-            BackendType::Int => MTy::Int,
-            BackendType::Nat => MTy::Nat,
-            BackendType::Struct { .. } => self.to_entrypoint_ty(),
-            BackendType::Contract(child_ty) => MTy::Contract {
+            InnerType::Address => MTy::Address,
+            InnerType::Bool => MTy::Bool,
+            InnerType::Mutez => MTy::Mutez,
+            InnerType::Int => MTy::Int,
+            InnerType::Nat => MTy::Nat,
+            InnerType::Struct { .. } => self.to_entrypoint_ty(),
+            InnerType::Contract(child_ty) => MTy::Contract {
                 ty: Box::new(child_ty.to_michelson_ty()),
             },
-            BackendType::Operation => MTy::Operation,
-            BackendType::Ptr(_) => MTy::Int,
-            BackendType::Option(child_ty) => MTy::Option {
+            InnerType::Operation => MTy::Operation,
+            InnerType::Ptr(_) => MTy::Int,
+            InnerType::Option(child_ty) => MTy::Option {
                 ty: Box::new(child_ty.to_michelson_ty()),
             },
-            BackendType::Array { .. } => {
+            InnerType::Array { .. } => {
                 panic!("Array 型に対応する michelson プリミティブはありません")
             }
         }
     }
 
-    pub fn default_value(ty: &BackendType) -> String {
+    pub fn default_value(ty: &InnerType) -> String {
         let res = match ty {
-            BackendType::Address => String::from("NONE address"),
-            BackendType::Array {
+            InnerType::Address => String::from("NONE address"),
+            InnerType::Array {
                 size: _,
                 elementtype: _,
             } => {
                 panic!()
             }
-            BackendType::Bool => String::from("False"),
-            BackendType::Mutez => String::from("0"),
-            BackendType::Int => String::from("0"),
-            BackendType::Nat => String::from("0"),
-            BackendType::Contract(_) => {
-                panic!("BackendType::Contractのdefault_valueはありません.")
+            InnerType::Bool => String::from("False"),
+            InnerType::Mutez => String::from("0"),
+            InnerType::Int => String::from("0"),
+            InnerType::Nat => String::from("0"),
+            InnerType::Contract(_) => {
+                panic!("InnerType::Contractのdefault_valueはありません.")
             }
-            BackendType::Operation => {
-                panic!("BackendType::Operationのdefault_valueはありません.")
+            InnerType::Operation => {
+                panic!("InnerType::Operationのdefault_valueはありません.")
             }
-            BackendType::Struct { .. } => {
-                panic!("BackendType::Structのdefault_valueはありません.")
+            InnerType::Struct { .. } => {
+                panic!("InnerType::Structのdefault_valueはありません.")
             }
-            BackendType::Ptr(_) => String::from("-1"),
-            BackendType::Option(child_ty) => {
+            InnerType::Ptr(_) => String::from("-1"),
+            InnerType::Option(child_ty) => {
                 let inner = child_ty.to_michelson_ty().to_string();
                 format!("NONE {inner}")
             }
@@ -407,47 +407,47 @@ impl BackendType {
         res
     }
 
-    pub fn default_value_instruction(ty: &BackendType) -> MInstr {
+    pub fn default_value_instruction(ty: &InnerType) -> MInstr {
         let res = match ty {
-            BackendType::Address => MInstr::None {
+            InnerType::Address => MInstr::None {
                 ty: Box::new(MTy::Address),
             },
-            BackendType::Array {
+            InnerType::Array {
                 size: _,
                 elementtype: _,
             } => {
                 todo!()
             }
-            BackendType::Bool => MInstr::Push {
+            InnerType::Bool => MInstr::Push {
                 ty: MTy::Bool,
                 val: MVal::Bool(false),
             },
-            BackendType::Mutez => MInstr::Push {
+            InnerType::Mutez => MInstr::Push {
                 ty: MTy::Mutez,
                 val: MVal::Mutez(0),
             },
-            BackendType::Int => MInstr::Push {
+            InnerType::Int => MInstr::Push {
                 ty: MTy::Int,
                 val: MVal::Int(0),
             },
-            BackendType::Nat => MInstr::Push {
+            InnerType::Nat => MInstr::Push {
                 ty: MTy::Nat,
                 val: MVal::Nat(0),
             },
-            BackendType::Contract(_) => {
+            InnerType::Contract(_) => {
                 todo!()
             }
-            BackendType::Operation => {
+            InnerType::Operation => {
                 todo!()
             }
-            BackendType::Struct { .. } => {
+            InnerType::Struct { .. } => {
                 todo!()
             }
-            BackendType::Ptr(_) => MInstr::Push {
+            InnerType::Ptr(_) => MInstr::Push {
                 ty: MTy::Int,
                 val: MVal::Int(-1),
             },
-            BackendType::Option(child_ty) => MInstr::None {
+            InnerType::Option(child_ty) => MInstr::None {
                 ty: Box::new(child_ty.to_michelson_ty()),
             },
         };
@@ -456,30 +456,30 @@ impl BackendType {
 
     pub fn get_name(&self) -> String {
         match self {
-            BackendType::Address => "address".to_string(),
-            BackendType::Array { size, elementtype } => {
+            InnerType::Address => "address".to_string(),
+            InnerType::Array { size, elementtype } => {
                 format!("[{} x {}]", size, elementtype.get_name())
             }
-            BackendType::Bool => "bool".to_string(),
-            BackendType::Mutez => "mutez".to_string(),
-            BackendType::Int => "int".to_string(),
-            BackendType::Nat => "nat".to_string(),
-            BackendType::Struct { id, fields: _ } => format!("%struct.{id}"),
-            BackendType::Contract(_) => panic!(),
-            BackendType::Operation => panic!(),
-            BackendType::Ptr(ty) => {
+            InnerType::Bool => "bool".to_string(),
+            InnerType::Mutez => "mutez".to_string(),
+            InnerType::Int => "int".to_string(),
+            InnerType::Nat => "nat".to_string(),
+            InnerType::Struct { id, fields: _ } => format!("%struct.{id}"),
+            InnerType::Contract(_) => panic!(),
+            InnerType::Operation => panic!(),
+            InnerType::Ptr(ty) => {
                 let inner = ty.get_name();
                 format!("{inner}*")
             }
-            BackendType::Option(ty) => match &**ty {
-                BackendType::Address => {
+            InnerType::Option(ty) => match &**ty {
+                InnerType::Address => {
                     format!("address")
                 }
-                BackendType::Contract(child_ty) => {
+                InnerType::Contract(child_ty) => {
                     let inner = child_ty.get_name();
                     format!("(%struct.contract {inner})")
                 }
-                BackendType::Operation => format!("operation"),
+                InnerType::Operation => format!("operation"),
                 _ => {
                     let inner = ty.get_name();
                     format!("(option {inner})")
@@ -488,9 +488,9 @@ impl BackendType {
         }
     }
 
-    pub fn deref(ty: &BackendType) -> BackendType {
+    pub fn deref(ty: &InnerType) -> InnerType {
         match ty {
-            BackendType::Ptr(inner) => *(inner.clone()),
+            InnerType::Ptr(inner) => *(inner.clone()),
             _ => panic!(),
         }
     }

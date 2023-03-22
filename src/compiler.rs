@@ -1,6 +1,6 @@
 //! LLTZ IR を Michelson へのコンパイルする module
 use super::lltz_ir::Program;
-use crate::lltz_ir::{BackendType, Register, Type};
+use crate::lltz_ir::{InnerType, Register, Type};
 use std::collections::HashMap;
 mod backend;
 mod utils;
@@ -18,13 +18,13 @@ pub fn compile(lltz_ir: Program) -> String {
     /*
      * RegisterをKeyとして,そのRegisterのLLTZの型を返すHashMap
      */
-    let mut register2ty: HashMap<Register, BackendType> = HashMap::new();
+    let mut register2ty: HashMap<Register, InnerType> = HashMap::new();
 
     /*
      * tyをKeyとして,そのtyの(MichelsonのStackにおける)メモリ領域内の相対位置を返すHashMap
      * 1-indexであることに注意
      */
-    let mut memory_ty2stack_ptr: HashMap<BackendType, usize> = HashMap::new();
+    let mut memory_ty2stack_ptr: HashMap<InnerType, usize> = HashMap::new();
 
     /*
      * Michelsonのスタック領域におけるレジスタ領域でのレジスタ確保において

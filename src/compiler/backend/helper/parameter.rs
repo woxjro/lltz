@@ -1,4 +1,4 @@
-use crate::lltz_ir::{Arg, BackendType, Register, Type};
+use crate::lltz_ir::{Arg, InnerType, Register, Type};
 use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::instruction_row;
 use michelson_ast::instruction_with_comment::InstructionWithComment as MInstrWrapper;
@@ -14,7 +14,7 @@ use std::collections::HashMap;
 pub fn alloca_parameter_by_value(
     parameter_arg: &Arg,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MInstrWrapper> {
     let Arg { reg, ty } = parameter_arg;
     let mut michelson_instructions = vec![];
@@ -73,7 +73,7 @@ fn decode_parameter_from_input(
     ptr: &Register,
     ty: &Type,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MInstrWrapper> {
     let mut michelson_instructions = vec![
         MInstr::Dup,
@@ -132,7 +132,7 @@ fn decode_parameter_field_from_input(
     is_last_field: bool,
     path: Vec<(usize, Type)>,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MInstrWrapper> {
     let mut michelson_instructions = vec![
         MInstr::Dup,
@@ -180,9 +180,7 @@ fn decode_parameter_field_from_input(
                 MInstr::Some.to_instruction_with_comment(),
             ]);
             for (i, (child_idx, child_ty)) in path.iter().enumerate() {
-                let memory_ptr = memory_ty2stack_ptr
-                    .get(&BackendType::from(child_ty))
-                    .unwrap();
+                let memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(child_ty)).unwrap();
 
                 if i == 0 {
                     /* 最初はptrを使う */
@@ -226,7 +224,7 @@ fn decode_parameter_field_from_input(
                 }
             }
 
-            let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
+            let memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(ty)).unwrap();
             michelson_instructions.append(
                 &mut vec![
                     MInstr::DigN(

@@ -1,12 +1,12 @@
 //! コンパイルには本質的には関係無いが, Debugなどに便利なものをまとめたモジュール
-use crate::lltz_ir::{BackendType, Register};
+use crate::lltz_ir::{InnerType, Register};
 use std::collections::HashMap;
 
 /// デバッグ用にMichelsonのスタックの初期状態を出力する
 pub fn print_michelson_initial_stack_status(
     register2stack_ptr: &HashMap<Register, usize>,
-    register2ty: &HashMap<Register, BackendType>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    register2ty: &HashMap<Register, InnerType>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> String {
     let mut rows = vec![];
 
@@ -19,7 +19,7 @@ pub fn print_michelson_initial_stack_status(
 
     for (reg, _ptr) in register2stack_ptr_sorted.iter() {
         let ty = register2ty.get(reg).unwrap();
-        let val = BackendType::default_value(&ty);
+        let val = InnerType::default_value(&ty);
         let michelson_ty = ty.to_michelson_ty().to_string();
         let llvm_ty_string = ty.get_name();
 

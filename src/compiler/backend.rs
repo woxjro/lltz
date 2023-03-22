@@ -5,7 +5,7 @@ mod helper;
 mod inject;
 mod scan;
 use crate::lltz_ir::{
-    Arg, BackendType, Condition, Function, Instruction, Opcode, Register, Type, Value,
+    Arg, Condition, Function, InnerType, Instruction, Opcode, Register, Type, Value,
 };
 use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::instruction_row;
@@ -23,8 +23,8 @@ pub fn scan(
     stack_ptr: &mut usize,
     register2stack_ptr: &mut HashMap<Register, usize>,
     memory_ptr: &mut usize,
-    memory_ty2stack_ptr: &mut HashMap<BackendType, usize>,
-    register2ty: &mut HashMap<Register, BackendType>,
+    memory_ty2stack_ptr: &mut HashMap<InnerType, usize>,
+    register2ty: &mut HashMap<Register, InnerType>,
 ) {
     scan::scan_structure_types(memory_ty2stack_ptr, memory_ptr, &structure_types);
 
@@ -46,7 +46,7 @@ pub fn scan(
 pub fn inject_argument_list(
     smart_contract_function: &Function,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MInstrWrapper> {
     let mut res = vec![
         instruction_row!(MInstr::Comment(format!(
@@ -87,8 +87,8 @@ pub fn inject_argument_list(
 /// after:  (storage, parameter):[register area]:[memory area]
 pub fn stack_initialization(
     register2stack_ptr: &HashMap<Register, usize>,
-    register2ty: &HashMap<Register, BackendType>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    register2ty: &HashMap<Register, InnerType>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MInstrWrapper> {
     let mut michelson_instructions = vec![
         instruction_row!(MInstr::Comment(format!(
@@ -139,14 +139,14 @@ pub fn stack_initialization(
         );
 
         match ty {
-            BackendType::Option(_inner) => {
+            InnerType::Option(_inner) => {
                 michelson_instructions.push(instruction_row!(
-                    BackendType::default_value_instruction(&ty),
+                    InnerType::default_value_instruction(&ty),
                     comment
                 ));
             }
             _ => michelson_instructions.push(instruction_row!(
-                BackendType::default_value_instruction(&ty),
+                InnerType::default_value_instruction(&ty),
                 comment
             )),
         };
@@ -169,8 +169,8 @@ pub fn stack_initialization(
 ///tab,tab_depthはMichelsonコードのフォーマットのために使う
 pub fn compile_instructions(
     register2stack_ptr: &HashMap<Register, usize>,
-    register2ty: &HashMap<Register, BackendType>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    register2ty: &HashMap<Register, InnerType>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
     instructions: &Vec<Instruction>,
 ) -> Vec<MInstrWrapper> {
     let mut res = vec![
@@ -192,7 +192,7 @@ pub fn compile_instructions(
                 ));
             }
             Instruction::Store { ty, value, ptr } => {
-                let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
+                let memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(ty)).unwrap();
 
                 let mut instructions = vec![
                     vec![MInstr::Comment(format!(
@@ -242,7 +242,7 @@ pub fn compile_instructions(
                 res.append(&mut instructions);
             }
             Instruction::Load { result, ty, ptr } => {
-                let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
+                let memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(ty)).unwrap();
 
                 let mut instructions = vec![
                     MInstr::Comment(format!(
@@ -274,7 +274,7 @@ pub fn compile_instructions(
                 ptrval,
                 subsequent,
             } => {
-                let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(ty)).unwrap();
+                let memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(ty)).unwrap();
 
                 // FIXME TODO: subsequent[1]で決め打ちで取得しているので直したい.
                 //              (...が, これ以外無い気がする)
@@ -667,7 +667,7 @@ pub fn compile_instructions(
                     MInstr::Comment(format!(
                         "{} = MichelsonAssertSome {} {} {{",
                         result.get_id(),
-                        BackendType::from(ty).to_michelson_ty().to_string(),
+                        InnerType::from(ty).to_michelson_ty().to_string(),
                         value.get_id()
                     )),
                     MInstr::DupN(*register2stack_ptr.get(&value).unwrap()),
@@ -737,7 +737,7 @@ pub fn compile_instructions(
 pub fn retrieve_storage_from_memory(
     smart_contract_function: &Function,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MInstrWrapper> {
     let Arg {
         reg,
@@ -765,10 +765,10 @@ pub fn retrieve_storage_from_memory(
 
     let storage_ty = Type::deref(&storage_ty_ptr);
     let storage_memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::from(&storage_ty))
+        .get(&InnerType::from(&storage_ty))
         .unwrap();
     let pair_memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::deref(&BackendType::from(&pair_ty_ptr)))
+        .get(&InnerType::deref(&InnerType::from(&pair_ty_ptr)))
         .unwrap();
     let mut michelson_instructions = vec![];
     michelson_instructions.append(
@@ -842,9 +842,9 @@ fn retrieve_storage_field_from_memory(
     field: &Type,
     path: Vec<usize>,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MInstrWrapper> {
-    let memory_ptr = memory_ty2stack_ptr.get(&BackendType::from(field)).unwrap();
+    let memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(field)).unwrap();
     match field {
         Type::Struct {
             id: child_id,
@@ -927,7 +927,7 @@ fn retrieve_storage_field_from_memory(
 pub fn retrieve_operations_from_memory(
     smart_contract_function: &Function,
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MInstrWrapper> {
     let Arg {
         reg,
@@ -942,7 +942,7 @@ pub fn retrieve_operations_from_memory(
         .unwrap();
 
     let pair_memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::from(&Type::deref(&pair_ty_ptr)))
+        .get(&InnerType::from(&Type::deref(&pair_ty_ptr)))
         .unwrap();
 
     let _pair_fields = match Type::deref(&pair_ty_ptr) {
@@ -958,7 +958,7 @@ pub fn retrieve_operations_from_memory(
         .unwrap();
 
     let operation_arr_memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::from(operation_arr_ty))
+        .get(&InnerType::from(operation_arr_ty))
         .unwrap();
 
     let mut michelson_instructions: Vec<MInstrWrapper> = vec![
@@ -1002,7 +1002,7 @@ pub fn retrieve_operations_from_memory(
     };
 
     let operation_memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::from(&Type::Operation))
+        .get(&InnerType::from(&Type::Operation))
         .unwrap();
 
     // input: ([size x operation] MAP instance) : (list operation) : encoded_storage :[register]:[memory]
@@ -1048,7 +1048,7 @@ pub fn retrieve_operations_from_memory(
 ///レジスタ領域とメモリ領域をDROPする
 pub fn exit(
     register2stack_ptr: &HashMap<Register, usize>,
-    memory_ty2stack_ptr: &HashMap<BackendType, usize>,
+    memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MInstrWrapper> {
     let mut instructions = vec![
         instruction_row!(MInstr::Comment(format!(

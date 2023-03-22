@@ -48,7 +48,14 @@ pub fn inject_argument_list(
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> Vec<MInstrWrapper> {
-    let mut res = vec![];
+    let mut res = vec![
+        instruction_row!(MInstr::Comment(format!(
+            "######## Inject Arguments ########"
+        ))),
+        instruction_row!(MInstr::Comment(format!(
+            "#################################{{"
+        ))),
+    ];
     res.append(&mut inject::inject_storage(
         smart_contract_function,
         register2stack_ptr,
@@ -67,6 +74,9 @@ pub fn inject_argument_list(
         memory_ty2stack_ptr,
     ));
 
+    res.push(instruction_row!(MInstr::Comment(format!(
+        "}}#################################"
+    ))));
     res
 }
 
@@ -80,7 +90,17 @@ pub fn stack_initialization(
     register2ty: &HashMap<Register, BackendType>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> Vec<MInstrWrapper> {
-    let mut michelson_instructions = vec![];
+    let mut michelson_instructions = vec![
+        instruction_row!(MInstr::Comment(format!(
+            "##################################"
+        ))),
+        instruction_row!(MInstr::Comment(format!(
+            "###### Stack Initialization ######"
+        ))),
+        instruction_row!(MInstr::Comment(format!(
+            "#################################{{"
+        ))),
+    ];
     let memory_ty2stack_ptr = memory_ty2stack_ptr.clone();
     let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr
         .iter()
@@ -91,11 +111,10 @@ pub fn stack_initialization(
         let comment = format!("memory for {lltz_ty_name}", lltz_ty_name = ty.get_name());
 
         michelson_instructions.append(&mut vec![
-            MInstr::Push {
+            instruction_row!(MInstr::Push {
                 ty: MTy::Int,
                 val: MVal::Int(0),
-            }
-            .to_instruction_with_comment(),
+            }),
             instruction_row!(
                 MInstr::EmptyMap {
                     kty: MTy::Int,
@@ -103,7 +122,7 @@ pub fn stack_initialization(
                 },
                 comment
             ),
-            MInstr::Pair.to_instruction_with_comment(),
+            instruction_row!(MInstr::Pair),
         ]);
     }
 
@@ -133,10 +152,13 @@ pub fn stack_initialization(
         };
     }
     //(param, storage)を一番上に持ってくる
-    michelson_instructions.push(
-        MInstr::DigN(register2stack_ptr.len() + memory_ty2stack_ptr.len())
-            .to_instruction_with_comment(),
-    );
+    michelson_instructions.push(instruction_row!(MInstr::DigN(
+        register2stack_ptr.len() + memory_ty2stack_ptr.len()
+    )));
+    michelson_instructions.push(instruction_row!(MInstr::Comment(format!(
+        "}}#################################"
+    ))));
+
     michelson_instructions
 }
 
@@ -151,7 +173,14 @@ pub fn compile_instructions(
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
     instructions: &Vec<Instruction>,
 ) -> Vec<MInstrWrapper> {
-    let mut res = vec![];
+    let mut res = vec![
+        instruction_row!(MInstr::Comment(format!(
+            "###### Compile Instructions ######"
+        ))),
+        instruction_row!(MInstr::Comment(format!(
+            "#################################{{"
+        ))),
+    ];
     for instruction in instructions {
         match instruction {
             Instruction::Alloca { ptr, ty } => {
@@ -692,6 +721,11 @@ pub fn compile_instructions(
             }
         };
     }
+
+    res.push(instruction_row!(MInstr::Comment(format!(
+        "}}#################################"
+    ))));
+
     res
 }
 
@@ -711,7 +745,7 @@ pub fn retrieve_storage_from_memory(
     } = smart_contract_function
         .argument_list
         .iter()
-        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+        .find(|Arg { reg: _, ty }| match Type::deref(&ty) {
             Type::Struct { id, fields: _ } => id == String::from("Pair"),
             _ => false,
         })
@@ -723,28 +757,28 @@ pub fn retrieve_storage_from_memory(
     } = smart_contract_function
         .argument_list
         .iter()
-        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+        .find(|Arg { reg: _, ty }| match Type::deref(&ty) {
             Type::Struct { id, fields: _ } => id == String::from("Storage"),
             _ => false,
         })
         .unwrap();
 
-    let storage_ty = Type::deref(storage_ty_ptr);
+    let storage_ty = Type::deref(&storage_ty_ptr);
     let storage_memory_ptr = memory_ty2stack_ptr
         .get(&BackendType::from(&storage_ty))
         .unwrap();
     let pair_memory_ptr = memory_ty2stack_ptr
-        .get(&BackendType::deref(&BackendType::from(pair_ty_ptr)))
+        .get(&BackendType::deref(&BackendType::from(&pair_ty_ptr)))
         .unwrap();
     let mut michelson_instructions = vec![];
     michelson_instructions.append(
         &mut vec![
-            MInstr::Comment(format!("encode Storage {{")),
+            MInstr::Comment(format!("Construct a storage {{")),
             MInstr::DupN(register2stack_ptr.len() + pair_memory_ptr),
             MInstr::Car,
             MInstr::Push {
                 ty: MTy::Int,
-                val: MVal::Int((*register2stack_ptr.get(reg).unwrap()).try_into().unwrap()),
+                val: MVal::Int((*register2stack_ptr.get(&reg).unwrap()).try_into().unwrap()),
             },
             MInstr::Get,
             MInstr::AssertSome,
@@ -928,30 +962,35 @@ pub fn retrieve_operations_from_memory(
         .unwrap();
 
     let mut michelson_instructions: Vec<MInstrWrapper> = vec![
-        MInstr::Comment("retrieve operations from memory {".to_string())
-            .to_instruction_with_comment(),
-        MInstr::Nil { ty: MTy::Operation }.to_instruction_with_comment(), //(nil operation) : storage : ...
+        instruction_row!(MInstr::Comment("Construct a operation list {".to_string())),
+        instruction_row!(
+            MInstr::Nil { ty: MTy::Operation },
+            format!("(nil operation) : storage : ...")
+        ),
         instruction_row!(
             MInstr::DupN(register2stack_ptr.len() + pair_memory_ptr + 2),
             format!("pair_memory : (nil operation) : storage : ...",)
         ),
-        MInstr::Car.to_instruction_with_comment(),
-        MInstr::DupN(register2stack_ptr.get(&reg).unwrap() + 3).to_instruction_with_comment(),
-        MInstr::Get.to_instruction_with_comment(),
-        MInstr::AssertSome.to_instruction_with_comment(), // pair_map_instance : (nil operation) : storage : ...
-        MInstr::Push {
+        instruction_row!(MInstr::Car),
+        instruction_row!(MInstr::DupN(register2stack_ptr.get(&reg).unwrap() + 3)),
+        instruction_row!(MInstr::Get),
+        instruction_row!(
+            MInstr::AssertSome,
+            format!("pair_map_instance : (nil operation) : storage : ...")
+        ),
+        instruction_row!(MInstr::Push {
             ty: MTy::Int,
             val: MVal::Int(0),
-        }
-        .to_instruction_with_comment(), //FIXME? NOTE: '0'番目に[size x operation]が入っている事を決め打ち
-        MInstr::Get.to_instruction_with_comment(),
-        MInstr::AssertSome.to_instruction_with_comment(), // [size x operation]* : (nil operation) : storage : ...
-        MInstr::DupN(register2stack_ptr.len() + operation_arr_memory_ptr + 3)
-            .to_instruction_with_comment(),
-        MInstr::Car.to_instruction_with_comment(),
-        MInstr::Swap.to_instruction_with_comment(),
-        MInstr::Get.to_instruction_with_comment(),
-        MInstr::AssertSome.to_instruction_with_comment(), // ([size x operation] MAP instance) : (nil operation) : storage : ...
+        }), //FIXME? NOTE: '0'番目に[size x operation]が入っている事を決め打ち
+        instruction_row!(MInstr::Get),
+        instruction_row!(MInstr::AssertSome), // [size x operation]* : (nil operation) : storage : ...
+        instruction_row!(MInstr::DupN(
+            register2stack_ptr.len() + operation_arr_memory_ptr + 3
+        )),
+        instruction_row!(MInstr::Car),
+        instruction_row!(MInstr::Swap),
+        instruction_row!(MInstr::Get),
+        instruction_row!(MInstr::AssertSome), // ([size x operation] MAP instance) : (nil operation) : storage : ...
     ];
 
     let size = *match operation_arr_ty {
@@ -1006,22 +1045,35 @@ pub fn retrieve_operations_from_memory(
     michelson_instructions
 }
 
-///(将来的にはこの関数はなくなるかもしれない)
-///レジスタ型環境（register2ty（これは今回は無し）, register2stack_ptr）と
-///メモリ型環境（memory_ty2stack_ptr）に相当するMichelsonスタックをDROPする
+///レジスタ領域とメモリ領域をDROPする
 pub fn exit(
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<BackendType, usize>,
 ) -> Vec<MInstrWrapper> {
-    let mut instructions = vec![];
+    let mut instructions = vec![
+        instruction_row!(MInstr::Comment(format!(
+            "###################################"
+        ))),
+        instruction_row!(MInstr::Comment(format!(
+            "############### Exit ##############"
+        ))),
+        instruction_row!(MInstr::Comment(format!(
+            "##################################{{"
+        ))),
+    ];
+
     instructions.push(instruction_row!(
         MInstr::DugN(register2stack_ptr.len() + memory_ty2stack_ptr.len()),
         format!("move a (list operation, storage) to the stack bottom")
     ));
     //後処理:レジスタ領域・メモリ領域をDROPする
     for _ in 0..(register2stack_ptr.iter().len() + memory_ty2stack_ptr.iter().len()) {
-        instructions.push(MInstr::Drop.to_instruction_with_comment());
+        instructions.push(instruction_row!(MInstr::Drop));
     }
+
+    instructions.push(instruction_row!(MInstr::Comment(format!(
+        "}}##################################"
+    ))));
 
     instructions
 }

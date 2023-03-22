@@ -73,41 +73,92 @@ pub fn compile(lltz_ir: Program) -> String {
     );
 
     let mut code = vec![];
-    code.append(&mut backend::stack_initialization(
-        &register2stack_ptr,
-        &register2ty,
-        &memory_ty2stack_ptr,
-    ));
 
-    code.append(&mut backend::inject_argument_list(
+    /* スタックの初期化 */
+    let mut stack_initialization_instructions =
+        backend::stack_initialization(&register2stack_ptr, &register2ty, &memory_ty2stack_ptr);
+    let stack_initialization_sum = stack_initialization_instructions
+        .iter()
+        .map(|instr| instr.count())
+        .sum::<usize>();
+    code.append(&mut stack_initialization_instructions);
+
+    /* 引数をメモリ領域に挿入 */
+    let mut inject_argument_list_instructions = backend::inject_argument_list(
         smart_contract_function,
         &register2stack_ptr,
         &memory_ty2stack_ptr,
-    ));
+    );
+    let inject_argument_list_sum = inject_argument_list_instructions
+        .iter()
+        .map(|instr| instr.count())
+        .sum::<usize>();
 
-    code.append(&mut backend::compile_instructions(
+    code.append(&mut inject_argument_list_instructions);
+
+    /* 各命令を模倣するMichelsonコードを発行 */
+    let mut compiled_instruction = backend::compile_instructions(
         &register2stack_ptr,
         &register2ty,
         &memory_ty2stack_ptr,
         &smart_contract_function.instructions,
-    ));
+    );
+    let compiled_instruction_sum = compiled_instruction
+        .iter()
+        .map(|instr| instr.count())
+        .sum::<usize>();
 
-    code.append(&mut backend::retrieve_storage_from_memory(
+    code.append(&mut compiled_instruction);
+
+    /* 返り値 storage を構築 */
+    let mut retrieve_storage_from_memory_instructions = backend::retrieve_storage_from_memory(
         smart_contract_function,
         &register2stack_ptr,
         &memory_ty2stack_ptr,
-    ));
+    );
+    let retrieve_storage_from_memory_instructions_sum = retrieve_storage_from_memory_instructions
+        .iter()
+        .map(|instr| instr.count())
+        .sum::<usize>();
 
-    code.append(&mut backend::retrieve_operations_from_memory(
+    code.append(&mut retrieve_storage_from_memory_instructions);
+
+    /* 返り値 operation list を構築 */
+    let mut retrieve_operations_from_memory_instructions = backend::retrieve_operations_from_memory(
         smart_contract_function,
         &register2stack_ptr,
         &memory_ty2stack_ptr,
-    ));
+    );
+    let retrieve_operations_from_memory_instructions_sum =
+        retrieve_operations_from_memory_instructions
+            .iter()
+            .map(|instr| instr.count())
+            .sum::<usize>();
 
-    code.append(&mut backend::exit(
-        &register2stack_ptr,
-        &memory_ty2stack_ptr,
-    ));
+    code.append(&mut retrieve_operations_from_memory_instructions);
+
+    /* スタックの処理 */
+    let mut exit_instructions = backend::exit(&register2stack_ptr, &memory_ty2stack_ptr);
+    let exit_instructions_sum = exit_instructions
+        .iter()
+        .map(|instr| instr.count())
+        .sum::<usize>();
+
+    code.append(&mut exit_instructions);
+    println!(
+        "{0: >12} | {1: >12} | {2: >7} | {3: >12} | {4: >12} | {5: >5} | {6: >6}",
+        "stack init", "inject args", "compile", "retrieve st", "retrieve ops", "exit", "total"
+    );
+    println!(
+        "{0: >12} | {1: >12} | {2: >7} | {3: >12} | {4: >12} | {5: >5} | {6: >6}",
+        stack_initialization_sum,
+        inject_argument_list_sum,
+        compiled_instruction_sum,
+        retrieve_storage_from_memory_instructions_sum,
+        retrieve_operations_from_memory_instructions_sum,
+        exit_instructions_sum,
+        code.iter().map(|instr| instr.count()).sum::<usize>()
+    );
 
     let parameter = lltz_ir
         .structure_types

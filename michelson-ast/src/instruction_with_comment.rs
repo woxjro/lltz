@@ -18,7 +18,7 @@ macro_rules! instruction_row {
     }};
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct InstructionWithComment {
     pub instruction: Instruction,
     pub comment: Option<String>,
@@ -188,5 +188,8 @@ impl InstructionWithComment {
                 _ => format!("{formatted_string};"),
             },
         }
+    }
+    pub fn count(&self) -> usize {
+        self.instruction.count()
     }
 }

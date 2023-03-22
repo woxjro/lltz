@@ -1,4 +1,4 @@
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Ty {
     Address,
     BigMap { kty: Box<Ty>, vty: Box<Ty> },

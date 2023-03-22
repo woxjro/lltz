@@ -1,7 +1,7 @@
 use super::ty::Ty;
 use super::val::Val;
 use crate::instruction_with_comment::InstructionWithComment;
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Instruction {
     Comment(String),
     ////////////////////////////////////////////////
@@ -316,6 +316,51 @@ impl Instruction {
         InstructionWithComment {
             comment: None,
             instruction: self.clone(),
+        }
+    }
+
+    /// 命令数を返す関数
+    /// コメントは0， PUSH, DIG, DUG などは1，IFなど内部に命令列を持つ命令は再帰的に計算
+    pub fn count(&self) -> usize {
+        match self {
+            Instruction::Comment(_) => 0,
+            ////////////////////////////////////////////////
+            ////////////////Control Structures//////////////
+            ////////////////////////////////////////////////
+            Instruction::If { instr1, instr2 } => {
+                instr1.iter().map(|instr| instr.count()).sum::<usize>()
+                    + instr2.iter().map(|instr| instr.count()).sum::<usize>()
+                    + 1
+            }
+            Instruction::IfCons { instr1, instr2 } => {
+                instr1.iter().map(|instr| instr.count()).sum::<usize>()
+                    + instr2.iter().map(|instr| instr.count()).sum::<usize>()
+                    + 1
+            }
+            Instruction::IfLeft { instr1, instr2 } => {
+                instr1.iter().map(|instr| instr.count()).sum::<usize>()
+                    + instr2.iter().map(|instr| instr.count()).sum::<usize>()
+                    + 1
+            }
+            Instruction::IfNone { instr1, instr2 } => {
+                instr1.iter().map(|instr| instr.count()).sum::<usize>()
+                    + instr2.iter().map(|instr| instr.count()).sum::<usize>()
+                    + 1
+            }
+            Instruction::Loop { instr } => {
+                instr.iter().map(|instr| instr.count()).sum::<usize>() + 1
+            }
+            Instruction::LoopLeft { instr } => {
+                instr.iter().map(|instr| instr.count()).sum::<usize>() + 1
+            }
+            //ITER inster,
+            //LAMBDA ty1 ty2 instr,
+            //instr1 ; instr2,
+            //{},
+            ////////////////////////////////////////////////
+            //////////Operations on data structures/////////
+            ////////////////////////////////////////////////
+            _ => 1,
         }
     }
 }

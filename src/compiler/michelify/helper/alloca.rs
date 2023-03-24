@@ -1,6 +1,6 @@
 use crate::lltz_ir::{InnerType, Register, Type};
 use michelson_ast::instruction::Instruction as MInstr;
-use michelson_ast::instruction_with_comment::InstructionWithComment as MInstrWrapper;
+use michelson_ast::instruction_with_comment::WrappedInstruction as MInstrWrapper;
 use michelson_ast::ty::Ty as MTy;
 use michelson_ast::val::Val as MVal;
 use std::collections::HashMap;

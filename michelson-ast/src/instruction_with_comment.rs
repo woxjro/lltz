@@ -4,14 +4,14 @@ use crate::instruction::Instruction;
 #[macro_export]
 macro_rules! instruction_row {
     ($instruction:expr) => {{
-        michelson_ast::instruction_with_comment::InstructionWithComment {
+        michelson_ast::instruction_with_comment::WrappedInstruction {
             instruction: $instruction,
             comment: None,
         }
     }};
 
     ($instruction:expr, $comment:expr) => {{
-        michelson_ast::instruction_with_comment::InstructionWithComment {
+        michelson_ast::instruction_with_comment::WrappedInstruction {
             instruction: $instruction,
             comment: Some($comment),
         }
@@ -19,12 +19,12 @@ macro_rules! instruction_row {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct InstructionWithComment {
+pub struct WrappedInstruction {
     pub instruction: Instruction,
     pub comment: Option<String>,
 }
 
-impl InstructionWithComment {
+impl WrappedInstruction {
     pub fn to_formatted_string(&self, accumulation: usize) -> String {
         let indent = " ".repeat(accumulation);
         let instruction = &self.instruction;

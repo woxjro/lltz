@@ -1,6 +1,6 @@
-use crate::instruction_with_comment::InstructionWithComment;
+use crate::instruction_with_comment::WrappedInstruction;
 
-pub fn format(instructions: &Vec<InstructionWithComment>, accumulation: usize) -> String {
+pub fn format(instructions: &Vec<WrappedInstruction>, accumulation: usize) -> String {
     let mut res = String::from("");
     for instruction in instructions {
         res = format!(

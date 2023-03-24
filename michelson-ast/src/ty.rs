@@ -1,3 +1,4 @@
+use std::string::ToString;
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Ty {
     Address,
@@ -32,8 +33,8 @@ pub enum Ty {
     Unit,
 }
 
-impl Ty {
-    pub fn to_string(&self) -> String {
+impl ToString for Ty {
+    fn to_string(&self) -> String {
         match self {
             Ty::Address => "address".to_string(),
             Ty::BigMap { kty, vty } => {

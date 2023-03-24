@@ -1,15 +1,16 @@
 use crate::formatter::format;
-use crate::instruction_with_comment::InstructionWithComment;
+use crate::instruction_with_comment::WrappedInstruction;
 use crate::ty::Ty;
+use std::string::ToString;
 
 pub struct Program {
     pub storage: Ty,
     pub parameter: Ty,
-    pub code: Vec<InstructionWithComment>,
+    pub code: Vec<WrappedInstruction>,
 }
 
-impl Program {
-    pub fn to_string(&self) -> String {
+impl ToString for Program {
+    fn to_string(&self) -> String {
         format!(
             r#"storage {};
 parameter {};
@@ -26,7 +27,7 @@ code {{
 #[cfg(test)]
 mod tests {
     use crate::instruction::Instruction;
-    use crate::instruction_with_comment::InstructionWithComment;
+    use crate::instruction_with_comment::WrappedInstruction;
     use crate::program::Program;
     use crate::ty::Ty;
     use crate::val::Val;
@@ -36,15 +37,15 @@ mod tests {
             storage: Ty::Unit,
             parameter: Ty::Unit,
             code: vec![
-                InstructionWithComment {
+                WrappedInstruction {
                     comment: Some("=> Unit".to_string()),
                     instruction: Instruction::Cdr,
                 },
-                InstructionWithComment {
+                WrappedInstruction {
                     comment: Some("=> {} : Unit".to_string()),
                     instruction: Instruction::Nil { ty: Ty::Operation },
                 },
-                InstructionWithComment {
+                WrappedInstruction {
                     comment: Some("=> (Pair {} Unit)".to_string()),
                     instruction: Instruction::Pair,
                 },

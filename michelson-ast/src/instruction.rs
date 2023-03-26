@@ -1,6 +1,6 @@
 use super::ty::Ty;
 use super::val::Val;
-use crate::instruction_with_comment::WrappedInstruction;
+use crate::wrapped_instruction::WrappedInstruction;
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Instruction {
     Comment(String),
@@ -312,7 +312,7 @@ impl Instruction {
         self.get_label().len()
     }
 
-    pub fn to_instruction_with_comment(&self) -> WrappedInstruction {
+    pub fn to_wrapped_instruction(&self) -> WrappedInstruction {
         WrappedInstruction {
             comment: None,
             instruction: self.clone(),

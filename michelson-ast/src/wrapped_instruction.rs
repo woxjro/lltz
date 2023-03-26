@@ -4,14 +4,14 @@ use crate::instruction::Instruction;
 #[macro_export]
 macro_rules! instruction_row {
     ($instruction:expr) => {{
-        michelson_ast::instruction_with_comment::WrappedInstruction {
+        michelson_ast::wrapped_instruction::WrappedInstruction {
             instruction: $instruction,
             comment: None,
         }
     }};
 
     ($instruction:expr, $comment:expr) => {{
-        michelson_ast::instruction_with_comment::WrappedInstruction {
+        michelson_ast::wrapped_instruction::WrappedInstruction {
             instruction: $instruction,
             comment: Some($comment),
         }

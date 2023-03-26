@@ -1,4 +1,4 @@
-use crate::instruction_with_comment::WrappedInstruction;
+use crate::wrapped_instruction::WrappedInstruction;
 
 pub fn format(instructions: &Vec<WrappedInstruction>, accumulation: usize) -> String {
     let mut res = String::from("");

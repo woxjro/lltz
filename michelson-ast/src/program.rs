@@ -1,5 +1,5 @@
 use crate::formatter::format;
-use crate::instruction_with_comment::WrappedInstruction;
+use crate::wrapped_instruction::WrappedInstruction;
 use crate::ty::Ty;
 use std::string::ToString;
 
@@ -27,7 +27,7 @@ code {{
 #[cfg(test)]
 mod tests {
     use crate::instruction::Instruction;
-    use crate::instruction_with_comment::WrappedInstruction;
+    use crate::wrapped_instruction::WrappedInstruction;
     use crate::program::Program;
     use crate::ty::Ty;
     use crate::val::Val;

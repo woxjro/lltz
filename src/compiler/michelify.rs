@@ -9,9 +9,9 @@ use crate::lltz_ir::{
 };
 use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::instruction_row;
-use michelson_ast::instruction_with_comment::WrappedInstruction as MInstrWrapper;
 use michelson_ast::ty::Ty as MTy;
 use michelson_ast::val::Val as MVal;
+use michelson_ast::wrapped_instruction::WrappedInstruction as MInstrWrapper;
 use std::collections::HashMap;
 
 ///Programの構造体宣言，引数リスト，命令列を受け取り，それらに現れるレジスタ，メモリや型
@@ -203,7 +203,7 @@ pub fn compile_instructions(
                         ptr.get_id()
                     ))]
                     .iter()
-                    .map(|instr| instr.to_instruction_with_comment())
+                    .map(|instr| instr.to_wrapped_instruction())
                     .collect::<Vec<_>>(),
                     match value {
                         Value::Register(register) => {
@@ -218,7 +218,7 @@ pub fn compile_instructions(
                         }
                     }
                     .iter()
-                    .map(|instr| instr.to_instruction_with_comment())
+                    .map(|instr| instr.to_wrapped_instruction())
                     .collect::<Vec<_>>(),
                     vec![
                         MInstr::Some,
@@ -232,7 +232,7 @@ pub fn compile_instructions(
                         MInstr::Comment("}".to_string()),
                     ]
                     .iter()
-                    .map(|instr| instr.to_instruction_with_comment())
+                    .map(|instr| instr.to_wrapped_instruction())
                     .collect::<Vec<_>>(),
                 ]
                 .into_iter()
@@ -263,7 +263,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -308,7 +308,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -338,7 +338,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -375,19 +375,18 @@ pub fn compile_instructions(
                 instr.append(&mut loop_instr.clone());
                 instr.append(&mut cond_instr.clone());
                 instr.push(
-                    MInstr::DupN(*register2stack_ptr.get(&cond).unwrap())
-                        .to_instruction_with_comment(),
+                    MInstr::DupN(*register2stack_ptr.get(&cond).unwrap()).to_wrapped_instruction(),
                 );
 
                 let mut instructions = vec![
-                    vec![MInstr::Comment(format!("while {{",)).to_instruction_with_comment()],
+                    vec![MInstr::Comment(format!("while {{",)).to_wrapped_instruction()],
                     cond_instr.clone(),
                     vec![
                         MInstr::DupN(*register2stack_ptr.get(&cond).unwrap())
-                            .to_instruction_with_comment(),
-                        MInstr::Loop { instr }.to_instruction_with_comment(),
+                            .to_wrapped_instruction(),
+                        MInstr::Loop { instr }.to_wrapped_instruction(),
                     ],
-                    vec![MInstr::Comment("}".to_string()).to_instruction_with_comment()],
+                    vec![MInstr::Comment("}".to_string()).to_wrapped_instruction()],
                 ]
                 .into_iter()
                 .flatten()
@@ -434,7 +433,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -478,7 +477,7 @@ pub fn compile_instructions(
                         },
                     ]
                     .iter()
-                    .map(|instr| instr.to_instruction_with_comment())
+                    .map(|instr| instr.to_wrapped_instruction())
                     .collect::<Vec<_>>(),
                     // TODO: 他のConditionについても実装
                     match cond {
@@ -493,7 +492,7 @@ pub fn compile_instructions(
                         }
                     }
                     .iter()
-                    .map(|instr| instr.to_instruction_with_comment())
+                    .map(|instr| instr.to_wrapped_instruction())
                     .collect::<Vec<_>>(),
                     vec![
                         MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
@@ -501,9 +500,9 @@ pub fn compile_instructions(
                         MInstr::DugN(register2stack_ptr.get(&result).unwrap() - 1),
                     ]
                     .iter()
-                    .map(|instr| instr.to_instruction_with_comment())
+                    .map(|instr| instr.to_wrapped_instruction())
                     .collect::<Vec<_>>(),
-                    vec![MInstr::Comment("}".to_string()).to_instruction_with_comment()],
+                    vec![MInstr::Comment("}".to_string()).to_wrapped_instruction()],
                 ]
                 .into_iter()
                 .flatten()
@@ -521,7 +520,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -536,7 +535,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -554,7 +553,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -569,7 +568,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -585,7 +584,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -601,7 +600,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -617,7 +616,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -633,7 +632,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -657,7 +656,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -678,7 +677,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -714,7 +713,7 @@ pub fn compile_instructions(
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>();
 
                 res.append(&mut instructions);
@@ -795,7 +794,7 @@ pub fn retrieve_storage_from_memory(
             MInstr::AssertSome, //Storage MAP Instance
         ]
         .iter()
-        .map(|instr| instr.to_instruction_with_comment())
+        .map(|instr| instr.to_wrapped_instruction())
         .collect::<Vec<_>>(),
     );
 
@@ -817,21 +816,21 @@ pub fn retrieve_storage_from_memory(
                         MInstr::PairN(fields.len()),
                         format!("PACK Struct {{ {id} }}")
                     ),
-                    MInstr::Swap.to_instruction_with_comment(),
+                    MInstr::Swap.to_wrapped_instruction(),
                     instruction_row!(MInstr::Drop, format!("Storage MAP Instance")),
                 ]);
             } else if fields.len() == 1 {
                 todo!()
             } else {
-                michelson_instructions.push(MInstr::Drop.to_instruction_with_comment());
-                michelson_instructions.push(MInstr::Unit.to_instruction_with_comment());
+                michelson_instructions.push(MInstr::Drop.to_wrapped_instruction());
+                michelson_instructions.push(MInstr::Unit.to_wrapped_instruction());
             }
         }
         _ => {
             panic!("StorageがStruct型ではなくPrimitive型になっています.")
         }
     }
-    michelson_instructions.push(MInstr::Comment("}".to_string()).to_instruction_with_comment());
+    michelson_instructions.push(MInstr::Comment("}".to_string()).to_wrapped_instruction());
 
     michelson_instructions
 }
@@ -852,25 +851,25 @@ fn retrieve_storage_field_from_memory(
         } => {
             //TODO: child_fields.len() > 2, == 1, == 0で場合分け
             let mut michelson_instructions: Vec<MInstrWrapper> = vec![
-                MInstr::Comment("{".to_string()).to_instruction_with_comment(),
+                MInstr::Comment("{".to_string()).to_wrapped_instruction(),
                 instruction_row!(MInstr::DupN(path[path.len() - 1]), format!("MAP instance")),
                 MInstr::Push {
                     ty: MTy::Int,
                     val: MVal::Int(field_idx.try_into().unwrap()),
                 }
-                .to_instruction_with_comment(),
-                MInstr::Get.to_instruction_with_comment(),
-                MInstr::AssertSome.to_instruction_with_comment(),
+                .to_wrapped_instruction(),
+                MInstr::Get.to_wrapped_instruction(),
+                MInstr::AssertSome.to_wrapped_instruction(),
                 instruction_row!(
                     MInstr::DupN(
                         register2stack_ptr.len() + memory_ptr + path.iter().sum::<usize>() + 1,
                     ),
                     format!("memory: {}", Type::get_name(field))
                 ),
-                MInstr::Car.to_instruction_with_comment(),
-                MInstr::Swap.to_instruction_with_comment(),
-                MInstr::Get.to_instruction_with_comment(),
-                MInstr::AssertSome.to_instruction_with_comment(),
+                MInstr::Car.to_wrapped_instruction(),
+                MInstr::Swap.to_wrapped_instruction(),
+                MInstr::Get.to_wrapped_instruction(),
+                MInstr::AssertSome.to_wrapped_instruction(),
             ];
             for (child_field_idx, child_field) in child_fields.iter().enumerate().rev() {
                 let new_path =
@@ -888,34 +887,34 @@ fn retrieve_storage_field_from_memory(
                     MInstr::PairN(child_fields.len()),
                     format!("PACK Struct {{ {child_id} }}")
                 ),
-                MInstr::Swap.to_instruction_with_comment(),
+                MInstr::Swap.to_wrapped_instruction(),
                 instruction_row!(MInstr::Drop, format!("child field MAP Instance")),
-                MInstr::Comment("}".to_string()).to_instruction_with_comment(),
+                MInstr::Comment("}".to_string()).to_wrapped_instruction(),
             ]);
 
             michelson_instructions
         }
         _ => {
             vec![
-                MInstr::Comment("{".to_string()).to_instruction_with_comment(),
+                MInstr::Comment("{".to_string()).to_wrapped_instruction(),
                 instruction_row!(MInstr::DupN(path[path.len() - 1]), format!("MAP instance")),
                 MInstr::Push {
                     ty: MTy::Int,
                     val: MVal::Int(field_idx.try_into().unwrap()),
                 }
-                .to_instruction_with_comment(),
-                MInstr::Get.to_instruction_with_comment(),
-                MInstr::AssertSome.to_instruction_with_comment(),
+                .to_wrapped_instruction(),
+                MInstr::Get.to_wrapped_instruction(),
+                MInstr::AssertSome.to_wrapped_instruction(),
                 instruction_row!(
                     MInstr::DupN(
                         register2stack_ptr.len() + memory_ptr + path.iter().sum::<usize>() + 1,
                     ),
                     format!("memory: {}", Type::get_name(field))
                 ),
-                MInstr::Car.to_instruction_with_comment(),
-                MInstr::Swap.to_instruction_with_comment(),
-                MInstr::Get.to_instruction_with_comment(),
-                MInstr::AssertSome.to_instruction_with_comment(),
+                MInstr::Car.to_wrapped_instruction(),
+                MInstr::Swap.to_wrapped_instruction(),
+                MInstr::Get.to_wrapped_instruction(),
+                MInstr::AssertSome.to_wrapped_instruction(),
                 instruction_row!(MInstr::Comment("}".to_string())),
             ]
         }
@@ -1026,12 +1025,12 @@ pub fn retrieve_operations_from_memory(
                     instr1: vec![],
                     instr2: vec![MInstr::DigN(2), MInstr::Swap, MInstr::Cons, MInstr::DugN(1)]
                         .iter()
-                        .map(|instr| instr.to_instruction_with_comment())
+                        .map(|instr| instr.to_wrapped_instruction())
                         .collect::<Vec<_>>(),
                 },
             ]
             .iter()
-            .map(|instr| instr.to_instruction_with_comment())
+            .map(|instr| instr.to_wrapped_instruction())
             .collect::<Vec<_>>(),
         );
     }
@@ -1039,7 +1038,7 @@ pub fn retrieve_operations_from_memory(
     michelson_instructions.append(
         &mut vec![MInstr::Drop, MInstr::Pair, MInstr::Comment("}".to_string())]
             .iter()
-            .map(|instr| instr.to_instruction_with_comment())
+            .map(|instr| instr.to_wrapped_instruction())
             .collect::<Vec<_>>(),
     );
     michelson_instructions

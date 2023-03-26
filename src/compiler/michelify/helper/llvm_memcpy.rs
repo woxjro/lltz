@@ -1,8 +1,8 @@
 use crate::lltz_ir::{InnerType, Register, Type};
 use michelson_ast::instruction::Instruction as MInstr;
-use michelson_ast::instruction_with_comment::WrappedInstruction as MInstrWrapper;
 use michelson_ast::ty::Ty as MTy;
 use michelson_ast::val::Val as MVal;
+use michelson_ast::wrapped_instruction::WrappedInstruction as MInstrWrapper;
 use std::collections::HashMap;
 
 ///@llvm.memcpyを実行する関数
@@ -49,7 +49,7 @@ pub fn exec_llvm_memcpy(
     }
 
     let mut michelson_instructions =
-        vec![MInstr::Comment(format!("@llvm.memcpy {{",)).to_instruction_with_comment()];
+        vec![MInstr::Comment(format!("@llvm.memcpy {{",)).to_wrapped_instruction()];
     match ty {
         Type::Struct { id: _, fields } => {
             let depth = 1;
@@ -63,7 +63,7 @@ pub fn exec_llvm_memcpy(
                     MInstr::AssertSome,
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>(),
             );
 
@@ -76,7 +76,7 @@ pub fn exec_llvm_memcpy(
                             "### llvm.memcpy GET {}[{idx}] {{",
                             Type::get_name(&ty)
                         ))
-                        .to_instruction_with_comment()],
+                        .to_wrapped_instruction()],
                         vec![
                             MInstr::Dup,
                             MInstr::Push {
@@ -92,7 +92,7 @@ pub fn exec_llvm_memcpy(
                             MInstr::AssertSome, // field_type_value:rest
                         ]
                         .iter()
-                        .map(|instr| instr.to_instruction_with_comment())
+                        .map(|instr| instr.to_wrapped_instruction())
                         .collect::<Vec<_>>(),
                     ]
                     .into_iter()
@@ -113,17 +113,17 @@ pub fn exec_llvm_memcpy(
                 ));
 
                 michelson_instructions.append(&mut vec![
-                    MInstr::Comment(format!("}}")).to_instruction_with_comment()
+                    MInstr::Comment(format!("}}")).to_wrapped_instruction()
                 ]);
             }
-            michelson_instructions.push(MInstr::Drop.to_instruction_with_comment());
+            michelson_instructions.push(MInstr::Drop.to_wrapped_instruction());
         }
         _ => {
             /*primitive or pointer*/
             panic!("Primitive(Pointer)型に対して@llvm.memcpyは実行出来ません.");
         }
     };
-    michelson_instructions.push(MInstr::Comment(format!("}}")).to_instruction_with_comment());
+    michelson_instructions.push(MInstr::Comment(format!("}}")).to_wrapped_instruction());
     michelson_instructions
 }
 
@@ -161,7 +161,7 @@ fn get_field_element(
                         MInstr::AssertSome,
                     ]
                     .iter()
-                    .map(|instr| instr.to_instruction_with_comment())
+                    .map(|instr| instr.to_wrapped_instruction())
                     .collect::<Vec<_>>(),
                 );
                 let mut new_path = path.clone();
@@ -176,12 +176,12 @@ fn get_field_element(
                     dest,
                 ));
             }
-            res.append(&mut vec![MInstr::Drop.to_instruction_with_comment()]);
+            res.append(&mut vec![MInstr::Drop.to_wrapped_instruction()]);
         }
         _ => {
             /*この関数の役目は終わりPUTの処理へ*/
             res.append(&mut vec![
-                MInstr::Comment(format!("@llvm.memcpy PUT {{")).to_instruction_with_comment()
+                MInstr::Comment(format!("@llvm.memcpy PUT {{")).to_wrapped_instruction()
             ]);
             res.append(&mut self::put_field_element(
                 depth,
@@ -191,7 +191,7 @@ fn get_field_element(
                 memory_ty2stack_ptr,
                 dest,
             ));
-            res.push(MInstr::Comment(format!("}}")).to_instruction_with_comment());
+            res.push(MInstr::Comment(format!("}}")).to_wrapped_instruction());
         }
     }
 
@@ -209,7 +209,7 @@ fn put_field_element(
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
     dest: &Register,
 ) -> Vec<MInstrWrapper> {
-    let mut res = vec![MInstr::Some.to_instruction_with_comment()];
+    let mut res = vec![MInstr::Some.to_wrapped_instruction()];
     for (i, (child_idx, child_ty)) in path.iter().enumerate() {
         let memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(child_ty)).unwrap();
 
@@ -230,7 +230,7 @@ fn put_field_element(
                     MInstr::AssertSome, //field_ptr:some(v)
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>(),
             );
         } else {
@@ -249,7 +249,7 @@ fn put_field_element(
                     MInstr::AssertSome,
                 ]
                 .iter()
-                .map(|instr| instr.to_instruction_with_comment())
+                .map(|instr| instr.to_wrapped_instruction())
                 .collect::<Vec<_>>(),
             );
         }
@@ -269,7 +269,7 @@ fn put_field_element(
             MInstr::DugN(register2stack_ptr.len() + memory_ptr + (depth - 1) - 1),
         ]
         .iter()
-        .map(|instr| instr.to_instruction_with_comment())
+        .map(|instr| instr.to_wrapped_instruction())
         .collect::<Vec<_>>(),
     );
 

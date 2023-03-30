@@ -1,17 +1,17 @@
 use super::helper;
 use crate::lltz_ir::{Arg, Function, InnerType, Register, Type};
-use michelson_ast::wrapped_instruction::WrappedInstruction as MInstrWrapper;
+use michelson_ast::wrapped_instruction::WrappedInstruction as MWrappedInstr;
 use std::collections::HashMap;
 ///ここが終わった段階ではMichelson StackのTopに(Parameter, Storage)が乗っている
 pub fn inject_storage(
     smart_contract_function: &Function,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let storage_arg = smart_contract_function
         .argument_list
         .iter()
-        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+        .find(|Arg { reg: _, ty }| match Type::deref(&ty) {
             Type::Struct { id, fields: _ } => id == String::from("Storage"),
             _ => false,
         })
@@ -24,11 +24,11 @@ pub fn inject_parameter(
     smart_contract_function: &Function,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let parameter_arg = smart_contract_function
         .argument_list
         .iter()
-        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+        .find(|Arg { reg: _, ty }| match Type::deref(&ty) {
             Type::Struct { id, fields: _ } => id == String::from("Parameter"),
             _ => false,
         })
@@ -46,11 +46,11 @@ pub fn inject_pair(
     smart_contract_function: &Function,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let pair_arg = smart_contract_function
         .argument_list
         .iter()
-        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+        .find(|Arg { reg: _, ty }| match Type::deref(&ty) {
             Type::Struct { id, fields: _ } => id == String::from("Pair"),
             _ => false,
         })

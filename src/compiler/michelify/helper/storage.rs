@@ -2,7 +2,7 @@ use crate::lltz_ir::{Arg, InnerType, Register, Type};
 use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::ty::Ty as MTy;
 use michelson_ast::val::Val as MVal;
-use michelson_ast::wrapped_instruction::WrappedInstruction as MInstrWrapper;
+use michelson_ast::wrapped_instruction::WrappedInstruction as MWrappedInstr;
 use std::collections::HashMap;
 
 ///StorageをMichelsonのPairからLLVMのレジスタ・メモリモデルへとデコードする関数
@@ -14,7 +14,7 @@ pub fn alloca_storage_by_value(
     storage_arg: &Arg,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let Arg { reg, ty } = storage_arg;
     let mut michelson_instructions = vec![];
     michelson_instructions
@@ -66,7 +66,7 @@ fn decode_storage_from_input(
     ty: &Type,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let mut michelson_instructions = vec![MInstr::Dup, MInstr::Unpair, MInstr::Drop]
         .iter()
         .map(|instr| instr.to_wrapped_instruction())
@@ -123,7 +123,7 @@ fn decode_storage_field_from_input(
     path: Vec<(usize, Type)>,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let mut michelson_instructions = vec![MInstr::Dup, MInstr::GetN(get_n_idx)]
         .iter()
         .map(|instr| instr.to_wrapped_instruction())

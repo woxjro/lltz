@@ -2,7 +2,7 @@ use crate::lltz_ir::{InnerType, Register, Type};
 use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::ty::Ty as MTy;
 use michelson_ast::val::Val as MVal;
-use michelson_ast::wrapped_instruction::WrappedInstruction as MInstrWrapper;
+use michelson_ast::wrapped_instruction::WrappedInstruction as MWrappedInstr;
 use std::collections::HashMap;
 
 ///@llvm.memcpyを実行する関数
@@ -16,7 +16,7 @@ pub fn exec_llvm_memcpy(
     register2stack_ptr: &HashMap<Register, usize>,
     register2ty: &HashMap<Register, InnerType>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     //validation
     match register2ty.get(&dest).unwrap() {
         InnerType::Ptr(inner) => {
@@ -139,7 +139,7 @@ fn get_field_element(
     register2ty: &HashMap<Register, InnerType>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
     dest: &Register,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let mut res = vec![];
     match field {
         Type::Struct { id: _, fields } => {
@@ -208,7 +208,7 @@ fn put_field_element(
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
     dest: &Register,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let mut res = vec![MInstr::Some.to_wrapped_instruction()];
     for (i, (child_idx, child_ty)) in path.iter().enumerate() {
         let memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(child_ty)).unwrap();

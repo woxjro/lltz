@@ -11,7 +11,7 @@ use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::instruction_row;
 use michelson_ast::ty::Ty as MTy;
 use michelson_ast::val::Val as MVal;
-use michelson_ast::wrapped_instruction::WrappedInstruction as MInstrWrapper;
+use michelson_ast::wrapped_instruction::WrappedInstruction as MWrappedInstr;
 use std::collections::HashMap;
 
 ///Programの構造体宣言，引数リスト，命令列を受け取り，それらに現れるレジスタ，メモリや型
@@ -47,7 +47,7 @@ pub fn inject_argument_list(
     smart_contract_function: &Function,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let mut res = vec![
         instruction_row!(MInstr::Comment(format!(
             "######## Inject Arguments ########"
@@ -89,7 +89,7 @@ pub fn stack_initialization(
     register2stack_ptr: &HashMap<Register, usize>,
     register2ty: &HashMap<Register, InnerType>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let mut michelson_instructions = vec![
         instruction_row!(MInstr::Comment(format!(
             "##################################"
@@ -172,7 +172,7 @@ pub fn compile_instructions(
     register2ty: &HashMap<Register, InnerType>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
     instructions: &Vec<Instruction>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let mut res = vec![
         instruction_row!(MInstr::Comment(format!(
             "###### Compile Instructions ######"
@@ -371,7 +371,7 @@ pub fn compile_instructions(
                     loop_block,
                 );
 
-                let mut instr: Vec<MInstrWrapper> = vec![];
+                let mut instr: Vec<MWrappedInstr> = vec![];
                 instr.append(&mut loop_instr.clone());
                 instr.append(&mut cond_instr.clone());
                 instr.push(
@@ -737,7 +737,7 @@ pub fn retrieve_storage_from_memory(
     smart_contract_function: &Function,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let Arg {
         reg,
         ty: pair_ty_ptr,
@@ -842,7 +842,7 @@ fn retrieve_storage_field_from_memory(
     path: Vec<usize>,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(field)).unwrap();
     match field {
         Type::Struct {
@@ -850,7 +850,7 @@ fn retrieve_storage_field_from_memory(
             fields: child_fields,
         } => {
             //TODO: child_fields.len() > 2, == 1, == 0で場合分け
-            let mut michelson_instructions: Vec<MInstrWrapper> = vec![
+            let mut michelson_instructions: Vec<MWrappedInstr> = vec![
                 MInstr::Comment("{".to_string()).to_wrapped_instruction(),
                 instruction_row!(MInstr::DupN(path[path.len() - 1]), format!("MAP instance")),
                 MInstr::Push {
@@ -927,7 +927,7 @@ pub fn retrieve_operations_from_memory(
     smart_contract_function: &Function,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let Arg {
         reg,
         ty: pair_ty_ptr,
@@ -960,7 +960,7 @@ pub fn retrieve_operations_from_memory(
         .get(&InnerType::from(operation_arr_ty))
         .unwrap();
 
-    let mut michelson_instructions: Vec<MInstrWrapper> = vec![
+    let mut michelson_instructions: Vec<MWrappedInstr> = vec![
         instruction_row!(MInstr::Comment("Construct a operation list {".to_string())),
         instruction_row!(
             MInstr::Nil { ty: MTy::Operation },
@@ -1048,7 +1048,7 @@ pub fn retrieve_operations_from_memory(
 pub fn exit(
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let mut instructions = vec![
         instruction_row!(MInstr::Comment(format!(
             "###################################"

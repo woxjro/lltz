@@ -2,7 +2,7 @@ use crate::lltz_ir::{InnerType, Register, Type};
 use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::ty::Ty as MTy;
 use michelson_ast::val::Val as MVal;
-use michelson_ast::wrapped_instruction::WrappedInstruction as MInstrWrapper;
+use michelson_ast::wrapped_instruction::WrappedInstruction as MWrappedInstr;
 use std::collections::HashMap;
 
 ///allocaをMichelsonへとコンパイルする関数
@@ -15,7 +15,7 @@ pub fn exec_alloca(
     ty: &Type,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(ty)).unwrap();
 
     let instructions = match ty {
@@ -79,7 +79,7 @@ pub fn exec_aggregate_type_alloca(
     ptr: &Register,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     //Struct { id, fields }型のメモリ領域のスタック上の相対ポインタ
 
     let memory_ptr = memory_ty2stack_ptr

@@ -3,7 +3,7 @@ use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::instruction_row;
 use michelson_ast::ty::Ty as MTy;
 use michelson_ast::val::Val as MVal;
-use michelson_ast::wrapped_instruction::WrappedInstruction as MInstrWrapper;
+use michelson_ast::wrapped_instruction::WrappedInstruction as MWrappedInstr;
 use std::collections::HashMap;
 
 ///parameterをMichelsonのPairからLLVMのレジスタ・メモリモデルへとデコードする関数
@@ -15,7 +15,7 @@ pub fn alloca_parameter_by_value(
     parameter_arg: &Arg,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let Arg { reg, ty } = parameter_arg;
     let mut michelson_instructions = vec![];
     michelson_instructions
@@ -72,7 +72,7 @@ fn decode_parameter_from_input(
     ty: &Type,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let mut michelson_instructions = vec![
         MInstr::Dup,
         MInstr::Car, //storage を破棄
@@ -131,7 +131,7 @@ fn decode_parameter_field_from_input(
     path: Vec<(usize, Type)>,
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
-) -> Vec<MInstrWrapper> {
+) -> Vec<MWrappedInstr> {
     let mut michelson_instructions = vec![
         MInstr::Dup,
         MInstr::GetN(get_n_idx), //PairからStructの子fieldに対応する部分を取得

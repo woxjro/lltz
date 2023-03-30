@@ -60,9 +60,6 @@ pub fn compile(lltz_ir: Program) -> String {
     drop(stack_ptr);
     drop(memory_ptr);
 
-    dbg!(&register2stack_ptr);
-    dbg!(&register2ty);
-    dbg!(&memory_ty2stack_ptr);
     println!(
         "{}",
         utils::print_michelson_initial_stack_status(

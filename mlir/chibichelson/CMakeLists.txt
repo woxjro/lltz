@@ -42,6 +42,7 @@ add_definitions(${LLVM_DEFINITIONS})
 # For a better template to copy, see examples/standalone
 set(LLVM_LINK_COMPONENTS
   Support
+  Option
   )
 
 set(SOURCES
@@ -53,8 +54,9 @@ set(SOURCES
 )
 
 include_directories(include/)
-add_executable(chibichelsonc-ch1 ${SOURCES})
-target_link_libraries(chibichelsonc-ch1
+add_compile_options(-fno-rtti)
+add_executable(chibichelsonc ${SOURCES})
+target_link_libraries(chibichelsonc
   PRIVATE
     MLIRSupport
 )

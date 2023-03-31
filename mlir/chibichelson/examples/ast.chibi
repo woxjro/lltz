@@ -1,0 +1,17 @@
+# User defined generic function that operates on unknown shaped arguments.
+def add_mutez(a, b) {
+  return a + b;
+}
+
+def smart_contract(param, storage) {
+  var a = 77;
+
+  var b = 99;
+
+  var c = a + b;
+
+  var d = a * b;
+
+  var e = mutez_add(b, a);
+  return storage;
+}

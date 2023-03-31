@@ -92,7 +92,7 @@ void ASTDumper::dump(ExprAST *expr) {
 void ASTDumper::dump(VarDeclExprAST *varDecl) {
   INDENT();
   llvm::errs() << "VarDecl " << varDecl->getName();
-  dump(varDecl->getType());
+  //dump(varDecl->getType());
   llvm::errs() << " " << loc(varDecl) << "\n";
   dump(varDecl->getInitVal());
 }

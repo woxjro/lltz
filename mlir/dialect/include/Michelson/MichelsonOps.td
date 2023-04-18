@@ -6,13 +6,18 @@ include "mlir/Interfaces/SideEffectInterfaces.td"
 
 def AddressType : OpaqueType<"michelson", "Address", "opaque address type">;
 def OperationType : OpaqueType<"michelson", "Operation", "opaque operation type">;
+def ContractType : OpaqueType<"michelson", "Contract", "opaque contract type">;
 def Mutez : SI<64>;
 def Int : SI<128>;
 def Nat : UI<128>;
 
 def NumericType: AnyTypeOf<[Mutez, Int, Nat]>;
 
-def MichelsonType : AnyTypeOf<[OperationType, NumericType]>;
+def MichelsonType : AnyTypeOf<[
+                        OperationType,
+                        ContractType,
+                        NumericType,
+                    ]>;
 
 //TODO: ConstantOp, FuncOp, PairType
 
@@ -32,23 +37,19 @@ def AddOp: MichelsonOp<"add", [Pure]> {
     ];
 }
 
-//def GetAmount: MichelsonOp<"get_amount", [Pure]> {
-//    let summary = "Get the amount of the current transaction.";
-//    let description = [{
-//        The `michelson.get_amount` operation returns the amount of the current transaction.
-//
-//        Example:
-//        ```mlir
-//        %0 = michelson.get_amount : mutez
-//        ```
-//    }];
-//
-//    let arguments = (ins);
-//    let results = (outs Mutez:$res);
-//
-//    let assemblyFormat = [{
-//        attr-dict `:` type($res)
-//    }];
-//}
+def GetAmount: MichelsonOp<"get_amount", [Pure]> {
+    let summary = "Get the amount of the current transaction.";
+    let description = [{
+        The `michelson.get_amount` operation returns the amount of the current transaction.
+
+        Example:
+        ```mlir
+        %0 = michelson.get_amount() : !michelson.mutez
+        ```
+    }];
+
+    let arguments = (ins);
+    let results = (outs Mutez:$res);
+}
 
 #endif // Michelson_OPS

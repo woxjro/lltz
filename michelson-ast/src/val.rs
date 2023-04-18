@@ -35,7 +35,7 @@ pub enum Val {
 impl Val {
     pub fn to_string(&self) -> String {
         match self {
-            Val::Address(addr) => addr.clone(),
+            Val::Address(addr) => format!("\"{}\"", addr.clone()),
             Val::Bool(b) => if *b { "True" } else { "False" }.to_string(),
             Val::Int(i) => i.to_string(),
             Val::Mutez(m) => m.to_string(),

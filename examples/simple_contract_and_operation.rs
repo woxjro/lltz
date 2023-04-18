@@ -95,7 +95,7 @@ fn main() {
             ty: Type::Address,
             //value: Register::new("\"KT1Vh2yUNseYabMc1c9EKiBbtQxbyoRWAFDv\""),
             value: Value::Const(Const::Address(
-                "\"tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv\"".to_string(),
+                "tz1ddb9NMYHZi5UzPdzTZMYQQZoMub195zgv".to_string(),
             )),
             ptr: Register::new("%4"),
         },

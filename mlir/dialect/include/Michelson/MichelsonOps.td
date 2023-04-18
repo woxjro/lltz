@@ -4,15 +4,17 @@
 include "MichelsonDialect.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
+def AddressType : OpaqueType<"michelson", "Address", "opaque address type">;
 def OperationType : OpaqueType<"michelson", "Operation", "opaque operation type">;
-def MutezType : SI<64>;
-def IntType : SI<128>;
-def NatType : UI<128>;
+def Mutez : SI<64>;
+def Int : SI<128>;
+def Nat : UI<128>;
 
-def NumericType: AnyTypeOf<[MutezType, IntType, NatType]>;
+def NumericType: AnyTypeOf<[Mutez, Int, Nat]>;
 
 def MichelsonType : AnyTypeOf<[OperationType, NumericType]>;
 
+//TODO: ConstantOp, FuncOp, PairType
 
 def AddOp: MichelsonOp<"add", [Pure]> {
     let summary = "addition operation";
@@ -42,7 +44,7 @@ def AddOp: MichelsonOp<"add", [Pure]> {
 //    }];
 //
 //    let arguments = (ins);
-//    let results = (outs MutezType:$res);
+//    let results = (outs Mutez:$res);
 //
 //    let assemblyFormat = [{
 //        attr-dict `:` type($res)

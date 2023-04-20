@@ -14,6 +14,7 @@ def MichelsonDialect : Dialect {
         This dialect provides operations specific to michelson assembly languages.
     }];
     let cppNamespace = "::mlir::michelson";
+    let useFoldAPI = kEmitFoldAdaptorFolder;
 }
 
 //===----------------------------------------------------------------------===//

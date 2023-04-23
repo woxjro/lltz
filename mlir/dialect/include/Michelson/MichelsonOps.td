@@ -41,6 +41,9 @@ include "mlir/Interfaces/SideEffectInterfaces.td"
     }
 */
 
+def MichelsonMutez: Type<CPred<"$_self.isa<::mlir::michelson::MichelsonMutezType>()">,
+                          "Michelson Mutez type", "::mlir::michelson::MichelsonMutezType">;
+
 def GetAmount: MichelsonOp<"get_amount", [Pure]> {
     let summary = "Get the amount of the current transaction.";
     let description = [{
@@ -52,8 +55,8 @@ def GetAmount: MichelsonOp<"get_amount", [Pure]> {
         ```
     }];
 
-    //let arguments = (ins);
-    //let results = (outs MichelsonMutezType:$res);
+    let arguments = (ins);
+    //let results = (outs MichelsonMutez:$res);
 }
 
 #endif // Michelson_OPS

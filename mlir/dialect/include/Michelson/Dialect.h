@@ -7,12 +7,11 @@
 //===----------------------------------------------------------------------===//
 //
 // This file implements the IR Dialect for the Michelson language.
-// See docs/Tutorials/Michelson/Ch-2.md for more information.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef MLIR_TUTORIAL_MICHELSON_DIALECT_H_
-#define MLIR_TUTORIAL_MICHELSON_DIALECT_H_
+#ifndef MLIR_MICHELSON_DIALECT_H_
+#define MLIR_MICHELSON_DIALECT_H_
 
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/FunctionInterfaces.h"
@@ -22,11 +21,11 @@
 
 /// Include the auto-generated header file containing the declaration of the michelson
 /// dialect.
-#include "Michelson/MichelsonOpsDialect.h.inc"
+#include "Michelson/MichelsonDialect.h.inc"
 
 /// Include the auto-generated header file containing the declarations of the
 /// michelson operations.
 #define GET_OP_CLASSES
 #include "Michelson/MichelsonOps.h.inc"
 
-#endif // MLIR_TUTORIAL_MICHELSON_DIALECT_H_
+#endif // MLIR_MICHELSON_DIALECT_H_

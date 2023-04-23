@@ -21,7 +21,7 @@
 using namespace mlir;
 using namespace mlir::michelson;
 
-#include "Michelson/MichelsonOpsDialect.cpp.inc"
+#include "Michelson/MichelsonDialect.cpp.inc"
 
 //===----------------------------------------------------------------------===//
 // MichelsonDialect

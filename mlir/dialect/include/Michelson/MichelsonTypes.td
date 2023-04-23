@@ -10,7 +10,7 @@ class MichelsonType<string name, string typeMnemonic, list<Trait> traits = []>
   let mnemonic = typeMnemonic;
 }
 
-def Mutez: MichelsonType<"MichelsonMutezType", "mutez"> {
+def Mutez: MichelsonType<"MichelsonMutez", "mutez"> {
     let summary = "Michelson mutez type";
     let description = [{
         The `!michelson.mutez` type is an Michelson mutez type.
@@ -24,9 +24,10 @@ def Mutez: MichelsonType<"MichelsonMutezType", "mutez"> {
     let parameters = (ins);
 }
 
-//def AddressType : OpaqueType<"michelson", "Address", "opaque address type">;
-//def OperationType : OpaqueType<"michelson", "Operation", "opaque operation type">;
-//def ContractType : OpaqueType<"michelson", "Contract", "opaque contract type">;
+
+def AddressType : OpaqueType<"michelson", "Address", "opaque address type">;
+def OperationType : OpaqueType<"michelson", "Operation", "opaque operation type">;
+def ContractType : OpaqueType<"michelson", "Contract", "opaque contract type">;
 //def Int : SI<128>;
 //def Nat : UI<128>;
 //

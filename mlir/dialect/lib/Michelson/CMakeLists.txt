@@ -1,5 +1,6 @@
 add_mlir_dialect_library(MLIRMichelson
         MichelsonDialect.cpp
+        MichelsonTypes.cpp
         MichelsonOps.cpp
 
         ADDITIONAL_HEADER_DIRS

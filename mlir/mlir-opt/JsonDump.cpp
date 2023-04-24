@@ -40,7 +40,7 @@ struct JsonDumpPass
     json["operations"] = std::move(opArr);
 
     llvm::json::Value jsonVal(std::move(json));
-    llvm::outs() << llvm::formatv("{0:2}\n", jsonVal);
+    llvm::errs() << llvm::formatv("{0:2}\n", jsonVal);
 
     //resetIndent();
     //printOperation(op);

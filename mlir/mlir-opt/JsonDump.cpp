@@ -20,20 +20,65 @@ struct JsonDumpPass
 
   StringRef getArgument() const final { return "dump-json"; }
   StringRef getDescription() const final { return "dump a Json."; }
+
+
+  llvm::json::Array opArr;
+  llvm::json::Object json = llvm::json::Object{{"operations", std::move(opArr)}};
+
   // Entry point for the pass.
   void runOnOperation() override {
-    //llvm::raw_ostream& os = llvm::outs();
-    llvm::json::Object obj = llvm::json::Object{{"position", "xxxxxxxxxxxxxxxxxxxxx"}};
-    llvm::json::Value val(std::move(obj));
-    llvm::outs() << llvm::formatv("{0:2}\n", val);
-    //llvm::json::Value value;
-    //llvm::Expected<llvm::json::Value> E = llvm::json::parse(R"( {"options": {"font": "sans-serif"}} )");
-    //auto val = E.get();
-    // Create a JSON object with some values and attributes
-    //os << obj.get("position");
+    //llvm::json::Object obj = llvm::json::Object{{"position", "xxx"}};
+    //llvm::json::Value val(std::move(obj));
+    //llvm::outs() << llvm::formatv("{0:2}\n", val);
     Operation *op = getOperation();
-    resetIndent();
-    printOperation(op);
+
+    llvm::json::Array arr;
+    llvm::json::Object json = llvm::json::Object{{"operations", std::move(arr)}};
+
+    auto opObj = dumpJson(op);
+    opArr.push_back(std::move(opObj));
+    json["operations"] = std::move(opArr);
+
+    llvm::json::Value jsonVal(std::move(json));
+    llvm::outs() << llvm::formatv("{0:2}\n", jsonVal);
+
+    //resetIndent();
+    //printOperation(op);
+  }
+
+  llvm::json::Object dumpJson(Operation *op) {
+    /*
+    printIndent() << "visiting op: '" << op->getName() << "' with "
+                  << op->getNumOperands() << " operands and "
+                  << op->getNumResults() << " results\n";
+    */
+
+    llvm::json::Object opJson = llvm::json::Object{};
+    opJson["name"] = op->getName().getStringRef();
+    opJson["num_operands"] = op->getNumOperands();
+    opJson["num_results"] = op->getNumResults();
+
+    llvm::json::Array regionsJson;
+    for (Region &region : op->getRegions()) {
+        llvm::json::Object regionJson = llvm::json::Object{};
+        regionJson["block_size"] = region.getBlocks().size();
+        llvm::json::Array blocksJson;
+        for (Block &block : region.getBlocks()) {
+            llvm::json::Object blockJson = llvm::json::Object{};
+            blockJson["operations_size"] = block.getOperations().size();
+            llvm::json::Array operationsJson;
+            for (Operation &op : block.getOperations()) {
+              auto operationJson = dumpJson(&op);
+              operationsJson.push_back(std::move(operationJson));
+            }
+            blockJson["operations"] = std::move(operationsJson);
+            blocksJson.push_back(std::move(blockJson));
+        }
+        regionJson["blocks"] = std::move(blocksJson);
+        regionsJson.push_back(std::move(regionJson));
+    }
+    opJson["regions"] = std::move(regionsJson);
+    return opJson;
   }
 
   /// The three methods below are mutually recursive and follow the nesting of
@@ -51,6 +96,7 @@ struct JsonDumpPass
         printIndent() << " - '" << attr.getName().getValue() << "' : '"
                       << attr.getValue() << "'\n";
     }
+
 
     // Recurse into each of the regions attached to the operation.
     printIndent() << " " << op->getNumRegions() << " nested regions:\n";

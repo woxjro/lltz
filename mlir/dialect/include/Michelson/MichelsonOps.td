@@ -56,7 +56,7 @@ def GetAmount: MichelsonOp<"get_amount", [Pure]> {
     }];
 
     let arguments = (ins);
-    //let results = (outs MichelsonMutez:$res);
+    let results = (outs MichelsonMutez:$res);
 }
 
 #endif // Michelson_OPS

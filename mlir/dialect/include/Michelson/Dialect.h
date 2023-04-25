@@ -23,6 +23,9 @@
 /// dialect.
 #include "Michelson/MichelsonDialect.h.inc"
 
+#define GET_TYPEDEF_CLASSES
+#include "Michelson/MichelsonTypes.h.inc"
+
 /// Include the auto-generated header file containing the declarations of the
 /// michelson operations.
 #define GET_OP_CLASSES

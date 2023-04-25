@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/AsmState.h"
 #include "mlir/Pass/Pass.h"
 #include "llvm/Support/JSON.h"
 
@@ -35,7 +36,7 @@ struct JsonDumpPass
     llvm::json::Array arr;
     llvm::json::Object json = llvm::json::Object{{"operations", std::move(arr)}};
 
-    auto opObj = dumpJson(op);
+    auto opObj = convertOpToJson(op);
     opArr.push_back(std::move(opObj));
     json["operations"] = std::move(opArr);
 
@@ -46,7 +47,10 @@ struct JsonDumpPass
     //printOperation(op);
   }
 
-  llvm::json::Object dumpJson(Operation *op) {
+
+  /// The three methods below are mutually recursive and follow the nesting of
+  /// the IR: operation->region->block->operation->...
+  llvm::json::Object convertOpToJson(Operation *op) {
     /*
     printIndent() << "visiting op: '" << op->getName() << "' with "
                   << op->getNumOperands() << " operands and "
@@ -54,9 +58,22 @@ struct JsonDumpPass
     */
 
     llvm::json::Object opJson = llvm::json::Object{};
+    opJson["dialect"] = op->getDialect()->getNamespace();
     opJson["name"] = op->getName().getStringRef();
-    opJson["num_operands"] = op->getNumOperands();
     opJson["num_results"] = op->getNumResults();
+
+    //auto ctx = op->getContext();
+    //AsmState asmState = AsmState(ctx);
+    llvm::json::Array operandsJson;
+    for (auto operand: op->getOperands()) {
+        //operand.printAsOperand(llvm::outs(), asmState);
+        llvm::json::Object operandJson = llvm::json::Object{
+            { "dialect", operand.getType().getDialect().getNamespace() },
+        };
+        operandsJson.push_back(std::move(operandJson));
+    }
+    opJson["operands"] = std::move(operandsJson);
+
 
     llvm::json::Array regionsJson;
     for (Region &region : op->getRegions()) {
@@ -68,7 +85,7 @@ struct JsonDumpPass
             blockJson["operations_size"] = block.getOperations().size();
             llvm::json::Array operationsJson;
             for (Operation &op : block.getOperations()) {
-              auto operationJson = dumpJson(&op);
+              auto operationJson = convertOpToJson(&op);
               operationsJson.push_back(std::move(operationJson));
             }
             blockJson["operations"] = std::move(operationsJson);
@@ -83,7 +100,6 @@ struct JsonDumpPass
 
   /// The three methods below are mutually recursive and follow the nesting of
   /// the IR: operation->region->block->operation->...
-
   void printOperation(Operation *op) {
     // Print the operation itself and some of its properties
     printIndent() << "visiting op: '" << op->getName() << "' with "

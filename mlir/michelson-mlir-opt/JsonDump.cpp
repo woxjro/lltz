@@ -62,11 +62,21 @@ struct JsonDumpPass
     opJson["name"] = op->getName().getStringRef();
     opJson["num_results"] = op->getNumResults();
 
-    //auto ctx = op->getContext();
-    //AsmState asmState = AsmState(ctx);
     llvm::json::Array operandsJson;
+
+    Operation *parentOp = op->getParentOp();
+    if (!parentOp) {
+      //os << "<<UNLINKED BLOCK>>\n";
+    } else {
+        while (auto *nextOp = parentOp->getParentOp()) {
+            parentOp = nextOp;
+        }
+    }
+    AsmState state(parentOp);
+    //AsmState asmState = AsmState(ctx);
     for (auto operand: op->getOperands()) {
-        //operand.printAsOperand(llvm::outs(), asmState);
+        operand.printAsOperand(llvm::outs(), state);
+        //operand.print(llvm::outs());
         llvm::json::Object operandJson = llvm::json::Object{
             { "dialect", operand.getType().getDialect().getNamespace() },
         };

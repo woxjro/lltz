@@ -1,6 +1,35 @@
 # Json Dumping of MLIR
 
-## いろいろする
+`mlir::michelson::MichelsonDialect`を追加すると以下のエラーがでる．
+```
+[100%] Linking CXX executable ../bin/michelson-mlir-opt
+ld: error: undefined symbol: mlir::detail::TypeIDResolver<mlir::michelson::MichelsonDialect, void>::id
+>>> referenced by michelson-mlir-opt.cpp
+>>>               CMakeFiles/michelson-mlir-opt.dir/michelson-mlir-opt.cpp.o:(mlir::detail::TypeIDResolver<mlir::m
+ichelson::MichelsonDialect, void>::resolveTypeID())
+
+ld: error: undefined symbol: mlir::michelson::MichelsonDialect::MichelsonDialect(mlir::MLIRContext*)
+>>> referenced by michelson-mlir-opt.cpp
+>>>               CMakeFiles/michelson-mlir-opt.dir/michelson-mlir-opt.cpp.o:(mlir::michelson::MichelsonDialect* m
+lir::MLIRContext::getOrLoadDialect<mlir::michelson::MichelsonDialect>()::'lambda'()::operator()() const)
+collect2: error: ld returned 1 exit status
+make[2]: *** [michelson-mlir-opt/CMakeFiles/michelson-mlir-opt.dir/build.make:411: bin/michelson-mlir-opt] Error 1
+make[1]: *** [CMakeFiles/Makefile2:676: michelson-mlir-opt/CMakeFiles/michelson-mlir-opt.dir/all] Error 2
+make: *** [Makefile:136: all] Error 2
+```
+
+## `mlir-opt`を切り出すやり方
+
+```sh
+$ cd <michelson-mlir-opt>
+$ mkdir build && cd build
+$ cmake .. \
+    -DMLIR_DIR=$PWD/../../../llvm-project/build/lib/cmake/mlir
+$ make
+```
+
+
+## 古いやり方（いろいろする）
 ### 1. `JsonDump.cpp`を適切な場所に設置する
 ```sh
 $ cp ./JsonDump.cpp ../llvm-project/mlir/test/lib/IR/JsonDump.cpp

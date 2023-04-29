@@ -21,19 +21,23 @@
 #include "llvm/Support/ToolOutputFile.h"
 
 #include "Michelson/Dialect.h"
+#include "JsonDump.cpp"
 
 int main(int argc, char **argv) {
   mlir::registerAllPasses();
+
   // TODO: Register michelson passes here.
+  registerJsonDumpPass();
 
   mlir::DialectRegistry registry;
-  registry.insert<
-      //mlir::michelson::MichelsonDialect,
-                  mlir::arith::ArithDialect, mlir::func::FuncDialect>();
+
   // Add the following to include *all* MLIR Core dialects, or selectively
   // include what you need like above. You only need to register dialects that
   // will be *parsed* by the tool, not the one generated
-  // registerAllDialects(registry);
+  registerAllDialects(registry);
+
+  //registry.insert<mlir::michelson::MichelsonDialect>();
+
 
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "michelson optimizer driver\n", registry));

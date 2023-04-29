@@ -17,3 +17,18 @@ You can compile all sample programs by the following command.
 ```
 cargo test build
 ```
+
+build `llvm-project`
+```sh
+$ cmake ../llvm \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DLLVM_ENABLE_PROJECTS=mlir \
+    -DLLVM_BUILD_EXAMPLES=ON \
+    -DLLVM_TARGETS_TO_BUILD=X86 \
+    -DLLVM_ENABLE_ASSERTIONS=ON \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=YES \
+    -DLLVM_CCACHE_BUILD=ON \
+    -DCMAKE_C_COMPILER=ccache-clang-14 \
+    -DCMAKE_CXX_COMPILER=ccache-clang++-14
+$ make
+```

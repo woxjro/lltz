@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
   // will be *parsed* by the tool, not the one generated
   registerAllDialects(registry);
 
-  //registry.insert<mlir::michelson::MichelsonDialect>();
+  registry.insert<mlir::michelson::MichelsonDialect>();
 
 
   return mlir::asMainReturnCode(

@@ -62,6 +62,18 @@ struct JsonDumpPass : public PassWrapper<JsonDumpPass, OperationPass<>> {
           {"result", resultName},
           {"type", llvm::formatv("{0}", result.getType())},
       };
+
+      /*
+      auto visitFn = [&](auto element) {
+          if (element) {
+              llvm::errs() << llvm::formatv("{0}", element) << '\n';
+          }
+      };
+
+      result.getType().walkImmediateSubElements(visitFn, visitFn);
+      */
+
+
       resultsJson.push_back(std::move(resultJson));
     }
     opJson["results"] = std::move(resultsJson);
@@ -78,6 +90,10 @@ struct JsonDumpPass : public PassWrapper<JsonDumpPass, OperationPass<>> {
           {"operand", operandName},
           {"type", llvm::formatv("{0}", operand.getType())},
       };
+
+      //operand.getType().walkImmediateSubElements(visitFn, visitFn);
+
+
       operandsJson.push_back(std::move(operandJson));
     }
     opJson["operands"] = std::move(operandsJson);
@@ -97,7 +113,6 @@ struct JsonDumpPass : public PassWrapper<JsonDumpPass, OperationPass<>> {
       llvm::json::Array blocksJson;
       for (Block &block : region.getBlocks()) {
         llvm::json::Object blockJson = llvm::json::Object{};
-        blockJson["operations_size"] = block.getOperations().size();
         llvm::json::Array operationsJson;
         for (Operation &op : block.getOperations()) {
           auto operationJson = convertOpToJson(&op);

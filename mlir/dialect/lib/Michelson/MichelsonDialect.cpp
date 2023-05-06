@@ -30,6 +30,7 @@ using namespace mlir::michelson;
 /// Dialect initialization, the instance will be owned by the context. This is
 /// the point of registration of types and operations for the dialect.
 void MichelsonDialect::initialize() {
+    /*
   addTypes<
 #define GET_TYPEDEF_LIST
 #include "Michelson/MichelsonTypes.cpp.inc"
@@ -39,6 +40,7 @@ void MichelsonDialect::initialize() {
 #define GET_OP_LIST
 #include "Michelson/MichelsonOps.cpp.inc"
       >();
+      */
 }
 
 //===----------------------------------------------------------------------===//

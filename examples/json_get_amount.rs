@@ -10,10 +10,10 @@ pub fn main() {
 
     let deserialized: Block = serde_json::from_str(&json_string).unwrap();
     let smart_contract = get_smart_contract_operation(deserialized).unwrap();
+    dbg!(&smart_contract.regions[0].blocks[0].arguments);
     let ops = &smart_contract.regions[0].blocks[0].operations;
 
-    dbg!(ops);
     for op in ops {
-        println!("{}", op.name);
+        println!("{}", op.name,);
     }
 }

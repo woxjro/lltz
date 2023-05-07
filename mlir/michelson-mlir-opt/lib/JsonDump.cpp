@@ -21,10 +21,13 @@ struct JsonDumpPass : public PassWrapper<JsonDumpPass, OperationPass<>> {
   StringRef getDescription() const final { return "dump a Json."; }
 
   llvm::json::Array opArr;
-  llvm::json::Object json =
-      llvm::json::Object{{"operations", std::move(opArr)}};
+  llvm::json::Array argArr;
+  llvm::json::Object json = llvm::json::Object{
+      {"operations", std::move(opArr)}};
 
-  // Entry point for the pass.
+  // TODO: Top Level の Operation は builtin.module で固定なはずなので，
+  //       "operations" から始めない．
+  //  Entry point for the pass.
   void runOnOperation() override {
     Operation *op = getOperation();
 
@@ -35,6 +38,7 @@ struct JsonDumpPass : public PassWrapper<JsonDumpPass, OperationPass<>> {
     auto opObj = convertOpToJson(op);
     opArr.push_back(std::move(opObj));
     json["operations"] = std::move(opArr);
+    json["arguments"] = std::move(argArr);
 
     llvm::json::Value jsonVal(std::move(json));
     llvm::errs() << llvm::formatv("{0:2}\n", jsonVal);
@@ -73,7 +77,6 @@ struct JsonDumpPass : public PassWrapper<JsonDumpPass, OperationPass<>> {
       result.getType().walkImmediateSubElements(visitFn, visitFn);
       */
 
-
       resultsJson.push_back(std::move(resultJson));
     }
     opJson["results"] = std::move(resultsJson);
@@ -91,8 +94,7 @@ struct JsonDumpPass : public PassWrapper<JsonDumpPass, OperationPass<>> {
           {"type", llvm::formatv("{0}", operand.getType())},
       };
 
-      //operand.getType().walkImmediateSubElements(visitFn, visitFn);
-
+      // operand.getType().walkImmediateSubElements(visitFn, visitFn);
 
       operandsJson.push_back(std::move(operandJson));
     }
@@ -119,6 +121,24 @@ struct JsonDumpPass : public PassWrapper<JsonDumpPass, OperationPass<>> {
           operationsJson.push_back(std::move(operationJson));
         }
         blockJson["operations"] = std::move(operationsJson);
+
+        llvm::json::Array argumentsJson;
+        for (auto argument : block.getArguments()) {
+          std::string argumentName;
+          llvm::raw_string_ostream os(argumentName);
+          argument.printAsOperand(os, asmState);
+          os.flush();
+
+          llvm::json::Object argumentJson = llvm::json::Object{
+              {"dialect", argument.getType().getDialect().getNamespace()},
+              {"argument", argumentName},
+              {"type", llvm::formatv("{0}", argument.getType())},
+          };
+
+          argumentsJson.push_back(std::move(argumentJson));
+        }
+        blockJson["arguments"] = std::move(argumentsJson);
+
         blocksJson.push_back(std::move(blockJson));
       }
       regionJson["blocks"] = std::move(blocksJson);

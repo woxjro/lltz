@@ -3,6 +3,7 @@ use String as TypeString;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Block {
     pub operations: Vec<Operation>,
+    pub arguments: Vec<Argument>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -13,6 +14,13 @@ pub struct Operation {
     pub operands: Vec<Operand>,
     pub regions: Vec<Region>,
     pub results: Vec<Result>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Argument {
+    pub argument: String,
+    pub dialect: String,
+    pub r#type: TypeString,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

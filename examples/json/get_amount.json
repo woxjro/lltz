@@ -1,4 +1,5 @@
 {
+  "arguments": [],
   "operations": [
     {
       "attributes": [],
@@ -9,12 +10,13 @@
         {
           "blocks": [
             {
+              "arguments": [],
               "operations": [
                 {
                   "attributes": [
                     {
                       "name": "function_type",
-                      "value": "(!michelson.mutez, !michelson.mutez) -> !michelson.pair<!michelson.list<!michelson.opera tion>, !michelson.mutez>"
+                      "value": "(!michelson.mutez, !michelson.mutez) -> !michelson.pair<!michelson.list<!michelson.operation>, !michelson.mutez>"
                     },
                     {
                       "name": "sym_name",
@@ -28,6 +30,18 @@
                     {
                       "blocks": [
                         {
+                          "arguments": [
+                            {
+                              "argument": "%arg0",
+                              "dialect": "michelson",
+                              "type": "!michelson.mutez"
+                            },
+                            {
+                              "argument": "%arg1",
+                              "dialect": "michelson",
+                              "type": "!michelson.mutez"
+                            }
+                          ],
                           "operations": [
                             {
                               "attributes": [],

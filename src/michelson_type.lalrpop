@@ -2,6 +2,7 @@ use crate::mlir_michelson_dialect_ast::{Type, Tok};
 grammar;
 
 pub Type: Type = {
+    <unit:Unit> => Type::Unit,
     <mutez:Mutez> => Type::Mutez,
     <operation:Operation> => Type::Operation,
     <list:List> "<" <ty:Type> ">" => Type::List { ty: Box::new(ty) },
@@ -10,6 +11,7 @@ pub Type: Type = {
         Type::SmartContract { param: Box::new(param), storage: Box::new(storage), res: Box::new(res) },
 };
 
+Unit: Tok = <s:r"[!][a-zA-Z]+[.]unit"> => Tok::Unit;
 Mutez: Tok = <s:r"[!][a-zA-Z]+[.]mutez"> => Tok::Mutez;
 Operation: Tok = <s:r"[!][a-zA-Z]+[.]operation"> => Tok::Operation;
 List: Tok = <s:r"[!][a-zA-Z]+[.]list"> => Tok::List;

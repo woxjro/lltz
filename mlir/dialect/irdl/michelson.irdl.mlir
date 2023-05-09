@@ -8,6 +8,8 @@ module {
 
     irdl.type @operation {}
 
+    irdl.type @unit {}
+
     irdl.type @pair {
       %fst = irdl.any
       %snd = irdl.any
@@ -40,6 +42,13 @@ module {
 
       irdl.operands(%elem)
       irdl.results(%res)
+    }
+
+    irdl.operation @get_unit {
+      %0 = irdl.any
+      %1 = irdl.parametric @unit<%0>
+      irdl.operands()
+      irdl.results(%0)
     }
 
     irdl.operation @get_amount {

@@ -1,5 +1,6 @@
 #[derive(Debug, Clone)]
 pub enum Type {
+    Unit,
     Mutez,
     Operation,
     Pair {
@@ -17,6 +18,7 @@ pub enum Type {
 }
 
 pub enum Tok {
+    Unit,
     Mutez,
     Operation,
     Pair,

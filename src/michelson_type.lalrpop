@@ -1,0 +1,16 @@
+use crate::mlir_michelson_dialect_ast::{Type, Tok};
+grammar;
+
+pub Type: Type = {
+    <mutez:Mutez> => Type::Mutez,
+    <operation:Operation> => Type::Operation,
+    <list:List> "<" <ty:Type> ">" => Type::List { ty: Box::new(ty) },
+    <pair:Pair> "<" <fst:Type> "," <snd:Type> ">" => Type::Pair { fst: Box::new(fst), snd: Box::new(snd) },
+    "(" <param: Type> "," <storage: Type> ")" "->" <res: Type> =>
+        Type::SmartContract { param: Box::new(param), storage: Box::new(storage), res: Box::new(res) },
+};
+
+Mutez: Tok = <s:r"[!][a-zA-Z]+[.]mutez"> => Tok::Mutez;
+Operation: Tok = <s:r"[!][a-zA-Z]+[.]operation"> => Tok::Operation;
+List: Tok = <s:r"[!][a-zA-Z]+[.]list"> => Tok::List;
+Pair: Tok = <s:r"[!][a-zA-Z]+[.]pair"> => Tok::Pair;

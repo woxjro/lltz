@@ -1,3 +1,8 @@
+use lalrpop_util;
+use lalrpop_util::lalrpop_mod;
+lalrpop_mod!(pub michelson_type);
+
+use crate::mlir_michelson_dialect_ast::Type;
 use serde::{Deserialize, Serialize};
 use String as TypeString;
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -56,4 +61,8 @@ pub fn get_smart_contract_operation(block: Block) -> std::result::Result<Operati
             .any(|attr| attr.name == "sym_name" && attr.value.contains("smart_contract"))
     });
     Ok(smart_contract.unwrap().clone())
+}
+
+pub fn string_to_michelson_type(s: String) -> Type {
+    michelson_type::TypeParser::new().parse(&s).unwrap()
 }

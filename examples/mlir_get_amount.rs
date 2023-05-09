@@ -1,5 +1,6 @@
-use lltz::json_to_mlir::{get_smart_contract_operation, Block};
+use lltz::json_to_mlir::{get_smart_contract_operation, string_to_michelson_type, Block};
 use std::process::Command;
+
 pub fn main() {
     let res = Command::new("michelson-mlir-opt")
         .args([
@@ -18,6 +19,9 @@ pub fn main() {
     let ops = &smart_contract.regions[0].blocks[0].operations;
 
     for op in ops {
-        println!("{}", op.name,);
+        for result in &op.results {
+            println!("{:?}", string_to_michelson_type(result.r#type.clone()));
+        }
+        //println!("{:?}", op);
     }
 }

@@ -1,4 +1,4 @@
-use lltz::json_to_mlir::{get_smart_contract_operation, string_to_michelson_type, Block};
+use lltz::json_to_mlir::json::{get_smart_contract_operation, Block};
 use std::process::Command;
 
 pub fn main() {
@@ -16,12 +16,15 @@ pub fn main() {
     let deserialized: Block = serde_json::from_str(&json).unwrap();
     let smart_contract = get_smart_contract_operation(deserialized).unwrap();
     dbg!(&smart_contract.regions[0].blocks[0].arguments);
-    let ops = &smart_contract.regions[0].blocks[0].operations;
 
+    dbg!(&smart_contract.to_mlir_operation());
+    //let ops = &smart_contract.regions[0].blocks[0].operations;
+    /*
     for op in ops {
         for result in &op.results {
             println!("{:?}", string_to_michelson_type(result.r#type.clone()));
         }
         //println!("{:?}", op);
     }
+    */
 }

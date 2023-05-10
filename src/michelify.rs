@@ -2,7 +2,6 @@ use crate::mlir::ast::{BaseType, Operation, Value};
 use michelson_ast::wrapped_instruction::WrappedInstruction as MWrappedInstr;
 use michelson_ast::{program, ty};
 use std::collections::{HashMap, HashSet};
-
 pub fn compile(smart_contract: Operation) -> String {
     /*
      * Value を Key として,その Value の Michelson の Stack 上での位置を返す HashMap
@@ -36,6 +35,8 @@ pub fn compile(smart_contract: Operation) -> String {
     let mut type_heap_address_counter = 0;
 
     let (parameter, storage) = get_signature(&smart_contract);
+    dbg!(&parameter);
+    dbg!(&storage);
     let mut code = vec![];
 
     /*
@@ -86,8 +87,12 @@ pub fn compile(smart_contract: Operation) -> String {
     michelson_program.to_string()
 }
 
-fn get_signature(operation: &Operation) -> (ty::Ty, ty::Ty) {
-    todo!()
+fn get_signature(smart_contract: &Operation) -> (ty::Ty, ty::Ty) {
+    let args = smart_contract.regions[0].blocks[0].arguments.to_owned();
+    //CAUTION: 逆か？？？
+    let param = args[0].try_to_get_michelson_type();
+    let storage = args[1].try_to_get_michelson_type();
+    (param.unwrap(), storage.unwrap())
 }
 
 fn scan(

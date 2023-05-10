@@ -1,4 +1,4 @@
-use crate::mlir_michelson_dialect_ast::{Type, Tok};
+use crate::mlir::dialect::michelson::ast::{Type, Tok};
 grammar;
 
 pub Type: Type = {

@@ -1,7 +1,7 @@
 use crate::mlir::dialect::michelson::ast::Type;
 use crate::mlir::dialect::DialectKind;
 
-trait Value {
+pub trait Value {
     fn get_dialect(&self) -> DialectKind;
     fn get_id(&self) -> String;
     fn get_type(&self) -> Box<dyn BaseType>;

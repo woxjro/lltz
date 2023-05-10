@@ -1,6 +1,16 @@
 use crate::mlir::dialect::michelson::ast::Type;
 use crate::mlir::dialect::DialectKind;
 
+trait Value {
+    fn get_dialect(&self) -> DialectKind;
+    fn get_id(&self) -> String;
+    fn get_type(&self) -> Box<dyn BaseType>;
+}
+
+pub trait BaseType {
+    fn get_dialect(&self) -> DialectKind;
+}
+
 #[derive(Debug, Clone)]
 pub struct Block {
     pub operations: Vec<Operation>,
@@ -24,6 +34,18 @@ pub struct Argument {
     pub r#type: Type,
 }
 
+impl Value for Argument {
+    fn get_dialect(&self) -> DialectKind {
+        self.dialect.to_owned()
+    }
+    fn get_id(&self) -> String {
+        self.argument.to_owned()
+    }
+    fn get_type(&self) -> Box<dyn BaseType> {
+        Box::new(self.r#type.to_owned())
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum AttrValue {
     String(String),
@@ -40,6 +62,18 @@ pub struct Operand {
     pub dialect: DialectKind,
     pub operand: String,
     pub r#type: Type,
+}
+
+impl Value for Operand {
+    fn get_dialect(&self) -> DialectKind {
+        self.dialect.to_owned()
+    }
+    fn get_id(&self) -> String {
+        self.operand.to_owned()
+    }
+    fn get_type(&self) -> Box<dyn BaseType> {
+        Box::new(self.r#type.to_owned())
+    }
 }
 
 #[derive(Debug, Clone)]

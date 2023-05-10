@@ -1,4 +1,4 @@
-use crate::mlir::dialect;
+use crate::mlir::{ast, dialect};
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Unit,
@@ -18,7 +18,7 @@ pub enum Type {
     },
 }
 
-impl dialect::BaseType for Type {
+impl ast::BaseType for Type {
     fn get_dialect(&self) -> dialect::DialectKind {
         dialect::DialectKind::Michelson
     }

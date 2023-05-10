@@ -1,15 +1,5 @@
 pub mod michelson;
 
-trait Value {
-    fn get_dialect(&self) -> DialectKind;
-    fn get_id(&self) -> String;
-    fn get_type(&self) -> dyn BaseType;
-}
-
-pub trait BaseType {
-    fn get_dialect(&self) -> DialectKind;
-}
-
 #[derive(Debug, Clone)]
 pub enum DialectKind {
     Func,

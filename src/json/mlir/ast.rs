@@ -1,5 +1,6 @@
 use crate::json::to_mlir::string_to_mlir;
-use crate::mlir::dialect::michelson::ast as mlir;
+use crate::mlir::ast as mlir;
+use crate::mlir::dialect::DialectKind;
 use lalrpop_util;
 use lalrpop_util::lalrpop_mod;
 lalrpop_mod!(pub mlir_parser);
@@ -46,7 +47,7 @@ impl Operation {
                 .iter()
                 .map(|attribute| attribute.to_mlir_attribute())
                 .collect::<Vec<_>>(),
-            dialect: self.dialect.to_owned(),
+            dialect: DialectKind::from(&self.dialect as &str),
             name: self.name.to_owned(),
             operands: self
                 .operands
@@ -76,7 +77,7 @@ impl Argument {
     pub fn to_mlir_argument(&self) -> mlir::Argument {
         mlir::Argument {
             argument: self.argument.to_owned(),
-            dialect: self.dialect.to_owned(),
+            dialect: DialectKind::from(&self.dialect as &str),
             r#type: string_to_mlir(self.r#type.to_owned()),
         }
     }
@@ -110,7 +111,7 @@ pub struct Operand {
 impl Operand {
     pub fn to_mlir_operand(&self) -> mlir::Operand {
         mlir::Operand {
-            dialect: self.dialect.to_owned(),
+            dialect: DialectKind::from(&self.dialect as &str),
             operand: self.operand.to_owned(),
             r#type: string_to_mlir(self.r#type.to_owned()),
         }
@@ -125,7 +126,7 @@ pub struct Result {
 impl Result {
     pub fn to_mlir_result(&self) -> mlir::Result {
         mlir::Result {
-            dialect: self.dialect.to_owned(),
+            dialect: DialectKind::from(&self.dialect as &str),
             result: self.result.to_owned(),
             r#type: string_to_mlir(self.r#type.to_owned()),
         }

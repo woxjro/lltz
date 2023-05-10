@@ -1,4 +1,4 @@
-use lltz::json_to_mlir::json::{get_smart_contract_operation, Block};
+use lltz::json::mlir::ast::{get_smart_contract_operation, Block};
 use std::process::Command;
 
 pub fn main() {

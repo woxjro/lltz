@@ -16,7 +16,6 @@ pub fn main() {
 
     let deserialized: Block = serde_json::from_str(&json).unwrap();
     let smart_contract = get_smart_contract_operation(deserialized).unwrap();
-    dbg!(&smart_contract.regions[0].blocks[0].arguments);
 
     let res = compile(smart_contract.to_mlir_operation());
     println!("{res}");

@@ -90,44 +90,44 @@ pub fn compile(smart_contract: Operation) -> String {
 fn get_signature(smart_contract: &Operation) -> (ty::Ty, ty::Ty) {
     let args = smart_contract.regions[0].blocks[0].arguments.to_owned();
     //CAUTION: 逆か？？？
-    let param = args[0].try_to_get_michelson_type();
-    let storage = args[1].try_to_get_michelson_type();
+    let param = args[1].try_to_get_michelson_type();
+    let storage = args[0].try_to_get_michelson_type();
     (param.unwrap(), storage.unwrap())
 }
 
 fn scan(
-    operation: &Operation,
-    value_address_counter: &mut usize,
-    type_heap_address_counter: &mut usize,
-    values: &mut HashSet<Box<dyn Value>>,
-    value_addresses: &mut HashMap<Box<dyn Value>, usize>,
-    type_heap_addresses: &mut HashMap<Box<dyn BaseType>, usize>,
+    _operation: &Operation,
+    _value_address_counter: &mut usize,
+    _type_heap_address_counter: &mut usize,
+    _values: &mut HashSet<Box<dyn Value>>,
+    _value_addresses: &mut HashMap<Box<dyn Value>, usize>,
+    _type_heap_addresses: &mut HashMap<Box<dyn BaseType>, usize>,
 ) {
     todo!()
 }
 fn stack_initialization(
-    values: &HashSet<Box<dyn Value>>,
-    value_addresses: &HashMap<Box<dyn Value>, usize>,
-    type_heap_addresses: &HashMap<Box<dyn BaseType>, usize>,
+    _values: &HashSet<Box<dyn Value>>,
+    _value_addresses: &HashMap<Box<dyn Value>, usize>,
+    _type_heap_addresses: &HashMap<Box<dyn BaseType>, usize>,
 ) -> Vec<MWrappedInstr> {
     todo!()
 }
 fn compile_operations(
-    operation: &Operation,
-    value_addresses: &HashMap<Box<dyn Value>, usize>,
-    type_heap_addresses: &HashMap<Box<dyn BaseType>, usize>,
+    _operation: &Operation,
+    _value_addresses: &HashMap<Box<dyn Value>, usize>,
+    _type_heap_addresses: &HashMap<Box<dyn BaseType>, usize>,
 ) -> Vec<MWrappedInstr> {
     todo!()
 }
 fn construct_return_value(
-    operation: &Operation,
-    value_addresses: &HashMap<Box<dyn Value>, usize>,
+    _operation: &Operation,
+    _value_addresses: &HashMap<Box<dyn Value>, usize>,
 ) -> Vec<MWrappedInstr> {
     todo!()
 }
 fn exit(
-    value_addresses: &HashMap<Box<dyn Value>, usize>,
-    type_heap_addresses: &HashMap<Box<dyn BaseType>, usize>,
+    _value_addresses: &HashMap<Box<dyn Value>, usize>,
+    _type_heap_addresses: &HashMap<Box<dyn BaseType>, usize>,
 ) -> Vec<MWrappedInstr> {
     todo!()
 }

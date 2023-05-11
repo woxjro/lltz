@@ -1,6 +1,7 @@
 use crate::mlir::ast::{BaseType, Operation, Value};
+use michelson_ast::program;
+use michelson_ast::ty::Ty as MTy;
 use michelson_ast::wrapped_instruction::WrappedInstruction as MWrappedInstr;
-use michelson_ast::{program, ty};
 use std::collections::{HashMap, HashSet};
 pub fn compile(smart_contract: Operation) -> String {
     /*
@@ -87,12 +88,18 @@ pub fn compile(smart_contract: Operation) -> String {
     michelson_program.to_string()
 }
 
-fn get_signature(smart_contract: &Operation) -> (ty::Ty, ty::Ty) {
+fn get_signature(smart_contract: &Operation) -> (MTy, MTy) {
     let args = smart_contract.regions[0].blocks[0].arguments.to_owned();
-    //CAUTION: 逆か？？？
-    let param = args[1].try_to_get_michelson_type();
-    let storage = args[0].try_to_get_michelson_type();
-    (param.unwrap(), storage.unwrap())
+    if args.len() == 2 {
+        let storage = args[0].try_to_get_michelson_type();
+        let param = args[1].try_to_get_michelson_type();
+        (param.unwrap(), storage.unwrap())
+    } else {
+        panic!(
+            "A smart_contract function is being given {} arguments instead of 2.",
+            args.len()
+        )
+    }
 }
 
 fn scan(

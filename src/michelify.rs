@@ -8,7 +8,7 @@ pub fn compile(smart_contract: Operation) -> String {
      * Value を Key として,その Value の Michelson の Stack 上での位置を返す HashMap
      * Value の 1-index でのレジスタ領域における相対位置を返す事に注意
      */
-    let mut value_addresses: HashMap<Box<dyn Value>, usize> = HashMap::new();
+    let mut value_addresses: HashMap<Value, usize> = HashMap::new();
 
     /*
      * type を Key として,その type の(Michelsonの Stack における)ヒープ領域内の
@@ -19,7 +19,7 @@ pub fn compile(smart_contract: Operation) -> String {
     /*
      * Value の集合
      */
-    let mut values: HashSet<Box<dyn Value>> = HashSet::new();
+    let mut values: HashSet<Value> = HashSet::new();
 
     /*
      * Michelson のスタック領域における Value 領域での Value 確保において
@@ -91,8 +91,10 @@ pub fn compile(smart_contract: Operation) -> String {
 fn get_signature(smart_contract: &Operation) -> (MTy, MTy) {
     let args = smart_contract.regions[0].blocks[0].arguments.to_owned();
     if args.len() == 2 {
-        let storage = args[0].try_to_get_michelson_type();
-        let param = args[1].try_to_get_michelson_type();
+        let storage_v = args[0].get_value();
+        let storage = storage_v.try_to_get_michelson_type();
+        let param_v = args[1].get_value();
+        let param = param_v.try_to_get_michelson_type();
         (param.unwrap(), storage.unwrap())
     } else {
         panic!(
@@ -103,37 +105,41 @@ fn get_signature(smart_contract: &Operation) -> (MTy, MTy) {
 }
 
 fn scan(
-    _operation: &Operation,
+    smart_contract: &Operation,
     _value_address_counter: &mut usize,
     _type_heap_address_counter: &mut usize,
-    _values: &mut HashSet<Box<dyn Value>>,
-    _value_addresses: &mut HashMap<Box<dyn Value>, usize>,
+    _values: &mut HashSet<Value>,
+    _value_addresses: &mut HashMap<Value, usize>,
     _type_heap_addresses: &mut HashMap<Box<dyn BaseType>, usize>,
 ) {
+    let args = smart_contract.regions[0].blocks[0].arguments.to_owned();
+    for _arg in args {
+        todo!()
+    }
     todo!()
 }
 fn stack_initialization(
-    _values: &HashSet<Box<dyn Value>>,
-    _value_addresses: &HashMap<Box<dyn Value>, usize>,
+    _values: &HashSet<Value>,
+    _value_addresses: &HashMap<Value, usize>,
     _type_heap_addresses: &HashMap<Box<dyn BaseType>, usize>,
 ) -> Vec<MWrappedInstr> {
     todo!()
 }
 fn compile_operations(
     _operation: &Operation,
-    _value_addresses: &HashMap<Box<dyn Value>, usize>,
+    _value_addresses: &HashMap<Value, usize>,
     _type_heap_addresses: &HashMap<Box<dyn BaseType>, usize>,
 ) -> Vec<MWrappedInstr> {
     todo!()
 }
 fn construct_return_value(
     _operation: &Operation,
-    _value_addresses: &HashMap<Box<dyn Value>, usize>,
+    _value_addresses: &HashMap<Value, usize>,
 ) -> Vec<MWrappedInstr> {
     todo!()
 }
 fn exit(
-    _value_addresses: &HashMap<Box<dyn Value>, usize>,
+    _value_addresses: &HashMap<Value, usize>,
     _type_heap_addresses: &HashMap<Box<dyn BaseType>, usize>,
 ) -> Vec<MWrappedInstr> {
     todo!()

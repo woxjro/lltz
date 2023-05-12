@@ -75,11 +75,11 @@ pub struct Argument {
 }
 impl Argument {
     pub fn to_mlir_argument(&self) -> mlir::Argument {
-        mlir::Argument {
-            argument: self.argument.to_owned(),
-            dialect: DialectKind::from(&self.dialect as &str),
-            r#type: string_to_mlir(self.r#type.to_owned()),
-        }
+        mlir::Argument::new(mlir::Value::new(
+            &self.argument.to_owned(),
+            DialectKind::from(&self.dialect as &str),
+            string_to_mlir(self.r#type.to_owned()),
+        ))
     }
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -110,11 +110,11 @@ pub struct Operand {
 }
 impl Operand {
     pub fn to_mlir_operand(&self) -> mlir::Operand {
-        mlir::Operand {
-            dialect: DialectKind::from(&self.dialect as &str),
-            operand: self.operand.to_owned(),
-            r#type: string_to_mlir(self.r#type.to_owned()),
-        }
+        mlir::Operand::new(mlir::Value::new(
+            &self.operand.to_owned(),
+            DialectKind::from(&self.dialect as &str),
+            string_to_mlir(self.r#type.to_owned()),
+        ))
     }
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -125,11 +125,11 @@ pub struct Result {
 }
 impl Result {
     pub fn to_mlir_result(&self) -> mlir::Result {
-        mlir::Result {
-            dialect: DialectKind::from(&self.dialect as &str),
-            result: self.result.to_owned(),
-            r#type: string_to_mlir(self.r#type.to_owned()),
-        }
+        mlir::Result::new(mlir::Value::new(
+            &self.result.to_owned(),
+            DialectKind::from(&self.dialect as &str),
+            string_to_mlir(self.r#type.to_owned()),
+        ))
     }
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]

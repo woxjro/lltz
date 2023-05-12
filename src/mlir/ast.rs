@@ -3,11 +3,39 @@ use crate::mlir::dialect::DialectKind;
 use michelson_ast::ty::Ty as MTy;
 use std::any::Any;
 
-pub trait Value {
-    fn get_dialect(&self) -> DialectKind;
-    fn get_id(&self) -> String;
-    fn get_type(&self) -> Box<dyn BaseType>;
-    fn try_to_get_michelson_type(&self) -> std::result::Result<MTy, &str>;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Value {
+    id: String,
+    dialect: DialectKind,
+    r#type: Type,
+}
+
+impl Value {
+    pub fn new(id: &str, dialect: DialectKind, r#type: Type) -> Self {
+        Self {
+            id: id.to_owned(),
+            dialect,
+            r#type,
+        }
+    }
+    pub fn get_dialect(&self) -> DialectKind {
+        self.dialect.to_owned()
+    }
+    pub fn get_id(&self) -> String {
+        self.id.to_owned()
+    }
+    pub fn get_type(&self) -> Box<dyn BaseType> {
+        Box::new(self.r#type.to_owned())
+    }
+    pub fn try_to_get_michelson_type(&self) -> std::result::Result<MTy, &str> {
+        let base_type: Box<dyn Any> = Box::new(self.r#type.to_owned());
+        // TODO: if let Some(ty) = base_type.downcast_ref::<MichelsonType>() {
+        if let Some(ty) = base_type.downcast_ref::<Type>() {
+            Ok(ty.michelify())
+        } else {
+            Err("A casting to MichelsonType has failed.")
+        }
+    }
 }
 
 pub trait BaseType {
@@ -32,29 +60,15 @@ pub struct Operation {
 
 #[derive(Debug, Clone)]
 pub struct Argument {
-    pub argument: String,
-    pub dialect: DialectKind,
-    pub r#type: Type,
+    value: Value,
 }
 
-impl Value for Argument {
-    fn get_dialect(&self) -> DialectKind {
-        self.dialect.to_owned()
+impl Argument {
+    pub fn new(value: Value) -> Self {
+        Self { value }
     }
-    fn get_id(&self) -> String {
-        self.argument.to_owned()
-    }
-    fn get_type(&self) -> Box<dyn BaseType> {
-        Box::new(self.r#type.to_owned())
-    }
-    fn try_to_get_michelson_type(&self) -> std::result::Result<MTy, &str> {
-        let base_type: Box<dyn Any> = Box::new(self.r#type.to_owned());
-        // TODO: if let Some(ty) = base_type.downcast_ref::<MichelsonType>() {
-        if let Some(ty) = base_type.downcast_ref::<Type>() {
-            Ok(ty.michelify())
-        } else {
-            Err("A casting to MichelsonType has failed.")
-        }
+    pub fn get_value(&self) -> Value {
+        self.value.to_owned()
     }
 }
 
@@ -71,37 +85,30 @@ pub struct Attribute {
 
 #[derive(Debug, Clone)]
 pub struct Operand {
-    pub dialect: DialectKind,
-    pub operand: String,
-    pub r#type: Type,
+    value: Value,
 }
 
-impl Value for Operand {
-    fn get_dialect(&self) -> DialectKind {
-        self.dialect.to_owned()
+impl Operand {
+    pub fn new(value: Value) -> Self {
+        Self { value }
     }
-    fn get_id(&self) -> String {
-        self.operand.to_owned()
-    }
-    fn get_type(&self) -> Box<dyn BaseType> {
-        Box::new(self.r#type.to_owned())
-    }
-    fn try_to_get_michelson_type(&self) -> std::result::Result<MTy, &str> {
-        let base_type: &dyn Any = &self.get_type();
-        // TODO: if let Some(ty) = base_type.downcast_ref::<MichelsonType>() {
-        if let Some(ty) = base_type.downcast_ref::<Type>() {
-            Ok(ty.michelify())
-        } else {
-            Err("A casting to MichelsonType has failed.")
-        }
+    pub fn get_value(&self) -> Value {
+        self.value.to_owned()
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Result {
-    pub dialect: DialectKind,
-    pub result: String,
-    pub r#type: Type,
+    value: Value,
+}
+
+impl Result {
+    pub fn new(value: Value) -> Self {
+        Self { value }
+    }
+    pub fn get_value(&self) -> Value {
+        self.value.to_owned()
+    }
 }
 
 #[derive(Debug, Clone)]

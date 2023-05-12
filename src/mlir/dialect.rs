@@ -1,6 +1,6 @@
 pub mod michelson;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DialectKind {
     Func,
     Michelson,

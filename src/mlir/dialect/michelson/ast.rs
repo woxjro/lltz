@@ -1,6 +1,6 @@
 use crate::mlir::{ast, dialect};
 use michelson_ast::ty::Ty as MTy;
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     Unit,
     Mutez,

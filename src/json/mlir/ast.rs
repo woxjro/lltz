@@ -24,7 +24,7 @@ impl Block {
             arguments: self
                 .arguments
                 .iter()
-                .map(|argument| argument.to_mlir_argument())
+                .map(|argument| argument.to_owned().into())
                 .collect::<Vec<_>>(),
         }
     }
@@ -52,7 +52,7 @@ impl Operation {
             operands: self
                 .operands
                 .iter()
-                .map(|operand| operand.to_mlir_operand())
+                .map(|operand| operand.to_owned().into())
                 .collect::<Vec<_>>(),
             regions: self
                 .regions
@@ -62,7 +62,7 @@ impl Operation {
             results: self
                 .results
                 .iter()
-                .map(|result| result.to_mlir_result())
+                .map(|result| result.to_owned().into())
                 .collect::<Vec<_>>(),
         }
     }
@@ -73,15 +73,7 @@ pub struct Argument {
     pub dialect: String,
     pub r#type: TypeString,
 }
-impl Argument {
-    pub fn to_mlir_argument(&self) -> mlir::Argument {
-        mlir::Argument::new(mlir::Value::new(
-            &self.argument.to_owned(),
-            DialectKind::from(&self.dialect as &str),
-            string_to_mlir(self.r#type.to_owned()),
-        ))
-    }
-}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Attribute {
     pub name: String,
@@ -108,30 +100,14 @@ pub struct Operand {
     pub operand: String,
     pub r#type: TypeString,
 }
-impl Operand {
-    pub fn to_mlir_operand(&self) -> mlir::Operand {
-        mlir::Operand::new(mlir::Value::new(
-            &self.operand.to_owned(),
-            DialectKind::from(&self.dialect as &str),
-            string_to_mlir(self.r#type.to_owned()),
-        ))
-    }
-}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Result {
     pub dialect: String,
     pub result: String,
     pub r#type: TypeString,
 }
-impl Result {
-    pub fn to_mlir_result(&self) -> mlir::Result {
-        mlir::Result::new(mlir::Value::new(
-            &self.result.to_owned(),
-            DialectKind::from(&self.dialect as &str),
-            string_to_mlir(self.r#type.to_owned()),
-        ))
-    }
-}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Region {
     pub blocks: Vec<Block>,

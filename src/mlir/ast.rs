@@ -1,3 +1,5 @@
+use crate::json::mlir::ast::{Argument as JArgument, Operand as JOperand, Result as JResult};
+use crate::json::to_mlir::string_to_mlir;
 use crate::mlir::dialect::michelson::ast::Type;
 use crate::mlir::dialect::DialectKind;
 use michelson_ast::ty::Ty as MTy;
@@ -64,11 +66,25 @@ pub struct Argument {
 }
 
 impl Argument {
-    pub fn new(value: Value) -> Self {
-        Self { value }
-    }
     pub fn get_value(&self) -> Value {
         self.value.to_owned()
+    }
+}
+
+impl From<Value> for Argument {
+    fn from(value: Value) -> Self {
+        Self { value }
+    }
+}
+
+impl From<JArgument> for Argument {
+    fn from(argument: JArgument) -> Self {
+        Value::new(
+            &argument.argument.to_owned(),
+            DialectKind::from(&argument.dialect as &str),
+            string_to_mlir(argument.r#type.to_owned()),
+        )
+        .into()
     }
 }
 
@@ -89,11 +105,25 @@ pub struct Operand {
 }
 
 impl Operand {
-    pub fn new(value: Value) -> Self {
-        Self { value }
-    }
     pub fn get_value(&self) -> Value {
         self.value.to_owned()
+    }
+}
+
+impl From<Value> for Operand {
+    fn from(value: Value) -> Self {
+        Self { value }
+    }
+}
+
+impl From<JOperand> for Operand {
+    fn from(operand: JOperand) -> Self {
+        Value::new(
+            &operand.operand.to_owned(),
+            DialectKind::from(&operand.dialect as &str),
+            string_to_mlir(operand.r#type.to_owned()),
+        )
+        .into()
     }
 }
 
@@ -103,11 +133,25 @@ pub struct Result {
 }
 
 impl Result {
-    pub fn new(value: Value) -> Self {
-        Self { value }
-    }
     pub fn get_value(&self) -> Value {
         self.value.to_owned()
+    }
+}
+
+impl From<Value> for Result {
+    fn from(value: Value) -> Self {
+        Self { value }
+    }
+}
+
+impl From<JResult> for Result {
+    fn from(result: JResult) -> Self {
+        Value::new(
+            &result.result.to_owned(),
+            DialectKind::from(&result.dialect as &str),
+            string_to_mlir(result.r#type.to_owned()),
+        )
+        .into()
     }
 }
 

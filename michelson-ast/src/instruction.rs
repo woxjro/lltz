@@ -64,7 +64,7 @@ pub enum Instruction {
         ty: Ty,
     },
     None {
-        ty: Box<Ty>,
+        ty: Ty,
     },
     Pack,
     Pair,

@@ -104,3 +104,25 @@ impl From<StackType> for MichelsonType {
         }
     }
 }
+
+/// michelson_ast::ty::Ty を拡張
+impl From<michelson_dialect::Type> for MichelsonType {
+    fn from(ty: michelson_dialect::Type) -> MichelsonType {
+        match ty {
+            michelson_dialect::Type::Unit => MichelsonType::Unit,
+            michelson_dialect::Type::Mutez => MichelsonType::Mutez,
+            michelson_dialect::Type::Operation => MichelsonType::Operation,
+            michelson_dialect::Type::Option { ty } => MichelsonType::Option {
+                ty: Box::new(MichelsonType::from(*ty)),
+            },
+            michelson_dialect::Type::Pair { ty1, ty2 } => MichelsonType::Pair {
+                ty1: Box::new(MichelsonType::from(*ty1)),
+                ty2: Box::new(MichelsonType::from(*ty2)),
+            },
+            michelson_dialect::Type::List { ty } => MichelsonType::List {
+                ty: Box::new(MichelsonType::from(*ty)),
+            },
+            michelson_dialect::Type::SmartContract { .. } => panic!("not supported"),
+        }
+    }
+}

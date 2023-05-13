@@ -5,7 +5,7 @@ use crate::mlir::dialect::michelson::ast::Type;
 use michelson_ast::instruction::Instruction as MInstr;
 use michelson_ast::instruction_row;
 use michelson_ast::program;
-use michelson_ast::ty::Ty as MTy;
+use michelson_ast::ty::Ty as MichelsonType;
 use michelson_ast::wrapped_instruction::WrappedInstruction as MWrappedInstr;
 use std::collections::HashMap;
 pub fn compile(smart_contract: Operation) -> String {
@@ -89,14 +89,14 @@ pub fn compile(smart_contract: Operation) -> String {
     michelson_program.to_string()
 }
 
-fn get_signature(smart_contract: &Operation) -> (MTy, MTy) {
+fn get_signature(smart_contract: &Operation) -> (MichelsonType, MichelsonType) {
     let args = smart_contract.regions[0].blocks[0].arguments.to_owned();
     if args.len() == 2 {
         let storage_v = args[0].get_value();
         let param_v = args[1].get_value();
         (
-            storage_v.get_type().michelify(),
-            param_v.get_type().michelify(),
+            MichelsonType::from(storage_v.get_type()),
+            MichelsonType::from(param_v.get_type()),
         )
     } else {
         panic!(
@@ -184,7 +184,14 @@ fn stack_initialization(
             continue; // parameter と storage の初期値の処理をスキップ
         }
         let stack_type: StackType = value.get_type().into();
-        michelson_instructions.push(instruction_row!(stack_type.default_value_instruction()));
+        michelson_instructions.push(instruction_row!(
+            stack_type.default_value_instruction(),
+            format!(
+                "{} : {}",
+                value.get_id(),
+                MichelsonType::from(value.get_type()).to_string()
+            )
+        ));
     }
 
     michelson_instructions.push(instruction_row!(MInstr::Comment(format!(

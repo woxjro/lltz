@@ -1,5 +1,9 @@
+mod ast;
+use crate::michelify::ast::StackType;
 use crate::mlir::ast::{Operation, Value};
 use crate::mlir::dialect::michelson::ast::Type;
+use michelson_ast::instruction::Instruction as MInstr;
+use michelson_ast::instruction_row;
 use michelson_ast::program;
 use michelson_ast::ty::Ty as MTy;
 use michelson_ast::wrapped_instruction::WrappedInstruction as MWrappedInstr;
@@ -109,13 +113,6 @@ fn scan(
     value_addresses: &mut HashMap<Value, usize>,
     _type_heap_addresses: &mut HashMap<Type, usize>,
 ) {
-    let args = smart_contract.regions[0].blocks[0].arguments.to_owned();
-    for arg in args {
-        let _ = value_addresses.entry(arg.get_value()).or_insert_with(|| {
-            *value_address_counter += 1;
-            *value_address_counter
-        });
-    }
     let operations = smart_contract.regions[0].blocks[0].operations.to_owned();
     for operation in operations {
         //TODO: While や If のような内部に Region を持つ命令の場合は再帰的に scan する必要がある
@@ -137,29 +134,85 @@ fn scan(
                 });
         }
     }
+    let args = smart_contract.regions[0].blocks[0].arguments.to_owned();
+    for arg in args {
+        let _ = value_addresses.entry(arg.get_value()).or_insert_with(|| {
+            *value_address_counter += 1;
+            *value_address_counter
+        });
+    }
 }
+
 fn stack_initialization(
-    _value_addresses: &HashMap<Value, usize>,
-    _type_heap_addresses: &HashMap<Type, usize>,
+    value_addresses: &HashMap<Value, usize>,
+    type_heap_addresses: &HashMap<Type, usize>,
 ) -> Vec<MWrappedInstr> {
-    todo!()
+    let mut michelson_instructions = vec![
+        instruction_row!(MInstr::Comment(format!(
+            "##################################"
+        ))),
+        instruction_row!(MInstr::Comment(format!(
+            "###### Stack Initialization ######"
+        ))),
+        instruction_row!(MInstr::Comment(format!(
+            "#################################{{"
+        ))),
+        //TODO: 引数が Option で包まなければいけない型の場合の処理をする
+        instruction_row!(
+            MInstr::Unpair,
+            format!("(parameter, storage) => param : storage")
+        ),
+    ];
+
+    let mut type_heap_addresses = type_heap_addresses
+        .iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect::<Vec<_>>();
+    type_heap_addresses.sort_by(|a, b| (a.1).cmp(&b.1));
+
+    for (_ty, _address) in type_heap_addresses.iter().rev() {
+        todo!()
+    }
+
+    let mut value_addresses = value_addresses
+        .iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect::<Vec<_>>();
+    value_addresses.sort_by(|a, b| (a.1).cmp(&b.1));
+    for (i, (value, _address)) in value_addresses.iter().rev().enumerate() {
+        if i <= 1 {
+            continue; // parameter と storage の初期値の処理をスキップ
+        }
+        let stack_type: StackType = value.get_type().into();
+        michelson_instructions.push(instruction_row!(stack_type.default_value_instruction()));
+    }
+
+    michelson_instructions.push(instruction_row!(MInstr::Comment(format!(
+        "}}#################################"
+    ))));
+
+    michelson_instructions
 }
+
 fn compile_operations(
     _operation: &Operation,
     _value_addresses: &HashMap<Value, usize>,
     _type_heap_addresses: &HashMap<Type, usize>,
 ) -> Vec<MWrappedInstr> {
-    todo!()
+    //todo!()
+    vec![]
 }
 fn construct_return_value(
     _operation: &Operation,
     _value_addresses: &HashMap<Value, usize>,
 ) -> Vec<MWrappedInstr> {
-    todo!()
+    //todo!()
+    vec![]
 }
 fn exit(
     _value_addresses: &HashMap<Value, usize>,
     _type_heap_addresses: &HashMap<Type, usize>,
 ) -> Vec<MWrappedInstr> {
-    todo!()
+    //todo!()
+    vec![]
 }

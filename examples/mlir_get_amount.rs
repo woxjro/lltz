@@ -17,7 +17,6 @@ pub fn main() {
     let smart_contract = get_smart_contract_operation(deserialized).unwrap();
     dbg!(&smart_contract.regions[0].blocks[0].arguments);
 
-    dbg!(&smart_contract.to_mlir_operation());
     //let ops = &smart_contract.regions[0].blocks[0].operations;
     /*
     for op in ops {

@@ -1,4 +1,4 @@
-use crate::json::mlir::ast::{Argument as JArgument, Operand as JOperand, Result as JResult};
+use crate::json::mlir::ast as json_mlir;
 use crate::json::to_mlir::string_to_mlir;
 use crate::mlir::dialect::michelson::ast::Type;
 use crate::mlir::dialect::DialectKind;
@@ -50,6 +50,23 @@ pub struct Block {
     pub arguments: Vec<Argument>,
 }
 
+impl From<json_mlir::Block> for Block {
+    fn from(block: json_mlir::Block) -> Self {
+        Self {
+            operations: block
+                .operations
+                .iter()
+                .map(|operation| operation.to_owned().into())
+                .collect::<Vec<_>>(),
+            arguments: block
+                .arguments
+                .iter()
+                .map(|argument| argument.to_owned().into())
+                .collect::<Vec<_>>(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Operation {
     pub attributes: Vec<Attribute>,
@@ -58,6 +75,35 @@ pub struct Operation {
     pub operands: Vec<Operand>,
     pub regions: Vec<Region>,
     pub results: Vec<Result>,
+}
+
+impl From<json_mlir::Operation> for Operation {
+    fn from(operation: json_mlir::Operation) -> Self {
+        Self {
+            attributes: operation
+                .attributes
+                .iter()
+                .map(|attribute| attribute.to_owned().into())
+                .collect::<Vec<_>>(),
+            dialect: DialectKind::from(&operation.dialect as &str),
+            name: operation.name.to_owned(),
+            operands: operation
+                .operands
+                .iter()
+                .map(|operand| operand.to_owned().into())
+                .collect::<Vec<_>>(),
+            regions: operation
+                .regions
+                .iter()
+                .map(|region| region.to_owned().into())
+                .collect::<Vec<_>>(),
+            results: operation
+                .results
+                .iter()
+                .map(|result| result.to_owned().into())
+                .collect::<Vec<_>>(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -77,8 +123,8 @@ impl From<Value> for Argument {
     }
 }
 
-impl From<JArgument> for Argument {
-    fn from(argument: JArgument) -> Self {
+impl From<json_mlir::Argument> for Argument {
+    fn from(argument: json_mlir::Argument) -> Self {
         Value::new(
             &argument.argument.to_owned(),
             DialectKind::from(&argument.dialect as &str),
@@ -99,6 +145,22 @@ pub struct Attribute {
     pub value: AttrValue,
 }
 
+impl From<json_mlir::Attribute> for Attribute {
+    fn from(attribute: json_mlir::Attribute) -> Self {
+        if attribute.name.contains("function_type") {
+            Self {
+                name: attribute.name.to_owned(),
+                value: AttrValue::Type(string_to_mlir(attribute.value.to_owned())),
+            }
+        } else {
+            Self {
+                name: attribute.name.to_owned(),
+                value: AttrValue::String(attribute.value.to_owned()),
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Operand {
     value: Value,
@@ -116,8 +178,8 @@ impl From<Value> for Operand {
     }
 }
 
-impl From<JOperand> for Operand {
-    fn from(operand: JOperand) -> Self {
+impl From<json_mlir::Operand> for Operand {
+    fn from(operand: json_mlir::Operand) -> Self {
         Value::new(
             &operand.operand.to_owned(),
             DialectKind::from(&operand.dialect as &str),
@@ -144,8 +206,8 @@ impl From<Value> for Result {
     }
 }
 
-impl From<JResult> for Result {
-    fn from(result: JResult) -> Self {
+impl From<json_mlir::Result> for Result {
+    fn from(result: json_mlir::Result) -> Self {
         Value::new(
             &result.result.to_owned(),
             DialectKind::from(&result.dialect as &str),
@@ -158,4 +220,16 @@ impl From<JResult> for Result {
 #[derive(Debug, Clone)]
 pub struct Region {
     pub blocks: Vec<Block>,
+}
+
+impl From<json_mlir::Region> for Region {
+    fn from(region: json_mlir::Region) -> Self {
+        Self {
+            blocks: region
+                .blocks
+                .iter()
+                .map(|block| block.to_owned().into())
+                .collect(),
+        }
+    }
 }

@@ -1,4 +1,5 @@
 use lltz::json::mlir::ast::{get_smart_contract_operation, Block};
+use lltz::mlir::ast as mlir;
 use std::process::Command;
 
 pub fn main() {
@@ -17,7 +18,7 @@ pub fn main() {
     let smart_contract = get_smart_contract_operation(deserialized).unwrap();
     dbg!(&smart_contract.regions[0].blocks[0].arguments);
 
-    dbg!(&smart_contract.to_mlir_operation());
+    dbg!(mlir::Operation::from(smart_contract));
     //let ops = &smart_contract.regions[0].blocks[0].operations;
     /*
     for op in ops {

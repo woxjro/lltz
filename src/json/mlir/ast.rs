@@ -3,7 +3,8 @@ use lalrpop_util::lalrpop_mod;
 lalrpop_mod!(pub mlir_parser);
 
 use serde::{Deserialize, Serialize};
-use String as TypeString;
+type TypeString = String;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Block {
     pub operations: Vec<Operation>,

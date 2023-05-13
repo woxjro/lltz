@@ -1,9 +1,6 @@
 use crate::json::mlir::ast as json_mlir;
-use crate::json::to_mlir::string_to_mlir;
 use crate::mlir::dialect::michelson::ast::Type;
 use crate::mlir::dialect::DialectKind;
-use michelson_ast::ty::Ty as MTy;
-use std::any::Any;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Value {
@@ -26,17 +23,9 @@ impl Value {
     pub fn get_id(&self) -> String {
         self.id.to_owned()
     }
-    pub fn get_type(&self) -> Box<dyn BaseType> {
-        Box::new(self.r#type.to_owned())
-    }
-    pub fn try_to_get_michelson_type(&self) -> std::result::Result<MTy, &str> {
-        let base_type: Box<dyn Any> = Box::new(self.r#type.to_owned());
-        // TODO: if let Some(ty) = base_type.downcast_ref::<MichelsonType>() {
-        if let Some(ty) = base_type.downcast_ref::<Type>() {
-            Ok(ty.michelify())
-        } else {
-            Err("A casting to MichelsonType has failed.")
-        }
+
+    pub fn get_type(&self) -> Type {
+        self.r#type.to_owned()
     }
 }
 
@@ -128,7 +117,7 @@ impl From<json_mlir::Argument> for Argument {
         Value::new(
             &argument.argument.to_owned(),
             DialectKind::from(&argument.dialect as &str),
-            string_to_mlir(argument.r#type.to_owned()),
+            Type::from(argument.r#type.to_owned()),
         )
         .into()
     }
@@ -150,7 +139,7 @@ impl From<json_mlir::Attribute> for Attribute {
         if attribute.name.contains("function_type") {
             Self {
                 name: attribute.name.to_owned(),
-                value: AttrValue::Type(string_to_mlir(attribute.value.to_owned())),
+                value: AttrValue::Type(Type::from(attribute.value.to_owned())),
             }
         } else {
             Self {
@@ -183,7 +172,7 @@ impl From<json_mlir::Operand> for Operand {
         Value::new(
             &operand.operand.to_owned(),
             DialectKind::from(&operand.dialect as &str),
-            string_to_mlir(operand.r#type.to_owned()),
+            Type::from(operand.r#type.to_owned()),
         )
         .into()
     }
@@ -211,7 +200,7 @@ impl From<json_mlir::Result> for Result {
         Value::new(
             &result.result.to_owned(),
             DialectKind::from(&result.dialect as &str),
-            string_to_mlir(result.r#type.to_owned()),
+            Type::from(result.r#type.to_owned()),
         )
         .into()
     }

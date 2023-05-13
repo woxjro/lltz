@@ -1,5 +1,10 @@
 use crate::mlir::{ast, dialect};
 use michelson_ast::ty::Ty as MTy;
+
+use lalrpop_util;
+use lalrpop_util::lalrpop_mod;
+lalrpop_mod!(pub mlir_parser);
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     Unit,
@@ -40,6 +45,12 @@ impl Type {
             },
             _ => todo!(),
         }
+    }
+}
+
+impl From<String> for Type {
+    fn from(s: String) -> Self {
+        mlir_parser::TypeParser::new().parse(&s).unwrap()
     }
 }
 

@@ -92,10 +92,11 @@ fn get_signature(smart_contract: &Operation) -> (MTy, MTy) {
     let args = smart_contract.regions[0].blocks[0].arguments.to_owned();
     if args.len() == 2 {
         let storage_v = args[0].get_value();
-        let storage = storage_v.try_to_get_michelson_type();
         let param_v = args[1].get_value();
-        let param = param_v.try_to_get_michelson_type();
-        (param.unwrap(), storage.unwrap())
+        (
+            storage_v.get_type().michelify(),
+            param_v.get_type().michelify(),
+        )
     } else {
         panic!(
             "A smart_contract function is being given {} arguments instead of 2.",

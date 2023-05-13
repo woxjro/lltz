@@ -409,9 +409,7 @@ impl InnerType {
 
     pub fn default_value_instruction(ty: &InnerType) -> MInstr {
         let res = match ty {
-            InnerType::Address => MInstr::None {
-                ty: Box::new(MTy::Address),
-            },
+            InnerType::Address => MInstr::None { ty: MTy::Address },
             InnerType::Array {
                 size: _,
                 elementtype: _,
@@ -448,7 +446,7 @@ impl InnerType {
                 val: MVal::Int(-1),
             },
             InnerType::Option(child_ty) => MInstr::None {
-                ty: Box::new(child_ty.to_michelson_ty()),
+                ty: child_ty.to_michelson_ty(),
             },
         };
         res

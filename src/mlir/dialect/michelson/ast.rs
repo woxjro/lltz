@@ -5,7 +5,7 @@ use lalrpop_util;
 use lalrpop_util::lalrpop_mod;
 lalrpop_mod!(pub mlir_parser);
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Type {
     Unit,
     Mutez,

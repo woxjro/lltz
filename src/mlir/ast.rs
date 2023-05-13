@@ -2,7 +2,7 @@ use crate::json::mlir::ast as json_mlir;
 use crate::mlir::dialect::michelson::ast::Type;
 use crate::mlir::dialect::DialectKind;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Value {
     id: String,
     dialect: DialectKind,

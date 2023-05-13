@@ -47,6 +47,8 @@ pub fn compile(smart_contract: Operation) -> String {
         &mut type_heap_addresses,
     );
 
+    dbg!(&value_addresses);
+
     /*
      * stack initialization
      */
@@ -102,16 +104,39 @@ fn get_signature(smart_contract: &Operation) -> (MTy, MTy) {
 
 fn scan(
     smart_contract: &Operation,
-    _value_address_counter: &mut usize,
+    value_address_counter: &mut usize,
     _type_heap_address_counter: &mut usize,
-    _value_addresses: &mut HashMap<Value, usize>,
+    value_addresses: &mut HashMap<Value, usize>,
     _type_heap_addresses: &mut HashMap<Type, usize>,
 ) {
     let args = smart_contract.regions[0].blocks[0].arguments.to_owned();
-    for _arg in args {
-        todo!()
+    for arg in args {
+        let _ = value_addresses.entry(arg.get_value()).or_insert_with(|| {
+            *value_address_counter += 1;
+            *value_address_counter
+        });
     }
-    todo!()
+    let operations = smart_contract.regions[0].blocks[0].operations.to_owned();
+    for operation in operations {
+        //TODO: While や If のような内部に Region を持つ命令の場合は再帰的に scan する必要がある
+        for operand in operation.operands {
+            let _ = value_addresses
+                .entry(operand.get_value())
+                .or_insert_with(|| {
+                    *value_address_counter += 1;
+                    *value_address_counter
+                });
+        }
+
+        for result in operation.results {
+            let _ = value_addresses
+                .entry(result.get_value())
+                .or_insert_with(|| {
+                    *value_address_counter += 1;
+                    *value_address_counter
+                });
+        }
+    }
 }
 fn stack_initialization(
     _value_addresses: &HashMap<Value, usize>,

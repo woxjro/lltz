@@ -6,7 +6,7 @@ pub Type: Type = {
     <mutez:Mutez> => Type::Mutez,
     <operation:Operation> => Type::Operation,
     <list:List> "<" <ty:Type> ">" => Type::List { ty: Box::new(ty) },
-    <pair:Pair> "<" <fst:Type> "," <snd:Type> ">" => Type::Pair { fst: Box::new(fst), snd: Box::new(snd) },
+    <pair:Pair> "<" <ty1:Type> "," <ty2:Type> ">" => Type::Pair { ty1: Box::new(ty1), ty2: Box::new(ty2) },
     "(" <param: Type> "," <storage: Type> ")" "->" <res: Type> =>
         Type::SmartContract { param: Box::new(param), storage: Box::new(storage), res: Box::new(res) },
 };

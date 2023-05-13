@@ -29,10 +29,6 @@ impl Value {
     }
 }
 
-pub trait BaseType {
-    fn get_dialect(&self) -> DialectKind;
-}
-
 #[derive(Debug, Clone)]
 pub struct Block {
     pub operations: Vec<Operation>,

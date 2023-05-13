@@ -1,8 +1,9 @@
-use crate::mlir::ast::{BaseType, Operation, Value};
+use crate::mlir::ast::{Operation, Value};
+use crate::mlir::dialect::michelson::ast::Type;
 use michelson_ast::program;
 use michelson_ast::ty::Ty as MTy;
 use michelson_ast::wrapped_instruction::WrappedInstruction as MWrappedInstr;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 pub fn compile(smart_contract: Operation) -> String {
     /*
      * Value を Key として,その Value の Michelson の Stack 上での位置を返す HashMap
@@ -14,12 +15,7 @@ pub fn compile(smart_contract: Operation) -> String {
      * type を Key として,その type の(Michelsonの Stack における)ヒープ領域内の
      * 相対位置を返す HashMap．1-indexであることに注意
      */
-    let mut type_heap_addresses: HashMap<Box<dyn BaseType>, usize> = HashMap::new();
-
-    /*
-     * Value の集合
-     */
-    let mut values: HashSet<Value> = HashSet::new();
+    let mut type_heap_addresses: HashMap<Type, usize> = HashMap::new();
 
     /*
      * Michelson のスタック領域における Value 領域での Value 確保において
@@ -47,7 +43,6 @@ pub fn compile(smart_contract: Operation) -> String {
         &smart_contract,
         &mut value_address_counter,
         &mut type_heap_address_counter,
-        &mut values,
         &mut value_addresses,
         &mut type_heap_addresses,
     );
@@ -56,7 +51,7 @@ pub fn compile(smart_contract: Operation) -> String {
      * stack initialization
      */
     let mut stack_initialization_instructions =
-        stack_initialization(&values, &value_addresses, &type_heap_addresses);
+        stack_initialization(&value_addresses, &type_heap_addresses);
     code.append(&mut stack_initialization_instructions);
 
     /*
@@ -109,9 +104,8 @@ fn scan(
     smart_contract: &Operation,
     _value_address_counter: &mut usize,
     _type_heap_address_counter: &mut usize,
-    _values: &mut HashSet<Value>,
     _value_addresses: &mut HashMap<Value, usize>,
-    _type_heap_addresses: &mut HashMap<Box<dyn BaseType>, usize>,
+    _type_heap_addresses: &mut HashMap<Type, usize>,
 ) {
     let args = smart_contract.regions[0].blocks[0].arguments.to_owned();
     for _arg in args {
@@ -120,16 +114,15 @@ fn scan(
     todo!()
 }
 fn stack_initialization(
-    _values: &HashSet<Value>,
     _value_addresses: &HashMap<Value, usize>,
-    _type_heap_addresses: &HashMap<Box<dyn BaseType>, usize>,
+    _type_heap_addresses: &HashMap<Type, usize>,
 ) -> Vec<MWrappedInstr> {
     todo!()
 }
 fn compile_operations(
     _operation: &Operation,
     _value_addresses: &HashMap<Value, usize>,
-    _type_heap_addresses: &HashMap<Box<dyn BaseType>, usize>,
+    _type_heap_addresses: &HashMap<Type, usize>,
 ) -> Vec<MWrappedInstr> {
     todo!()
 }
@@ -141,7 +134,7 @@ fn construct_return_value(
 }
 fn exit(
     _value_addresses: &HashMap<Value, usize>,
-    _type_heap_addresses: &HashMap<Box<dyn BaseType>, usize>,
+    _type_heap_addresses: &HashMap<Type, usize>,
 ) -> Vec<MWrappedInstr> {
     todo!()
 }

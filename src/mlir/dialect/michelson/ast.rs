@@ -1,4 +1,4 @@
-use crate::mlir::{ast, dialect};
+use crate::mlir::dialect;
 use michelson_ast::ty::Ty as MTy;
 
 use lalrpop_util;
@@ -24,12 +24,6 @@ pub enum Type {
     },
 }
 
-impl ast::BaseType for Type {
-    fn get_dialect(&self) -> dialect::DialectKind {
-        dialect::DialectKind::Michelson
-    }
-}
-
 impl Type {
     pub fn michelify(&self) -> MTy {
         match self {
@@ -45,6 +39,9 @@ impl Type {
             },
             _ => todo!(),
         }
+    }
+    pub fn get_dialect(&self) -> dialect::DialectKind {
+        dialect::DialectKind::Michelson
     }
 }
 

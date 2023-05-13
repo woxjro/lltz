@@ -51,7 +51,7 @@ impl ToString for Ty {
             Ty::Key => "key".to_string(),
             Ty::KeyHash => "key_hash".to_string(),
             Ty::Lambda { .. } => todo!(),
-            Ty::List { .. } => todo!(),
+            Ty::List { ty } => format!("(list {})", ty.to_string()),
             Ty::Map { kty, vty } => {
                 format!("(map {} {})", kty.to_string(), vty.to_string())
             }

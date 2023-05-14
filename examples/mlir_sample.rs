@@ -26,8 +26,8 @@ pub fn main() {
     let contents = format!("{command_typecheck}{command_mock}{michelson_code}",
             command_typecheck = format!("#tezos-client --mode mockup --base-dir \
                 /tmp/mockup typecheck script ./examples/out/{file_name}.tz\n"),
-            command_mock = format!("#tezos-client --mode mockup --base-dir /tmp/mockup\
-                run script ./examples/out/{file_name}.tz on storage 'Unit' and input '0' --trace-stack\n")
+            command_mock = format!("#tezos-client --mode mockup --base-dir /tmp/mockup \
+                run script ./examples/out/{file_name}.tz on storage '0' and input 'Unit' --trace-stack\n")
         );
     let mut file = File::create(format!("examples/out/{file_name}.tz")).unwrap();
     file.write_all(contents.as_bytes()).unwrap();

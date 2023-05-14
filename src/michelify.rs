@@ -1,8 +1,9 @@
 mod ast;
 use crate::michelify::ast::StackType;
+use crate::mlir;
 use crate::mlir::ast::{Operation, Value};
 use crate::mlir::dialect::michelson::ast::Type;
-use michelson_ast::instruction::Instruction as MInstr;
+use michelson_ast::instruction::Instruction as MichelsonInstruction;
 use michelson_ast::instruction_row;
 use michelson_ast::program;
 use michelson_ast::ty::Ty as MichelsonType;
@@ -68,16 +69,9 @@ pub fn compile(smart_contract: Operation) -> String {
     code.append(&mut compile_operations_instructions);
 
     /*
-     * construct a return value
-     */
-    let mut construct_return_value_instructions =
-        construct_return_value(&smart_contract, &value_addresses);
-    code.append(&mut construct_return_value_instructions);
-
-    /*
      * drop an unused stack region
      */
-    let mut exit_instructions = exit(&value_addresses, &type_heap_addresses);
+    let mut exit_instructions = exit(&smart_contract, &value_addresses, &type_heap_addresses);
     code.append(&mut exit_instructions);
 
     let michelson_program = program::Program {
@@ -143,23 +137,19 @@ fn scan(
     }
 }
 
+///before:            (parameter, storage) |> stack_bottom
+///after : [value region] |> [heap region] |> stack_bottom
 fn stack_initialization(
     value_addresses: &HashMap<Value, usize>,
     type_heap_addresses: &HashMap<Type, usize>,
 ) -> Vec<MWrappedInstr> {
     let mut michelson_instructions = vec![
-        instruction_row!(MInstr::Comment(format!(
-            "##################################"
-        ))),
-        instruction_row!(MInstr::Comment(format!(
-            "###### Stack Initialization ######"
-        ))),
-        instruction_row!(MInstr::Comment(format!(
-            "#################################{{"
+        instruction_row!(MichelsonInstruction::Comment(format!(
+            "###### Stack Initialization ######{{"
         ))),
         //TODO: 引数が Option で包まなければいけない型の場合の処理をする
         instruction_row!(
-            MInstr::Unpair,
+            MichelsonInstruction::Unpair,
             format!("(parameter, storage) => param : storage")
         ),
     ];
@@ -194,32 +184,140 @@ fn stack_initialization(
         ));
     }
 
-    michelson_instructions.push(instruction_row!(MInstr::Comment(format!(
+    michelson_instructions.push(instruction_row!(MichelsonInstruction::Comment(format!(
         "}}#################################"
     ))));
 
     michelson_instructions
 }
 
+///before: [value region] |> [heap region] |> stack_bottom
+///after : [value region] |> [heap region] |> stack_bottom
 fn compile_operations(
-    _operation: &Operation,
-    _value_addresses: &HashMap<Value, usize>,
+    smart_contract: &Operation,
+    value_addresses: &HashMap<Value, usize>,
     _type_heap_addresses: &HashMap<Type, usize>,
 ) -> Vec<MWrappedInstr> {
-    //todo!()
-    vec![]
+    let mut instructions = vec![];
+
+    let operations = smart_contract.regions[0].blocks[0].operations.to_owned();
+
+    for operation in operations {
+        let operation = mlir::dialect::Operation::from(operation);
+        match operation {
+            mlir::dialect::Operation::FuncOp { operation } => {
+                use mlir::dialect::func;
+                match operation {
+                    func::ast::Operation::ReturnOp { .. } => {}
+                }
+            }
+            mlir::dialect::Operation::MichelsonOp { operation } => {
+                use mlir::dialect::michelson;
+                match operation {
+                    michelson::ast::Operation::GetAmountOp { result } => {
+                        let address = *value_addresses.get(&result.get_value()).unwrap();
+                        instructions.append(
+                            &mut vec![
+                                MichelsonInstruction::Comment(format!(
+                                    "{} = michelson.get_amount() {{",
+                                    result.get_value().get_id()
+                                )),
+                                MichelsonInstruction::Amount,
+                                MichelsonInstruction::DigN(address),
+                                MichelsonInstruction::Drop,
+                                MichelsonInstruction::DugN(address - 1),
+                                MichelsonInstruction::Comment("}".to_string()),
+                            ]
+                            .iter()
+                            .map(|instr| instr.to_wrapped_instruction())
+                            .collect::<Vec<_>>(),
+                        );
+                    }
+                    michelson::ast::Operation::MakeListOp { result } => {
+                        //スタック初期化の際に `nil ty` を既に積んでいるため何もする必要無し
+                        instructions.append(
+                            &mut vec![MichelsonInstruction::Comment(format!(
+                                "{} = michelson.make_list() {{ }}",
+                                result.get_value().get_id()
+                            ))]
+                            .iter()
+                            .map(|instr| instr.to_wrapped_instruction())
+                            .collect::<Vec<_>>(),
+                        )
+                    }
+                    michelson::ast::Operation::MakePairOp { result, fst, snd } => {
+                        let result_address = *value_addresses.get(&result.get_value()).unwrap();
+                        let fst_address = *value_addresses.get(&fst.get_value()).unwrap();
+                        let snd_address = *value_addresses.get(&snd.get_value()).unwrap();
+                        instructions.append(
+                            &mut vec![
+                                MichelsonInstruction::Comment(format!(
+                                    "{} = michelson.make_pair({}, {}) {{",
+                                    result.get_value().get_id(),
+                                    fst.get_value().get_id(),
+                                    snd.get_value().get_id(),
+                                )),
+                                MichelsonInstruction::DupN(snd_address),
+                                MichelsonInstruction::DupN(fst_address + 1),
+                                MichelsonInstruction::Pair,
+                                MichelsonInstruction::DigN(result_address),
+                                MichelsonInstruction::Drop,
+                                MichelsonInstruction::Some,
+                                MichelsonInstruction::DugN(result_address - 1),
+                                MichelsonInstruction::Comment("}".to_string()),
+                            ]
+                            .iter()
+                            .map(|instr| instr.to_wrapped_instruction())
+                            .collect::<Vec<_>>(),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    instructions
 }
-fn construct_return_value(
-    _operation: &Operation,
-    _value_addresses: &HashMap<Value, usize>,
-) -> Vec<MWrappedInstr> {
-    //todo!()
-    vec![]
-}
+
+///before: [value region] |> [heap region] |> stack_bottom
+///after :           (operations, storage) |> stack_bottom
 fn exit(
-    _value_addresses: &HashMap<Value, usize>,
-    _type_heap_addresses: &HashMap<Type, usize>,
+    smart_contract: &Operation,
+    value_addresses: &HashMap<Value, usize>,
+    type_heap_addresses: &HashMap<Type, usize>,
 ) -> Vec<MWrappedInstr> {
-    //todo!()
-    vec![]
+    let return_op = smart_contract.regions[0].blocks[0]
+        .operations
+        .last()
+        .unwrap()
+        .to_owned();
+    let value = return_op.operands[0].get_value();
+    let address = *value_addresses.get(&value).unwrap();
+
+    let mut instructions = vec![instruction_row!(MichelsonInstruction::Comment(format!(
+        "############## Exit ##############{{"
+    )))];
+
+    instructions.append(
+        &mut vec![
+            MichelsonInstruction::DigN(address - 1),
+            MichelsonInstruction::AssertSome,
+            MichelsonInstruction::DugN(
+                value_addresses.iter().len() + type_heap_addresses.iter().len() - 1,
+            ),
+        ]
+        .iter()
+        .map(|instr| instr.to_wrapped_instruction())
+        .collect::<Vec<_>>(),
+    );
+
+    for _ in 0..(value_addresses.iter().len() + type_heap_addresses.iter().len()) - 1 {
+        instructions.push(instruction_row!(MichelsonInstruction::Drop));
+    }
+
+    instructions.push(instruction_row!(MichelsonInstruction::Comment(format!(
+        "}}#################################"
+    ))));
+
+    instructions
 }

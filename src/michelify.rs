@@ -57,17 +57,22 @@ pub fn compile(smart_contract: Operation) -> String {
         stack_initialization(&value_addresses, &type_heap_addresses);
     code.append(&mut stack_initialization_instructions);
 
+    let get_address_closure = get_get_address_closure(value_addresses.clone());
     /*
      * compile operations
      */
     let mut compile_operations_instructions =
-        compile_operations(&smart_contract, &value_addresses, &type_heap_addresses);
+        compile_operations(&smart_contract, get_address_closure.as_ref());
     code.append(&mut compile_operations_instructions);
 
     /*
      * drop an unused stack region
      */
-    let mut exit_instructions = exit(&smart_contract, &value_addresses, &type_heap_addresses);
+    let mut exit_instructions = exit(
+        &smart_contract,
+        value_addresses.iter().len() + type_heap_addresses.iter().len(),
+        get_address_closure.as_ref(),
+    );
     code.append(&mut exit_instructions);
 
     let michelson_program = program::Program {
@@ -141,12 +146,12 @@ fn stack_initialization(
 ) -> Vec<MWrappedInstr> {
     let mut michelson_instructions = vec![
         instruction_row!(MichelsonInstruction::Comment(format!(
-            "###### Stack Initialization ######{{"
+            "------ Stack Initialization ------ {{"
         ))),
         //TODO: 引数が Option で包まなければいけない型の場合の処理をする
         instruction_row!(
             MichelsonInstruction::Unpair,
-            format!("(parameter, storage) => param : storage")
+            format!("(parameter, storage) => param |> storage")
         ),
     ];
 
@@ -181,7 +186,7 @@ fn stack_initialization(
     }
 
     michelson_instructions.push(instruction_row!(MichelsonInstruction::Comment(format!(
-        "}}#################################"
+        "---------------------------------- }}"
     ))));
 
     michelson_instructions
@@ -191,8 +196,7 @@ fn stack_initialization(
 ///after : [value region] |> [heap region] |> stack_bottom
 fn compile_operations(
     smart_contract: &Operation,
-    value_addresses: &HashMap<Value, usize>,
-    _type_heap_addresses: &HashMap<Type, usize>,
+    get_address_closure: &(dyn Fn(Value) -> usize),
 ) -> Vec<MWrappedInstr> {
     let mut instructions = vec![];
 
@@ -211,7 +215,7 @@ fn compile_operations(
                 use mlir::dialect::michelson;
                 match operation {
                     michelson::ast::Operation::GetUnitOp { result } => {
-                        let address = *value_addresses.get(&result.get_value()).unwrap();
+                        let address = (*get_address_closure)(result.get_value());
                         instructions.append(
                             &mut vec![
                                 MichelsonInstruction::Comment(format!(
@@ -230,7 +234,7 @@ fn compile_operations(
                         );
                     }
                     michelson::ast::Operation::GetAmountOp { result } => {
-                        let address = *value_addresses.get(&result.get_value()).unwrap();
+                        let address = (*get_address_closure)(result.get_value());
                         instructions.append(
                             &mut vec![
                                 MichelsonInstruction::Comment(format!(
@@ -261,9 +265,9 @@ fn compile_operations(
                         )
                     }
                     michelson::ast::Operation::MakePairOp { result, fst, snd } => {
-                        let result_address = *value_addresses.get(&result.get_value()).unwrap();
-                        let fst_address = *value_addresses.get(&fst.get_value()).unwrap();
-                        let snd_address = *value_addresses.get(&snd.get_value()).unwrap();
+                        let result_address = (*get_address_closure)(result.get_value());
+                        let fst_address = (*get_address_closure)(fst.get_value());
+                        let snd_address = (*get_address_closure)(snd.get_value());
                         instructions.append(
                             &mut vec![
                                 MichelsonInstruction::Comment(format!(
@@ -298,8 +302,8 @@ fn compile_operations(
 ///after :           (operations, storage) |> stack_bottom
 fn exit(
     smart_contract: &Operation,
-    value_addresses: &HashMap<Value, usize>,
-    type_heap_addresses: &HashMap<Type, usize>,
+    stack_size: usize,
+    get_address_closure: &(dyn Fn(Value) -> usize),
 ) -> Vec<MWrappedInstr> {
     let return_op = smart_contract.regions[0].blocks[0]
         .operations
@@ -307,32 +311,34 @@ fn exit(
         .unwrap()
         .to_owned();
     let value = return_op.operands[0].get_value();
-    let address = *value_addresses.get(&value).unwrap();
+    let address = (*get_address_closure)(value);
 
     let mut instructions = vec![instruction_row!(MichelsonInstruction::Comment(format!(
-        "############## Exit ##############{{"
+        "-------------- Exit -------------- {{"
     )))];
 
     instructions.append(
         &mut vec![
             MichelsonInstruction::DigN(address - 1),
             MichelsonInstruction::AssertSome,
-            MichelsonInstruction::DugN(
-                value_addresses.iter().len() + type_heap_addresses.iter().len() - 1,
-            ),
+            MichelsonInstruction::DugN(stack_size - 1),
         ]
         .iter()
         .map(|instr| instr.to_wrapped_instruction())
         .collect::<Vec<_>>(),
     );
 
-    for _ in 0..(value_addresses.iter().len() + type_heap_addresses.iter().len()) - 1 {
+    for _ in 0..stack_size - 1 {
         instructions.push(instruction_row!(MichelsonInstruction::Drop));
     }
 
     instructions.push(instruction_row!(MichelsonInstruction::Comment(format!(
-        "}}#################################"
+        "---------------------------------- }}"
     ))));
 
     instructions
+}
+
+fn get_get_address_closure(value_addresses: HashMap<Value, usize>) -> Box<dyn Fn(Value) -> usize> {
+    Box::new(move |value| *value_addresses.get(&value).unwrap())
 }

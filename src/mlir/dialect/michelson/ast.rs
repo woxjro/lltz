@@ -48,6 +48,9 @@ pub enum Tok {
 
 #[derive(Debug, Clone)]
 pub enum Operation {
+    GetUnitOp {
+        result: ast::Result,
+    },
     GetAmountOp {
         result: ast::Result,
     },
@@ -62,6 +65,7 @@ pub enum Operation {
 }
 
 enum OperationKind {
+    GetUnitOp,
     GetAmountOp,
     MakeListOp,
     MakePairOp,
@@ -70,6 +74,7 @@ enum OperationKind {
 impl ToString for OperationKind {
     fn to_string(&self) -> String {
         match self {
+            OperationKind::GetUnitOp => "get_unit".to_owned(),
             OperationKind::GetAmountOp => "get_amount".to_owned(),
             OperationKind::MakeListOp => "make_list".to_owned(),
             OperationKind::MakePairOp => "make_pair".to_owned(),
@@ -94,6 +99,10 @@ impl From<ast::Operation> for Operation {
                         result: operation.results[0].to_owned(),
                         fst: operation.operands[0].to_owned(),
                         snd: operation.operands[1].to_owned(),
+                    }
+                } else if operation.get_mnemonic() == OperationKind::GetUnitOp.to_string() {
+                    Operation::GetUnitOp {
+                        result: operation.results[0].to_owned(),
                     }
                 } else {
                     panic!("unsupported operation")

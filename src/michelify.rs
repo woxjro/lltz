@@ -37,8 +37,6 @@ pub fn compile(smart_contract: Operation) -> String {
     let mut type_heap_address_counter = 0;
 
     let (parameter, storage) = get_signature(&smart_contract);
-    dbg!(&parameter);
-    dbg!(&storage);
     let mut code = vec![];
 
     /*
@@ -51,8 +49,6 @@ pub fn compile(smart_contract: Operation) -> String {
         &mut value_addresses,
         &mut type_heap_addresses,
     );
-
-    dbg!(&value_addresses);
 
     /*
      * stack initialization
@@ -214,6 +210,25 @@ fn compile_operations(
             mlir::dialect::Operation::MichelsonOp { operation } => {
                 use mlir::dialect::michelson;
                 match operation {
+                    michelson::ast::Operation::GetUnitOp { result } => {
+                        let address = *value_addresses.get(&result.get_value()).unwrap();
+                        instructions.append(
+                            &mut vec![
+                                MichelsonInstruction::Comment(format!(
+                                    "{} = michelson.get_unit() {{",
+                                    result.get_value().get_id()
+                                )),
+                                MichelsonInstruction::Unit,
+                                MichelsonInstruction::DigN(address),
+                                MichelsonInstruction::Drop,
+                                MichelsonInstruction::DugN(address - 1),
+                                MichelsonInstruction::Comment("}".to_string()),
+                            ]
+                            .iter()
+                            .map(|instr| instr.to_wrapped_instruction())
+                            .collect::<Vec<_>>(),
+                        );
+                    }
                     michelson::ast::Operation::GetAmountOp { result } => {
                         let address = *value_addresses.get(&result.get_value()).unwrap();
                         instructions.append(

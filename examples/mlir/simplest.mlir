@@ -1,5 +1,5 @@
 module {
-  func.func @smart_contract(%storage: !michelson.unit, %parameter: !michelson.unit)
+  func.func @smart_contract(%parameter: !michelson.unit, %storage: !michelson.unit)
     -> !michelson.pair<!michelson.list<!michelson.operation>, !michelson.unit> {
 
     %unit = "michelson.get_unit"() : () -> !michelson.unit

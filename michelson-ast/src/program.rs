@@ -1,6 +1,6 @@
 use crate::formatter::format;
-use crate::wrapped_instruction::WrappedInstruction;
 use crate::ty::Ty;
+use crate::wrapped_instruction::WrappedInstruction;
 use std::string::ToString;
 
 pub struct Program {
@@ -12,13 +12,13 @@ pub struct Program {
 impl ToString for Program {
     fn to_string(&self) -> String {
         format!(
-            r#"storage {};
-parameter {};
+            r#"parameter {};
+storage {};
 code {{
 {}
      }}"#,
-            self.storage.to_string(),
             self.parameter.to_string(),
+            self.storage.to_string(),
             format(&self.code, 7)
         )
     }
@@ -27,10 +27,10 @@ code {{
 #[cfg(test)]
 mod tests {
     use crate::instruction::Instruction;
-    use crate::wrapped_instruction::WrappedInstruction;
     use crate::program::Program;
     use crate::ty::Ty;
     use crate::val::Val;
+    use crate::wrapped_instruction::WrappedInstruction;
     #[test]
     fn it_works() {
         let program = Program {

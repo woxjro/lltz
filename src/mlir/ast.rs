@@ -56,10 +56,16 @@ impl From<json_mlir::Block> for Block {
 pub struct Operation {
     pub attributes: Vec<Attribute>,
     pub dialect: DialectKind,
-    pub name: String,
+    name: String,
     pub operands: Vec<Operand>,
     pub regions: Vec<Region>,
     pub results: Vec<Result>,
+}
+
+impl Operation {
+    pub fn get_mnemonic(&self) -> String {
+        self.name.split('.').nth(1).unwrap().to_owned()
+    }
 }
 
 impl From<json_mlir::Operation> for Operation {

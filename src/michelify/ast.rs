@@ -35,11 +35,6 @@ impl From<michelson_dialect::Type> for StackType {
                     ty2: Box::new(stupidly_from(ty2.as_ref().to_owned())),
                 }),
             },
-            michelson_dialect::Type::List { ty } => StackType::Option {
-                ty: Box::new(StackType::List {
-                    ty: Box::new(stupidly_from(ty.as_ref().to_owned())),
-                }),
-            },
             michelson_dialect::Type::SmartContract { .. } => panic!(),
             ty => stupidly_from(ty.to_owned()),
         }

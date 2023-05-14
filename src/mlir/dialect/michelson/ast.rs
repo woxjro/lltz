@@ -1,4 +1,4 @@
-use crate::mlir::dialect;
+use crate::mlir::{ast, dialect};
 
 use lalrpop_util;
 use lalrpop_util::lalrpop_mod;
@@ -44,4 +44,62 @@ pub enum Tok {
     Operation,
     Pair,
     List,
+}
+
+#[derive(Debug, Clone)]
+pub enum Operation {
+    GetAmountOp {
+        result: ast::Result,
+    },
+    MakeListOp {
+        result: ast::Result,
+    },
+    MakePairOp {
+        result: ast::Result,
+        fst: ast::Operand,
+        snd: ast::Operand,
+    },
+}
+
+enum OperationKind {
+    GetAmountOp,
+    MakeListOp,
+    MakePairOp,
+}
+
+impl ToString for OperationKind {
+    fn to_string(&self) -> String {
+        match self {
+            OperationKind::GetAmountOp => "get_amount".to_owned(),
+            OperationKind::MakeListOp => "make_list".to_owned(),
+            OperationKind::MakePairOp => "make_pair".to_owned(),
+        }
+    }
+}
+
+impl From<ast::Operation> for Operation {
+    fn from(operation: ast::Operation) -> Operation {
+        match operation.dialect {
+            dialect::DialectKind::Michelson => {
+                if operation.get_mnemonic() == OperationKind::GetAmountOp.to_string() {
+                    Operation::GetAmountOp {
+                        result: operation.results[0].to_owned(),
+                    }
+                } else if operation.get_mnemonic() == OperationKind::MakeListOp.to_string() {
+                    Operation::MakeListOp {
+                        result: operation.results[0].to_owned(),
+                    }
+                } else if operation.get_mnemonic() == OperationKind::MakePairOp.to_string() {
+                    Operation::MakePairOp {
+                        result: operation.results[0].to_owned(),
+                        fst: operation.operands[0].to_owned(),
+                        snd: operation.operands[1].to_owned(),
+                    }
+                } else {
+                    panic!("unsupported operation")
+                }
+            }
+            _ => panic!(),
+        }
+    }
 }

@@ -8,6 +8,7 @@ use michelson_ast::val::Val as MichelsonVal;
 /// MLIR の Operation 型は Michelson の Stack 上では Option Operation 型となる
 #[derive(Debug, Clone)]
 pub enum StackType {
+    Address,
     Unit,
     Mutez,
     Operation,
@@ -21,11 +22,17 @@ pub enum StackType {
     List {
         ty: Box<StackType>,
     },
+    Contract {
+        ty: Box<StackType>,
+    },
 }
 
 impl From<michelson_dialect::Type> for StackType {
     fn from(ty: michelson_dialect::Type) -> StackType {
         match ty {
+            michelson_dialect::Type::Address => StackType::Option {
+                ty: Box::new(StackType::Address),
+            },
             michelson_dialect::Type::Operation => StackType::Option {
                 ty: Box::new(StackType::Operation),
             },
@@ -36,6 +43,11 @@ impl From<michelson_dialect::Type> for StackType {
                 }),
             },
             michelson_dialect::Type::SmartContract { .. } => panic!(),
+            michelson_dialect::Type::Contract { ty } => StackType::Option {
+                ty: Box::new(StackType::Contract {
+                    ty: Box::new(stupidly_from(ty.as_ref().to_owned())),
+                }),
+            },
             ty => stupidly_from(ty.to_owned()),
         }
     }
@@ -55,7 +67,7 @@ impl StackType {
             StackType::List { ty } => MichelsonInstruction::Nil {
                 ty: MichelsonType::from(ty.as_ref().to_owned()),
             },
-            _ => todo!(),
+            ty => todo!("{:?}", ty),
         }
     }
 }
@@ -63,6 +75,7 @@ impl StackType {
 fn stupidly_from(ty: michelson_dialect::Type) -> StackType {
     match ty {
         michelson_dialect::Type::Unit => StackType::Unit,
+        michelson_dialect::Type::Address => StackType::Address,
         michelson_dialect::Type::Mutez => StackType::Mutez,
         michelson_dialect::Type::Operation => StackType::Operation,
         michelson_dialect::Type::Option { ty } => StackType::Option {
@@ -75,7 +88,10 @@ fn stupidly_from(ty: michelson_dialect::Type) -> StackType {
             ty1: Box::new(stupidly_from(ty1.as_ref().to_owned())),
             ty2: Box::new(stupidly_from(ty2.as_ref().to_owned())),
         },
-        _ => todo!(),
+        michelson_dialect::Type::Contract { ty } => StackType::Contract {
+            ty: Box::new(stupidly_from(ty.as_ref().to_owned())),
+        },
+        ty => todo!("{:?}", ty),
     }
 }
 
@@ -83,6 +99,7 @@ fn stupidly_from(ty: michelson_dialect::Type) -> StackType {
 impl From<StackType> for MichelsonType {
     fn from(stack_type: StackType) -> MichelsonType {
         match stack_type {
+            StackType::Address => MichelsonType::Address,
             StackType::Unit => MichelsonType::Unit,
             StackType::Mutez => MichelsonType::Mutez,
             StackType::Operation => MichelsonType::Operation,
@@ -95,6 +112,9 @@ impl From<StackType> for MichelsonType {
             StackType::Pair { ty1, ty2 } => MichelsonType::Pair {
                 ty1: Box::new(MichelsonType::from(*ty1)),
                 ty2: Box::new(MichelsonType::from(*ty2)),
+            },
+            StackType::Contract { ty } => MichelsonType::Contract {
+                ty: Box::new(MichelsonType::from(*ty)),
             },
         }
     }
@@ -118,6 +138,10 @@ impl From<michelson_dialect::Type> for MichelsonType {
                 ty: Box::new(MichelsonType::from(*ty)),
             },
             michelson_dialect::Type::SmartContract { .. } => panic!("not supported"),
+            michelson_dialect::Type::Contract { ty } => MichelsonType::Contract {
+                ty: Box::new(MichelsonType::from(*ty)),
+            },
+            michelson_dialect::Type::Address => MichelsonType::Address,
         }
     }
 }

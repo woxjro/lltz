@@ -5,14 +5,15 @@ module {
     %unit = "michelson.get_unit"() : () -> !michelson.unit
     %amount = "michelson.get_amount"() : () -> !michelson.mutez
     %nil = "michelson.make_list"() : () -> !michelson.list<!michelson.operation>
-    %some_contract = "michelson.get_contract"() :
-      () -> !michelson.option<!michelson.contract<!michelson.unit>>
+    %address = "michelson.get_source"() : () -> !michelson.address
+    %some_contract = "michelson.get_contract"(%address) :
+      (!michelson.address) -> !michelson.option<!michelson.contract<!michelson.unit>>
 
     %contract = "michelson.assert_some"(%some_contract) :
       (!michelson.option<!michelson.contract<!michelson.unit>>) -> !michelson.contract<!michelson.unit>
 
-    %operation = "michelson.transfer_tokens"(%amount, %unit) :
-      (!michelson.mutez, !michelson.unit) -> !michelson.operation
+    %operation = "michelson.transfer_tokens"(%unit, %amount, %contract) :
+      (!michelson.unit, !michelson.mutez, !michelson.contract<!michelson.unit>) -> !michelson.operation
 
     %operations = "michelson.cons"(%nil, %operation) :
       (!michelson.list<!michelson.operation>, !michelson.operation) -> !michelson.list<!michelson.operation>

@@ -54,15 +54,6 @@ pub fn scan(
     let operations = smart_contract.regions[0].blocks[0].operations.to_owned();
     for operation in operations {
         //TODO: While や If のような内部に Region を持つ命令の場合は再帰的に scan する必要がある
-        for operand in operation.operands {
-            let _ = value_addresses
-                .entry(operand.get_value())
-                .or_insert_with(|| {
-                    *value_address_counter += 1;
-                    *value_address_counter
-                });
-        }
-
         for result in operation.results {
             let _ = value_addresses
                 .entry(result.get_value())

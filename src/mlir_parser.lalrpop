@@ -2,17 +2,23 @@ use crate::mlir::dialect::michelson::ast::{Type, Tok};
 grammar;
 
 pub Type: Type = {
+    <address:Address> => Type::Address,
     <unit:Unit> => Type::Unit,
     <mutez:Mutez> => Type::Mutez,
     <operation:Operation> => Type::Operation,
     <list:List> "<" <ty:Type> ">" => Type::List { ty: Box::new(ty) },
+    <option:Option> "<" <ty:Type> ">" => Type::Option { ty: Box::new(ty) },
+    <option:Contract> "<" <ty:Type> ">" => Type::Contract { ty: Box::new(ty) },
     <pair:Pair> "<" <ty1:Type> "," <ty2:Type> ">" => Type::Pair { ty1: Box::new(ty1), ty2: Box::new(ty2) },
     "(" <param: Type> "," <storage: Type> ")" "->" <res: Type> =>
         Type::SmartContract { param: Box::new(param), storage: Box::new(storage), res: Box::new(res) },
 };
 
 Unit: Tok = <s:r"[!][a-zA-Z]+[.]unit"> => Tok::Unit;
+Address: Tok = <s:r"[!][a-zA-Z]+[.]address"> => Tok::Address;
+Option: Tok = <s:r"[!][a-zA-Z]+[.]option"> => Tok::Option;
 Mutez: Tok = <s:r"[!][a-zA-Z]+[.]mutez"> => Tok::Mutez;
+Contract: Tok = <s:r"[!][a-zA-Z]+[.]contract"> => Tok::Contract;
 Operation: Tok = <s:r"[!][a-zA-Z]+[.]operation"> => Tok::Operation;
 List: Tok = <s:r"[!][a-zA-Z]+[.]list"> => Tok::List;
 Pair: Tok = <s:r"[!][a-zA-Z]+[.]pair"> => Tok::Pair;

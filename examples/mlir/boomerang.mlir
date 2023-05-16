@@ -1,0 +1,27 @@
+module {
+  func.func @smart_contract(%parameter: !michelson.unit, %storage: !michelson.unit)
+    -> !michelson.pair<!michelson.list<!michelson.operation>, !michelson.unit> {
+
+    %unit = "michelson.get_unit"() : () -> !michelson.unit
+    %amount = "michelson.get_amount"() : () -> !michelson.mutez
+    %nil = "michelson.make_list"() : () -> !michelson.list<!michelson.operation>
+    %some_contract = "michelson.get_contract"() :
+      () -> !michelson.option<!michelson.contract<!michelson.unit>>
+
+    %contract = "michelson.assert_some"(%some_contract) :
+      (!michelson.option<!michelson.contract<!michelson.unit>>) -> !michelson.contract<!michelson.unit>
+
+    %operation = "michelson.transfer_tokens"(%amount, %unit) :
+      (!michelson.mutez, !michelson.unit) -> !michelson.operation
+
+    %operations = "michelson.cons"(%nil, %operation) :
+      (!michelson.list<!michelson.operation>, !michelson.operation) -> !michelson.list<!michelson.operation>
+
+
+    %res = "michelson.make_pair"(%operations, %unit) :
+      (!michelson.list<!michelson.operation> , !michelson.unit)
+        -> !michelson.pair<!michelson.list<!michelson.operation>, !michelson.unit>
+
+    return %res : !michelson.pair<!michelson.list<!michelson.operation>, !michelson.unit>
+  }
+}

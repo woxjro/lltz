@@ -89,7 +89,7 @@ pub fn stack_initialization(
 ) -> Vec<MWrappedInstr> {
     let mut michelson_instructions = vec![
         instruction_row!(MichelsonInstruction::Comment(format!(
-            "------ Stack Initialization ------ {{"
+            "------ stack initialization ------ {{"
         ))),
         //TODO: 引数が Option で包まなければいけない型の場合の処理をする
         instruction_row!(
@@ -148,12 +148,6 @@ pub fn compile_operations(
     for operation in operations {
         let operation = mlir::dialect::Operation::from(operation);
         match operation {
-            mlir::dialect::Operation::FuncOp { operation } => {
-                use mlir::dialect::func;
-                match operation {
-                    func::ast::Operation::ReturnOp { .. } => {}
-                }
-            }
             mlir::dialect::Operation::MichelsonOp { operation } => {
                 use mlir::dialect::michelson;
                 match operation {
@@ -240,48 +234,46 @@ pub fn compile_operations(
                     }
                 }
             }
+            mlir::dialect::Operation::FuncOp { operation } => {
+                use mlir::dialect::func;
+                match operation {
+                    //before: [value region] |> [heap region] |> stack_bottom
+                    //after :           (operations, storage) |> stack_bottom
+                    func::ast::Operation::ReturnOp { operands } => {
+                        let value = operands[0].get_value();
+                        let address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(value.to_owned()));
+                        let stack_size = (*get_address_closure)(GetAddressClosureArg::StackSize);
+                        instructions.append(&mut vec![instruction_row!(
+                            MichelsonInstruction::Comment(format!(
+                                "func.return {} {{",
+                                value.get_id()
+                            ))
+                        )]);
+
+                        instructions.append(
+                            &mut vec![
+                                MichelsonInstruction::DigN(address - 1),
+                                MichelsonInstruction::AssertSome,
+                                MichelsonInstruction::DugN(stack_size - 1),
+                            ]
+                            .iter()
+                            .map(|instr| instr.to_wrapped_instruction())
+                            .collect::<Vec<_>>(),
+                        );
+
+                        for _ in 0..stack_size - 1 {
+                            instructions.push(instruction_row!(MichelsonInstruction::Drop));
+                        }
+
+                        instructions.push(instruction_row!(MichelsonInstruction::Comment(
+                            "}".to_string()
+                        )));
+                    }
+                }
+            }
         }
     }
-
-    instructions
-}
-
-///before: [value region] |> [heap region] |> stack_bottom
-///after :           (operations, storage) |> stack_bottom
-pub fn exit(
-    smart_contract: &Operation,
-    get_address_closure: &(dyn Fn(GetAddressClosureArg) -> usize),
-) -> Vec<MWrappedInstr> {
-    let return_op = smart_contract.regions[0].blocks[0]
-        .operations
-        .last()
-        .unwrap()
-        .to_owned();
-    let value = return_op.operands[0].get_value();
-    let address = (*get_address_closure)(GetAddressClosureArg::Value(value));
-    let stack_size = (*get_address_closure)(GetAddressClosureArg::StackSize);
-    let mut instructions = vec![instruction_row!(MichelsonInstruction::Comment(format!(
-        "-------------- Exit -------------- {{"
-    )))];
-
-    instructions.append(
-        &mut vec![
-            MichelsonInstruction::DigN(address - 1),
-            MichelsonInstruction::AssertSome,
-            MichelsonInstruction::DugN(stack_size - 1),
-        ]
-        .iter()
-        .map(|instr| instr.to_wrapped_instruction())
-        .collect::<Vec<_>>(),
-    );
-
-    for _ in 0..stack_size - 1 {
-        instructions.push(instruction_row!(MichelsonInstruction::Drop));
-    }
-
-    instructions.push(instruction_row!(MichelsonInstruction::Comment(format!(
-        "---------------------------------- }}"
-    ))));
 
     instructions
 }

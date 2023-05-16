@@ -55,18 +55,13 @@ pub fn compile(smart_contract: Operation) -> String {
 
     let get_address_closure =
         phase::get_get_address_closure(value_addresses.clone(), type_heap_addresses.clone());
+
     /*
      * compile operations
      */
     let mut compile_operations_instructions =
         phase::compile_operations(&smart_contract, get_address_closure.as_ref());
     code.append(&mut compile_operations_instructions);
-
-    /*
-     * drop an unused stack region
-     */
-    let mut exit_instructions = phase::exit(&smart_contract, get_address_closure.as_ref());
-    code.append(&mut exit_instructions);
 
     let michelson_program = program::Program {
         parameter,

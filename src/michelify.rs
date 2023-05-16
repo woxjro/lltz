@@ -53,7 +53,8 @@ pub fn compile(smart_contract: Operation) -> String {
         phase::stack_initialization(&value_addresses, &type_heap_addresses);
     code.append(&mut stack_initialization_instructions);
 
-    let get_address_closure = phase::get_get_address_closure(value_addresses.clone());
+    let get_address_closure =
+        phase::get_get_address_closure(value_addresses.clone(), type_heap_addresses.clone());
     /*
      * compile operations
      */
@@ -64,11 +65,7 @@ pub fn compile(smart_contract: Operation) -> String {
     /*
      * drop an unused stack region
      */
-    let mut exit_instructions = phase::exit(
-        &smart_contract,
-        value_addresses.iter().len() + type_heap_addresses.iter().len(),
-        get_address_closure.as_ref(),
-    );
+    let mut exit_instructions = phase::exit(&smart_contract, get_address_closure.as_ref());
     code.append(&mut exit_instructions);
 
     let michelson_program = program::Program {

@@ -24,6 +24,15 @@ pub struct WrappedInstruction {
     pub comment: Option<String>,
 }
 
+impl From<Instruction> for WrappedInstruction {
+    fn from(instruction: Instruction) -> Self {
+        Self {
+            comment: None,
+            instruction,
+        }
+    }
+}
+
 impl WrappedInstruction {
     pub fn to_formatted_string(&self, accumulation: usize) -> String {
         let indent = " ".repeat(accumulation);

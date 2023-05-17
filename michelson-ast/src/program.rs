@@ -29,7 +29,6 @@ mod tests {
     use crate::instruction::Instruction;
     use crate::program::Program;
     use crate::ty::Ty;
-    use crate::val::Val;
     use crate::wrapped_instruction::WrappedInstruction;
     #[test]
     fn it_works() {

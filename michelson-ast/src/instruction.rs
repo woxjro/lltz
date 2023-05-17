@@ -1,6 +1,8 @@
-use super::ty::Ty;
-use super::val::Val;
+mod token;
+use crate::ty::Ty;
+use crate::val::Val;
 use crate::wrapped_instruction::WrappedInstruction;
+use token::Token;
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Instruction {
     Comment(String),
@@ -172,19 +174,19 @@ pub enum Instruction {
 impl Instruction {
     pub fn get_label(&self) -> String {
         match self {
-            Instruction::Comment(comment) => comment.clone(),
+            Instruction::Comment(comment) => comment.to_owned(),
             ////////////////////////////////////////////////
             ////////////////Control Structures//////////////
             ////////////////////////////////////////////////
-            Instruction::Apply => "APPLY".to_string(),
-            Instruction::Exec => "EXEC".to_string(),
-            Instruction::Failwith => "FAILWITH".to_string(),
-            Instruction::If { .. } => "IF".to_string(),
-            Instruction::IfCons { .. } => "IF_CONS".to_string(),
-            Instruction::IfLeft { .. } => "IF_LEFT".to_string(),
-            Instruction::IfNone { .. } => "IF_NONE".to_string(),
-            Instruction::Loop { .. } => "LOOP".to_string(),
-            Instruction::LoopLeft { .. } => "LOOP_LEFT".to_string(),
+            Instruction::Apply => Token::Apply.to_string(),
+            Instruction::Exec => Token::Exec.to_string(),
+            Instruction::Failwith => Token::Failwith.to_string(),
+            Instruction::If { .. } => Token::If.to_string(),
+            Instruction::IfCons { .. } => Token::IfCons.to_string(),
+            Instruction::IfLeft { .. } => Token::IfLeft.to_string(),
+            Instruction::IfNone { .. } => Token::IfNone.to_string(),
+            Instruction::Loop { .. } => Token::Loop.to_string(),
+            Instruction::LoopLeft { .. } => Token::LoopLeft.to_string(),
             //ITER inster,
             //LAMBDA ty1 ty2 instr,
             //instr1 ; instr2,
@@ -192,118 +194,118 @@ impl Instruction {
             ////////////////////////////////////////////////
             //////////Operations on data structures/////////
             ////////////////////////////////////////////////
-            Instruction::Car => "CAR".to_string(),
-            Instruction::Cdr => "CDR".to_string(),
-            Instruction::Concat => "CONCAT".to_string(),
-            Instruction::Cons => "CONS".to_string(),
-            Instruction::EmptyBigMap { .. } => "EMPTY_BIG_MAP".to_string(),
-            Instruction::EmptyMap { .. } => "EMPTY_MAP".to_string(),
-            Instruction::EmptySet => "EMPTY_SET".to_string(),
-            Instruction::Get => "GET".to_string(),
-            Instruction::GetN(_) => "GET".to_string(),
-            Instruction::GetAndUpdate => "GET_AND_UPDATE".to_string(),
+            Instruction::Car => Token::Car.to_string(),
+            Instruction::Cdr => Token::Cdr.to_string(),
+            Instruction::Concat => Token::Concat.to_string(),
+            Instruction::Cons => Token::Cons.to_string(),
+            Instruction::EmptyBigMap { .. } => Token::EmptyBigMap.to_string(),
+            Instruction::EmptyMap { .. } => Token::EmptyMap.to_string(),
+            Instruction::EmptySet => Token::EmptySet.to_string(),
+            Instruction::Get => Token::Get.to_string(),
+            Instruction::GetN(_) => Token::GetN.to_string(),
+            Instruction::GetAndUpdate => Token::GetAndUpdate.to_string(),
             //LEFT ty2,
             //MAP instr,
-            Instruction::Mem => "MEM".to_string(),
-            Instruction::Never => "NEVER".to_string(),
-            Instruction::Nil { .. } => "NIL".to_string(),
-            Instruction::None { .. } => "NONE".to_string(),
-            Instruction::Pack => "PACK".to_string(),
-            Instruction::Pair => "PAIR".to_string(),
-            Instruction::PairN(_) => "PAIR".to_string(),
+            Instruction::Mem => Token::Mem.to_string(),
+            Instruction::Never => Token::Never.to_string(),
+            Instruction::Nil { .. } => Token::Nil.to_string(),
+            Instruction::None { .. } => Token::None.to_string(),
+            Instruction::Pack => Token::Pack.to_string(),
+            Instruction::Pair => Token::Pair.to_string(),
+            Instruction::PairN(_) => Token::PairN.to_string(),
             //RIGHT ty1,
-            Instruction::Size => "SIZE".to_string(),
-            Instruction::Slice => "SLICE".to_string(),
-            Instruction::Some => "SOME".to_string(),
-            Instruction::Unit => "UNIT".to_string(),
+            Instruction::Size => Token::Size.to_string(),
+            Instruction::Slice => Token::Slice.to_string(),
+            Instruction::Some => Token::Some.to_string(),
+            Instruction::Unit => Token::Unit.to_string(),
             //UNPACK ty,
-            Instruction::Unpair => "UNPAIR".to_string(),
+            Instruction::Unpair => Token::Unpair.to_string(),
             //UNPAIR n,
-            Instruction::Update => "UPDATE".to_string(),
+            Instruction::Update => Token::Update.to_string(),
             //UPDATE n,
             ////////////////////////////////////////////////
             /////////////Blockchain operations//////////////
             ////////////////////////////////////////////////
-            Instruction::Address => "ADDRESS".to_string(),
-            Instruction::Amount => "AMOUNT".to_string(),
-            Instruction::Balance => "BALANCE".to_string(),
-            Instruction::ChainId => "CHAIN_ID".to_string(),
-            Instruction::Contract { .. } => "CONTRACT".to_string(),
+            Instruction::Address => Token::Address.to_string(),
+            Instruction::Amount => Token::Amount.to_string(),
+            Instruction::Balance => Token::Balance.to_string(),
+            Instruction::ChainId => Token::ChainId.to_string(),
+            Instruction::Contract { .. } => Token::Contract.to_string(),
             //CREATE_CONTRACT { parameter ty1; storage ty2; code instr1 },
-            Instruction::ImplicitAccount => "IMPLICIT_ACCOUNT".to_string(),
-            Instruction::Level => "LEVEL".to_string(),
-            Instruction::Now => "NOW".to_string(),
-            //Instruction::Self => "SELF".to_string(),
-            Instruction::SelfAddress => "SELF_ADDRESS".to_string(),
-            Instruction::Sender => "SENDER".to_string(),
-            Instruction::SetDelegate => "SET_DELEGATE".to_string(),
-            Instruction::Source => "SOURCE".to_string(),
-            Instruction::TotalVotingPower => "TOTAL_VOTING_POWER".to_string(),
-            Instruction::TransferTokens => "TRANSFER_TOKENS".to_string(),
-            Instruction::VotingPower => "VOTING_POWER".to_string(),
+            Instruction::ImplicitAccount => Token::ImplicitAccount.to_string(),
+            Instruction::Level => Token::Level.to_string(),
+            Instruction::Now => Token::Now.to_string(),
+            //Instruction::Self => //Token::,
+            Instruction::SelfAddress => Token::SelfAddress.to_string(),
+            Instruction::Sender => Token::Sender.to_string(),
+            Instruction::SetDelegate => Token::SetDelegate.to_string(),
+            Instruction::Source => Token::Source.to_string(),
+            Instruction::TotalVotingPower => Token::TotalVotingPower.to_string(),
+            Instruction::TransferTokens => Token::TransferTokens.to_string(),
+            Instruction::VotingPower => Token::VotingPower.to_string(),
             ////////////////////////////////////////////////
             ////////////Operations on tickets///////////////
             ////////////////////////////////////////////////
-            Instruction::JointTickets => "JOINT_TICKETS".to_string(),
-            Instruction::ReadTicket => "READ_TICKET".to_string(),
-            Instruction::SplitTicket => "SPLIT_TICKET".to_string(),
-            Instruction::Ticket => "TICKET".to_string(),
+            Instruction::JointTickets => Token::JointTickets.to_string(),
+            Instruction::ReadTicket => Token::ReadTicket.to_string(),
+            Instruction::SplitTicket => Token::SplitTicket.to_string(),
+            Instruction::Ticket => Token::Ticket.to_string(),
             ////////////////////////////////////////////////
             ////////////Cryptographic operations////////////
             ////////////////////////////////////////////////
-            Instruction::Blake2b => "BLAKE2B".to_string(),
-            Instruction::CheckSignature => "CHECK_SIGNATURE".to_string(),
-            Instruction::HashKey => "HASH_KEY".to_string(),
-            Instruction::Keccak => "KECCAK".to_string(),
-            Instruction::PairingCheck => "PAIRING_CHECK".to_string(),
-            Instruction::SaplingEmptyState => "SAPLING_EMPTY_STATE".to_string(),
-            Instruction::SaplingVerifyUpdate => "SAPLING_VERIFY_UPDATE".to_string(),
-            Instruction::Sha256 => "SHA256".to_string(),
-            Instruction::Sha3 => "SHA3".to_string(),
-            Instruction::Sha512 => "SHA512".to_string(),
+            Instruction::Blake2b => Token::Blake2b.to_string(),
+            Instruction::CheckSignature => Token::CheckSignature.to_string(),
+            Instruction::HashKey => Token::HashKey.to_string(),
+            Instruction::Keccak => Token::Keccak.to_string(),
+            Instruction::PairingCheck => Token::PairingCheck.to_string(),
+            Instruction::SaplingEmptyState => Token::SaplingEmptyState.to_string(),
+            Instruction::SaplingVerifyUpdate => Token::SaplingVerifyUpdate.to_string(),
+            Instruction::Sha256 => Token::Sha256.to_string(),
+            Instruction::Sha3 => Token::Sha3.to_string(),
+            Instruction::Sha512 => Token::Sha512.to_string(),
             ////////////////////////////////////////////////
             //////////////Boolean operations////////////////
             ////////////////////////////////////////////////
-            Instruction::And => "AND".to_string(),
-            Instruction::Not => "NOT".to_string(),
-            Instruction::Or => "OR".to_string(),
-            Instruction::Xor => "XOR".to_string(),
+            Instruction::And => Token::And.to_string(),
+            Instruction::Not => Token::Not.to_string(),
+            Instruction::Or => Token::Or.to_string(),
+            Instruction::Xor => Token::Xor.to_string(),
             ////////////////////////////////////////////////
             ////////////Arithmetic operations///////////////
             ////////////////////////////////////////////////
-            Instruction::Abs => "ABS".to_string(),
-            Instruction::Add => "ADD".to_string(),
-            Instruction::Compare => "COMPARE".to_string(),
-            Instruction::Ediv => "EDIV".to_string(),
-            Instruction::Eq => "EQ".to_string(),
-            Instruction::Ge => "GE".to_string(),
-            Instruction::Gt => "GT".to_string(),
-            Instruction::Int => "INT".to_string(),
-            Instruction::Isnat => "ISNAT".to_string(),
-            Instruction::Le => "LE".to_string(),
-            Instruction::Lsl => "LSL".to_string(),
-            Instruction::Lsr => "LSR".to_string(),
-            Instruction::Lt => "LT".to_string(),
-            Instruction::Mul => "MUL".to_string(),
-            Instruction::Neg => "NEG".to_string(),
-            Instruction::Neq => "NEQ".to_string(),
-            Instruction::Sub => "SUB".to_string(),
+            Instruction::Abs => Token::Abs.to_string(),
+            Instruction::Add => Token::Add.to_string(),
+            Instruction::Compare => Token::Compare.to_string(),
+            Instruction::Ediv => Token::Ediv.to_string(),
+            Instruction::Eq => Token::Eq.to_string(),
+            Instruction::Ge => Token::Ge.to_string(),
+            Instruction::Gt => Token::Gt.to_string(),
+            Instruction::Int => Token::Int.to_string(),
+            Instruction::Isnat => Token::Isnat.to_string(),
+            Instruction::Le => Token::Le.to_string(),
+            Instruction::Lsl => Token::Lsl.to_string(),
+            Instruction::Lsr => Token::Lsr.to_string(),
+            Instruction::Lt => Token::Lt.to_string(),
+            Instruction::Mul => Token::Mul.to_string(),
+            Instruction::Neg => Token::Neg.to_string(),
+            Instruction::Neq => Token::Neq.to_string(),
+            Instruction::Sub => Token::Sub.to_string(),
             ////////////////////////////////////////////////
             /////////////Stack manipulation/////////////////
             ////////////////////////////////////////////////
-            Instruction::DigN(_) => "DIG".to_string(),
-            Instruction::DugN(_) => "DUG".to_string(),
-            Instruction::Dip => "DIP".to_string(),
-            Instruction::DipN(_) => "DIP".to_string(),
-            Instruction::Dup => "DUP".to_string(),
-            Instruction::DupN(_) => "DUP".to_string(),
-            Instruction::Push { .. } => "PUSH".to_string(),
-            Instruction::Drop => "DROP".to_string(),
-            Instruction::Swap => "SWAP".to_string(),
+            Instruction::DigN(_) => Token::DigN.to_string(),
+            Instruction::DugN(_) => Token::DugN.to_string(),
+            Instruction::Dip => Token::Dip.to_string(),
+            Instruction::DipN(_) => Token::DipN.to_string(),
+            Instruction::Dup => Token::Dup.to_string(),
+            Instruction::DupN(_) => Token::DupN.to_string(),
+            Instruction::Push { .. } => Token::Push.to_string(),
+            Instruction::Drop => Token::Drop.to_string(),
+            Instruction::Swap => Token::Swap.to_string(),
             ////////////////////////////////////////////////
             /////////////      Macro       /////////////////
             ////////////////////////////////////////////////
-            Instruction::AssertSome => "ASSERT_SOME".to_string(),
+            Instruction::AssertSome => Token::AssertSome.to_string(),
             e => todo!("{:?} is not implemented", e),
         }
     }
@@ -313,10 +315,7 @@ impl Instruction {
     }
 
     pub fn to_wrapped_instruction(&self) -> WrappedInstruction {
-        WrappedInstruction {
-            comment: None,
-            instruction: self.clone(),
-        }
+        WrappedInstruction::from(self.clone())
     }
 
     /// 命令数を返す関数

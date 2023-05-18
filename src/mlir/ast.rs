@@ -1,6 +1,12 @@
 use crate::json::mlir::ast as json_mlir;
-use crate::mlir::dialect::michelson::ast::Type;
+use crate::mlir::dialect;
 use crate::mlir::dialect::DialectKind;
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Type {
+    Michelson(dialect::michelson::ast::Type),
+    Func(dialect::func::ast::Type),
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Value {
@@ -119,7 +125,9 @@ impl From<json_mlir::Argument> for Argument {
         Value::new(
             &argument.argument.to_owned(),
             DialectKind::from(&argument.dialect as &str),
-            Type::from(argument.r#type.to_owned()),
+            Type::Michelson(dialect::michelson::ast::Type::from(
+                argument.r#type.to_owned(),
+            )),
         )
         .into()
     }
@@ -141,7 +149,9 @@ impl From<json_mlir::Attribute> for Attribute {
         if attribute.name.contains("function_type") {
             Self {
                 name: attribute.name.to_owned(),
-                value: AttrValue::Type(Type::from(attribute.value.to_owned())),
+                value: AttrValue::Type(Type::Michelson(dialect::michelson::ast::Type::from(
+                    attribute.value.to_owned(),
+                ))),
             }
         } else {
             Self {
@@ -174,7 +184,9 @@ impl From<json_mlir::Operand> for Operand {
         Value::new(
             &operand.operand.to_owned(),
             DialectKind::from(&operand.dialect as &str),
-            Type::from(operand.r#type.to_owned()),
+            Type::Michelson(dialect::michelson::ast::Type::from(
+                operand.r#type.to_owned(),
+            )),
         )
         .into()
     }
@@ -202,7 +214,9 @@ impl From<json_mlir::Result> for Result {
         Value::new(
             &result.result.to_owned(),
             DialectKind::from(&result.dialect as &str),
-            Type::from(result.r#type.to_owned()),
+            Type::Michelson(dialect::michelson::ast::Type::from(
+                result.r#type.to_owned(),
+            )),
         )
         .into()
     }

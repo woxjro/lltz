@@ -1,3 +1,4 @@
+use crate::mlir::ast::Type;
 use crate::mlir::dialect::michelson::ast as michelson_dialect;
 use michelson_ast::instruction::Instruction as MichelsonInstruction;
 use michelson_ast::ty::Ty as MichelsonType;
@@ -49,6 +50,15 @@ impl From<michelson_dialect::Type> for StackType {
                 }),
             },
             ty => stupidly_from(ty.to_owned()),
+        }
+    }
+}
+
+impl From<Type> for StackType {
+    fn from(ty: Type) -> StackType {
+        match ty {
+            Type::Michelson(ty) => StackType::from(ty),
+            Type::Func(_) => panic!(),
         }
     }
 }
@@ -142,6 +152,16 @@ impl From<michelson_dialect::Type> for MichelsonType {
                 ty: Box::new(MichelsonType::from(*ty)),
             },
             michelson_dialect::Type::Address => MichelsonType::Address,
+        }
+    }
+}
+
+/// michelson_ast::ty::Ty を拡張
+impl From<Type> for MichelsonType {
+    fn from(ty: Type) -> MichelsonType {
+        match ty {
+            Type::Michelson(ty) => MichelsonType::from(ty),
+            Type::Func(_) => panic!(),
         }
     }
 }

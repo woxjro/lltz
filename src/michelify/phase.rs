@@ -10,7 +10,7 @@ use std::collections::HashMap;
 
 pub enum GetAddressClosureArg {
     Value(Value),
-    Type(Type),
+    //Type(Type),
     StackSize,
 }
 
@@ -20,9 +20,9 @@ pub fn get_get_address_closure(
 ) -> Box<dyn Fn(GetAddressClosureArg) -> usize> {
     Box::new(move |arg| match arg {
         GetAddressClosureArg::Value(value) => *value_addresses.get(&value).unwrap(),
-        GetAddressClosureArg::Type(ty) => {
-            value_addresses.len() + type_heap_addresses.get(&ty).unwrap()
-        }
+        //GetAddressClosureArg::Type(ty) => {
+        //    value_addresses.len() + type_heap_addresses.get(&ty).unwrap()
+        //}
         GetAddressClosureArg::StackSize => value_addresses.len() + type_heap_addresses.len(),
     })
 }
@@ -191,9 +191,13 @@ pub fn compile_operations(
                         let result_address =
                             (*get_address_closure)(GetAddressClosureArg::Value(result.get_value()));
 
+                        //FIXME: 冗長
                         let contract_type: MichelsonType = match result.get_value().get_type() {
-                            Type::Option { ty } => match ty.as_ref().to_owned() {
-                                Type::Contract { ty } => ty,
+                            mlir::ast::Type::Michelson(ty) => match ty {
+                                Type::Option { ty } => match ty.as_ref().to_owned() {
+                                    Type::Contract { ty } => ty,
+                                    _ => panic!(),
+                                },
                                 _ => panic!(),
                             },
                             _ => panic!(),
@@ -428,6 +432,7 @@ pub fn compile_operations(
                             "}".to_string()
                         )));
                     }
+                    func::ast::Operation::FuncOp { .. } => todo!(),
                 }
             }
         }

@@ -38,7 +38,9 @@ impl WrappedInstruction {
         let indent = " ".repeat(accumulation);
         let instruction = &self.instruction;
         let formatted_string = match instruction {
-            Instruction::Comment(comment) => format!("{indent}# {comment}"),
+            Instruction::Comment(comment) => {
+                format!("{indent}{label} {comment}", label = instruction.get_label(),)
+            }
             ////////////////////////////////////////////////
             ////////////////Control Structures//////////////
             ////////////////////////////////////////////////

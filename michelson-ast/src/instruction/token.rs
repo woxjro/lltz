@@ -199,7 +199,7 @@ impl ToString for Token {
             Token::ImplicitAccount => "IMPLICIT_ACCOUNT",
             Token::Level => "LEVEL",
             Token::Now => "NOW",
-            //Token::Self => "SELF" ,
+            Token::Slf => "SELF",
             Token::SelfAddress => "SELF_ADDRESS",
             Token::Sender => "SENDER",
             Token::SetDelegate => "SET_DELEGATE",
@@ -270,7 +270,6 @@ impl ToString for Token {
             /////////////      Macro       /////////////////
             ////////////////////////////////////////////////
             Token::AssertSome => "ASSERT_SOME",
-            e => todo!("{:?} is not implemented", e),
         }
         .to_string()
     }

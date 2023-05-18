@@ -2,10 +2,10 @@ mod ast;
 mod phase;
 use crate::mlir::ast::{Operation, Value};
 use crate::mlir::dialect::michelson::ast::Type;
-use michelson_ast::program;
+use michelson_ast;
 use std::collections::HashMap;
 
-pub fn compile(smart_contract: Operation) -> String {
+pub fn compile(smart_contract: Operation) -> michelson_ast::program::Program {
     /*
      * Value を Key として,その Value の Michelson の Stack 上での位置を返す HashMap
      * Value の 1-index でのレジスタ領域における相対位置を返す事に注意
@@ -63,11 +63,9 @@ pub fn compile(smart_contract: Operation) -> String {
         phase::compile_operations(&smart_contract, get_address_closure.as_ref());
     code.append(&mut compile_operations_instructions);
 
-    let michelson_program = program::Program {
+    michelson_ast::program::Program {
         parameter,
         storage,
         code,
-    };
-
-    michelson_program.to_string()
+    }
 }

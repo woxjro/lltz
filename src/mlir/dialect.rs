@@ -47,7 +47,7 @@ impl From<&str> for DialectKind {
         } else if s == DialectKind::Michelson.to_string() {
             DialectKind::Michelson
         } else {
-            todo!("unsupported DialectKind")
+            todo!("{s}: unsupported DialectKind")
         }
     }
 }

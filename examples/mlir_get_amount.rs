@@ -1,6 +1,7 @@
 use lltz::json::mlir::ast::{get_smart_contract_operation, Block};
+use lltz::michelify::compile;
+use lltz::tools::example::emit_file;
 use std::process::Command;
-
 pub fn main() {
     let res = Command::new("michelson-mlir-opt")
         .args([
@@ -15,15 +16,11 @@ pub fn main() {
 
     let deserialized: Block = serde_json::from_str(&json).unwrap();
     let smart_contract = get_smart_contract_operation(deserialized).unwrap();
-    dbg!(&smart_contract.regions[0].blocks[0].arguments);
 
-    //let ops = &smart_contract.regions[0].blocks[0].operations;
-    /*
-    for op in ops {
-        for result in &op.results {
-            println!("{:?}", string_to_michelson_type(result.r#type.clone()));
-        }
-        //println!("{:?}", op);
-    }
-    */
+    emit_file(
+        "mlir_get_amount",
+        "0",
+        "Unit",
+        compile(smart_contract.into()),
+    );
 }

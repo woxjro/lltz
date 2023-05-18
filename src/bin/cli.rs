@@ -34,7 +34,7 @@ pub fn main() {
     let deserialized: Block = serde_json::from_str(&json).unwrap();
     let smart_contract = get_smart_contract_operation(deserialized).unwrap();
 
-    let michelson_code = compile(smart_contract.into());
+    let michelson_code = compile(smart_contract.into()).to_string();
 
     match args.output {
         Some(output) => {
@@ -46,7 +46,7 @@ pub fn main() {
                 ),
                 command_mock = format!(
                     "#tezos-client --mode mockup --base-dir /tmp/mockup \
-                        run script {output} on storage '0' and input 'Unit' --trace-stack\n"
+                        run script {output} on storage '' and input '' --trace-stack\n"
                 )
             );
             let mut file = File::create(output).unwrap();

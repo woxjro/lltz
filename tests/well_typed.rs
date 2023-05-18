@@ -28,15 +28,50 @@ fn well_typed_test() {
             .output()
             .expect("error");
 
-        //FIXME: .len() == 0よりも良い方法
         let build_result = String::from_utf8(build_output.stdout).unwrap();
-        if build_result.len() == 0 {
+        if build_result.is_empty() {
             panic!("failed to bulid {}.rs", file_name);
-        } else {
+        } else
+        /* 成功するとstack レイアウトなどが出力される */
+        {
             println!("====Build Completed===");
         }
 
         //tezos-client --mode mockup typecheck script ./examples/out/simple_add.tz
+        let output = Command::new("tezos-client")
+            .args([
+                "--mode",
+                "mockup",
+                "typecheck",
+                "script",
+                &format!("./examples/out/{file_name}.tz"),
+            ])
+            .output()
+            .expect("faled to execute process");
+
+        let result = String::from_utf8(output.stdout).unwrap();
+        println!("{}", &result);
+        let well_typed = result.contains("Well typed");
+        assert_eq!(well_typed, true);
+    }
+}
+
+#[test]
+fn mlir_well_typed_test() {
+    let file_names = ["mlir_simplest", "mlir_get_amount", "mlir_boomerang"];
+
+    for file_name in file_names {
+        println!("======{file_name}=====");
+        let build_output = Command::new("cargo")
+            .args(["run", "--example", file_name])
+            .output()
+            .expect("error");
+
+        let build_result = String::from_utf8(build_output.stdout).unwrap();
+        if !build_result.is_empty() {
+            panic!("{file_name} build failed");
+        }
+
         let output = Command::new("tezos-client")
             .args([
                 "--mode",

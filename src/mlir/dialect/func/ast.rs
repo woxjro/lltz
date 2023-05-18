@@ -1,11 +1,21 @@
 use crate::mlir::{ast, dialect};
 
+use lalrpop_util;
+use lalrpop_util::lalrpop_mod;
+lalrpop_mod!(pub mlir_parser);
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Type {
     Function {
         arguments: Vec<ast::Type>,
         results: Vec<ast::Type>,
     },
+}
+
+impl From<String> for Type {
+    fn from(s: String) -> Self {
+        mlir_parser::FTypeParser::new().parse(&s).unwrap()
+    }
 }
 
 #[derive(Debug, Clone)]

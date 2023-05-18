@@ -43,7 +43,6 @@ impl From<michelson_dialect::Type> for StackType {
                     ty2: Box::new(stupidly_from(ty2.as_ref().to_owned())),
                 }),
             },
-            michelson_dialect::Type::SmartContract { .. } => panic!(),
             michelson_dialect::Type::Contract { ty } => StackType::Option {
                 ty: Box::new(StackType::Contract {
                     ty: Box::new(stupidly_from(ty.as_ref().to_owned())),
@@ -101,7 +100,6 @@ fn stupidly_from(ty: michelson_dialect::Type) -> StackType {
         michelson_dialect::Type::Contract { ty } => StackType::Contract {
             ty: Box::new(stupidly_from(ty.as_ref().to_owned())),
         },
-        ty => todo!("{:?}", ty),
     }
 }
 
@@ -147,7 +145,6 @@ impl From<michelson_dialect::Type> for MichelsonType {
             michelson_dialect::Type::List { ty } => MichelsonType::List {
                 ty: Box::new(MichelsonType::from(*ty)),
             },
-            michelson_dialect::Type::SmartContract { .. } => panic!("not supported"),
             michelson_dialect::Type::Contract { ty } => MichelsonType::Contract {
                 ty: Box::new(MichelsonType::from(*ty)),
             },

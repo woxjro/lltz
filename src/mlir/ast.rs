@@ -149,7 +149,7 @@ impl From<json_mlir::Attribute> for Attribute {
         if attribute.name.contains("function_type") {
             Self {
                 name: attribute.name.to_owned(),
-                value: AttrValue::Type(Type::Michelson(dialect::michelson::ast::Type::from(
+                value: AttrValue::Type(Type::Func(dialect::func::ast::Type::from(
                     attribute.value.to_owned(),
                 ))),
             }

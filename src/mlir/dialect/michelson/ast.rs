@@ -10,24 +10,10 @@ pub enum Type {
     Unit,
     Mutez,
     Operation,
-    Option {
-        ty: Box<Type>,
-    },
-    Pair {
-        ty1: Box<Type>,
-        ty2: Box<Type>,
-    },
-    Contract {
-        ty: Box<Type>,
-    },
-    List {
-        ty: Box<Type>,
-    },
-    SmartContract {
-        param: Box<Type>,
-        storage: Box<Type>,
-        res: Box<Type>,
-    },
+    Option { ty: Box<Type> },
+    Pair { ty1: Box<Type>, ty2: Box<Type> },
+    Contract { ty: Box<Type> },
+    List { ty: Box<Type> },
 }
 
 impl Type {
@@ -49,7 +35,7 @@ impl Type {
 
 impl From<String> for Type {
     fn from(s: String) -> Self {
-        mlir_parser::TypeParser::new().parse(&s).unwrap()
+        mlir_parser::MTypeParser::new().parse(&s).unwrap()
     }
 }
 

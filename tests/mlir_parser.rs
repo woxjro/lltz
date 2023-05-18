@@ -1,53 +1,54 @@
-use lltz::mlir::dialect::michelson::ast::Type;
+use lltz::mlir::ast::Type;
+use lltz::mlir::dialect::func::ast::Type as FType;
+use lltz::mlir::dialect::michelson::ast::Type as MType;
 #[test]
 fn mlir_parser() {
-    assert_eq!(Type::from("!michelson.mutez".to_owned()), Type::Mutez);
+    assert_eq!(MType::from("!michelson.mutez".to_owned()), MType::Mutez);
     assert_eq!(
-        Type::from("!michelson.list<!michelson.mutez>".to_owned(),),
-        Type::List {
-            ty: Box::new(Type::Mutez)
+        MType::from("!michelson.list<!michelson.mutez>".to_owned(),),
+        MType::List {
+            ty: Box::new(MType::Mutez)
         }
     );
 
     assert_eq!(
-        Type::from(
+        MType::from(
             "!michelson.pair<!michelson.list<!michelson.operation>,!michelson.mutez>".to_owned(),
         ),
-        Type::Pair {
-            ty1: Box::new(Type::List {
-                ty: Box::new(Type::Operation)
+        MType::Pair {
+            ty1: Box::new(MType::List {
+                ty: Box::new(MType::Operation)
             }),
-            ty2: Box::new(Type::Mutez)
+            ty2: Box::new(MType::Mutez)
         }
     );
 
     assert_eq!(
-        Type::from(
-            "(!michelson.mutez, !michelson.mutez) -> !michelson.pair<!michelson.list<!michelson.operation>, !michelson.mutez>".to_owned(),
-        ),
-        Type::SmartContract {
-            param: Box::new(Type::Mutez),
-            storage: Box::new(Type::Mutez),
-            res: Box::new(
-                Type::Pair {
-                    ty1: Box::new(Type::List {
-                        ty: Box::new(Type::Operation)
-                    }),
-                    ty2: Box::new(Type::Mutez)
-                }
-            )
-        }
-    );
+            FType::from(
+                "(!michelson.mutez, !michelson.mutez) -> !michelson.pair<!michelson.list<!michelson.operation>, !michelson.mutez>".to_owned(),
+            ),
+            FType::Function {
+                arguments: vec![ Type::Michelson(MType::Mutez), Type::Michelson(MType::Mutez) ],
+                results: vec![
+                   Type::Michelson( MType::Pair {
+                        ty1: Box::new(MType::List {
+                            ty: Box::new(MType::Operation)
+                        }),
+                        ty2: Box::new(MType::Mutez)
+                    })
+                ]
+            }
+        );
 
     assert_eq!(
-        Type::from(
+        MType::from(
             "!michelson.pair<!michelson.list<!michelson.operation>,!michelson.mutez>".to_owned(),
         ),
-        Type::Pair {
-            ty1: Box::new(Type::List {
-                ty: Box::new(Type::Operation)
+        MType::Pair {
+            ty1: Box::new(MType::List {
+                ty: Box::new(MType::Operation)
             }),
-            ty2: Box::new(Type::Mutez)
+            ty2: Box::new(MType::Mutez)
         }
     );
 }

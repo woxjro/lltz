@@ -1,18 +1,26 @@
-use crate::mlir::dialect::michelson::ast::{Type, Tok};
+use crate::mlir::dialect::michelson::ast::{Type as MType, Tok};
+use crate::mlir::dialect::func::ast::{Type as FType};
+use crate::mlir::ast::{Type};
 grammar;
 
-pub Type: Type = {
-    <address:Address> => Type::Address,
-    <unit:Unit> => Type::Unit,
-    <mutez:Mutez> => Type::Mutez,
-    <operation:Operation> => Type::Operation,
-    <list:List> "<" <ty:Type> ">" => Type::List { ty: Box::new(ty) },
-    <option:Option> "<" <ty:Type> ">" => Type::Option { ty: Box::new(ty) },
-    <option:Contract> "<" <ty:Type> ">" => Type::Contract { ty: Box::new(ty) },
-    <pair:Pair> "<" <ty1:Type> "," <ty2:Type> ">" => Type::Pair { ty1: Box::new(ty1), ty2: Box::new(ty2) },
-    "(" <param: Type> "," <storage: Type> ")" "->" <res: Type> =>
-        Type::SmartContract { param: Box::new(param), storage: Box::new(storage), res: Box::new(res) },
+pub MType: MType = {
+    <address:Address> => MType::Address,
+    <unit:Unit> => MType::Unit,
+    <mutez:Mutez> => MType::Mutez,
+    <operation:Operation> => MType::Operation,
+    <list:List> "<" <ty:MType> ">" => MType::List { ty: Box::new(ty) },
+    <option:Option> "<" <ty:MType> ">" => MType::Option { ty: Box::new(ty) },
+    <option:Contract> "<" <ty:MType> ">" => MType::Contract { ty: Box::new(ty) },
+    <pair:Pair> "<" <ty1:MType> "," <ty2:MType> ">" => MType::Pair { ty1: Box::new(ty1), ty2: Box::new(ty2) }
 };
+
+pub FType: FType = {
+    "(" <param: MType> "," <storage: MType> ")" "->" <result: MType> =>
+        FType::Function {
+            arguments: vec![Type::Michelson(param), Type::Michelson(storage)],
+            results: vec![Type::Michelson(result)]
+        },
+}
 
 Unit: Tok = <s:r"[!][a-zA-Z]+[.]unit"> => Tok::Unit;
 Address: Tok = <s:r"[!][a-zA-Z]+[.]address"> => Tok::Address;

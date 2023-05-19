@@ -1,10 +1,11 @@
 use lltz::json::mlir::ast::{get_smart_contract_operation, Block};
 use lltz::michelify::compile;
-use lltz::tools::example::emit_file;
+use lltz::tools;
+
 use std::process::Command;
 
 pub fn main() {
-    let res = Command::new("michelson-mlir-opt")
+    let res = Command::new("./mlir/build/bin/michelson-mlir-opt")
         .args([
             "--dump-json",
             "--irdl-file=./mlir/dialect/irdl/michelson.irdl.mlir",
@@ -17,11 +18,23 @@ pub fn main() {
 
     let deserialized: Block = serde_json::from_str(&json).unwrap();
     let smart_contract = get_smart_contract_operation(deserialized).unwrap();
+    let program = compile(smart_contract.into());
 
-    emit_file(
-        "mlir_simplest",
-        "Unit",
-        "Unit",
-        compile(smart_contract.into()),
+    #[cfg(debug_assertions)]
+    eprintln!(
+        "number of instructions: {}",
+        program
+            .code
+            .iter()
+            .map(|instr| instr.count())
+            .sum::<usize>()
+    );
+
+    tools::example::emit_file("mlir_simplest", "Unit", "Unit", program);
+
+    #[cfg(debug_assertions)]
+    eprintln!(
+        "gas consumption: {}",
+        tools::measure::get_gas_consumption("./examples/out/mlir_simplest.tz", "Unit", "Unit")
     );
 }

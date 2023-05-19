@@ -20,7 +20,7 @@ struct Args {
 pub fn main() {
     let args = Args::parse();
 
-    let res = Command::new("michelson-mlir-opt")
+    let res = Command::new("./mlir/build/bin/michelson-mlir-opt")
         .args([
             "--dump-json",
             "--irdl-file=./mlir/dialect/irdl/michelson.irdl.mlir",

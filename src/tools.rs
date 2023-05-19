@@ -20,3 +20,21 @@ pub mod example {
         file.write_all(contents.as_bytes()).unwrap();
     }
 } /* example */
+
+pub mod measure {
+
+    use std::process::Command;
+    pub fn get_gas_consumption(file_name: &str, storage: &str, parameter: &str) -> String {
+        let res = Command::new("sh")
+            .args([
+                "./utils/calculate_gas_consumption.sh",
+                file_name,
+                storage,
+                parameter,
+            ])
+            .output()
+            .unwrap()
+            .stdout;
+        String::from_utf8(res).unwrap()
+    }
+} /* measure */

@@ -1,11 +1,14 @@
 use crate::michelify::ast::StackType;
 use crate::mlir;
-use crate::mlir::ast::{Operation, Value};
-use crate::mlir::dialect::michelson::ast::Type;
-use michelson_ast::instruction::Instruction as MichelsonInstruction;
-use michelson_ast::instruction_row;
-use michelson_ast::ty::Ty as MichelsonType;
-use michelson_ast::wrapped_instruction::WrappedInstruction as MWrappedInstr;
+use crate::mlir::{
+    ast::{AttrValue, Operation, Value},
+    dialect::func,
+    dialect::michelson::ast::Type,
+};
+use michelson_ast::{
+    instruction::Instruction as MichelsonInstruction, instruction_row, ty::Ty as MichelsonType,
+    wrapped_instruction::WrappedInstruction as MWrappedInstr,
+};
 use std::collections::HashMap;
 
 pub enum GetAddressClosureArg {
@@ -27,20 +30,28 @@ pub fn get_get_address_closure(
     })
 }
 
-pub fn get_signature(smart_contract: &Operation) -> (MichelsonType, MichelsonType) {
-    let args = smart_contract.regions[0].blocks[0].arguments.to_owned();
-    if args.len() == 2 {
-        let storage_v = args[0].get_value();
-        let param_v = args[1].get_value();
-        (
-            MichelsonType::from(storage_v.get_type()),
-            MichelsonType::from(param_v.get_type()),
-        )
+/// A function that takes an Operation equivalent to a smart contract and returns the types of
+/// storage and parameter, which represent the entry point of the smart contract.
+pub fn get_entrypoint_types(smart_contract: &Operation) -> (MichelsonType, MichelsonType) {
+    if let Some(attr) = smart_contract
+        .attributes
+        .iter()
+        .find(|attribute| attribute.name == "function_type")
+    {
+        if let AttrValue::Type(mlir::ast::Type::Func(func::ast::Type::Function {
+            arguments,
+            results: _,
+        })) = &attr.value
+        {
+            (
+                MichelsonType::from(arguments[0].to_owned()),
+                MichelsonType::from(arguments[1].to_owned()),
+            )
+        } else {
+            panic!()
+        }
     } else {
-        panic!(
-            "A smart_contract function is being given {} arguments instead of 2.",
-            args.len()
-        )
+        panic!("The json input is invalid.");
     }
 }
 
@@ -397,7 +408,6 @@ pub fn compile_operations(
                 }
             }
             mlir::dialect::Operation::FuncOp { operation } => {
-                use mlir::dialect::func;
                 match operation {
                     //before: [value region] |> [heap region] |> stack_bottom
                     //after :           (operations, storage) |> stack_bottom

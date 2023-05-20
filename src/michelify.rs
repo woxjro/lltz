@@ -32,7 +32,7 @@ pub fn compile(smart_contract: Operation) -> michelson_ast::program::Program {
      */
     let mut type_heap_address_counter = 0;
 
-    let (parameter, storage) = phase::get_signature(&smart_contract);
+    let (parameter, storage) = phase::get_entrypoint_types(&smart_contract);
     let mut code = vec![];
 
     /*
@@ -49,9 +49,10 @@ pub fn compile(smart_contract: Operation) -> michelson_ast::program::Program {
     /*
      * stack initialization
      */
-    let mut stack_initialization_instructions =
-        phase::stack_initialization(&value_addresses, &type_heap_addresses);
-    code.append(&mut stack_initialization_instructions);
+    code.append(&mut phase::stack_initialization(
+        &value_addresses,
+        &type_heap_addresses,
+    ));
 
     let get_address_closure =
         phase::get_get_address_closure(value_addresses.clone(), type_heap_addresses.clone());
@@ -59,9 +60,10 @@ pub fn compile(smart_contract: Operation) -> michelson_ast::program::Program {
     /*
      * compile operations
      */
-    let mut compile_operations_instructions =
-        phase::compile_operations(&smart_contract, get_address_closure.as_ref());
-    code.append(&mut compile_operations_instructions);
+    code.append(&mut phase::compile_operations(
+        &smart_contract,
+        get_address_closure.as_ref(),
+    ));
 
     michelson_ast::program::Program {
         parameter,

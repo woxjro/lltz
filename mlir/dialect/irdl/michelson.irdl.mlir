@@ -3,7 +3,7 @@ module {
     ///////////////////////////////
     /////////   Types     /////////
     ///////////////////////////////
-    irdl.type @address{}
+    irdl.type @address {}
 
     irdl.type @mutez {}
 
@@ -41,23 +41,21 @@ module {
       %fst = irdl.any
       %snd = irdl.any
 
-      %res = irdl.is @pair
+      %res = irdl.any
 
       irdl.operands(%fst, %snd)
       irdl.results(%res)
     }
 
     irdl.operation @make_list {
-      %elem = irdl.any
+      %res = irdl.any
 
-      %res = irdl.is @list
-
-      irdl.operands(%elem)
+      irdl.operands()
       irdl.results(%res)
     }
 
     irdl.operation @get_unit {
-      %0 = irdl.is @unit
+      %0 = irdl.any
       irdl.operands()
       irdl.results(%0)
     }
@@ -77,24 +75,25 @@ module {
     }
 
     irdl.operation @get_source {
-      %source = irdl.is @address
+      %source = irdl.any
       irdl.operands()
       irdl.results(%source)
     }
 
     irdl.operation @get_contract {
-      %addr = irdl.is @address
+      %addr = irdl.any
       %param = irdl.any
-      %res = irdl.parametric @contract<%param>
+      %contract = irdl.parametric @contract<%param>
+      %res = irdl.parametric @option<%contract>
       irdl.operands(%addr)
       irdl.results(%res)
     }
 
     irdl.operation @transfer_tokens {
-      %tokens = irdl.is @mutez
+      %tokens = irdl.any
       %parameter = irdl.any
       %ct = irdl.parametric @contract<%parameter>
-      %res = irdl.is @operation
+      %res = irdl.any
       irdl.operands(%parameter, %tokens, %ct)
       irdl.results(%res)
     }

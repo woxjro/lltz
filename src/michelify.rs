@@ -1,7 +1,9 @@
 mod ast;
 mod phase;
-use crate::mlir::ast::{Operation, Value};
-use crate::mlir::dialect::michelson::ast::Type;
+use crate::mlir::{
+    ast::{Operation, Value},
+    dialect::michelson::ast::Type,
+};
 use michelson_ast;
 use std::collections::HashMap;
 

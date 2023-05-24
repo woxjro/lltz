@@ -202,20 +202,18 @@ pub fn compile_operations(
                         let result_address =
                             (*get_address_closure)(GetAddressClosureArg::Value(result.get_value()));
 
-                        //FIXME: 冗長
-                        let contract_type: MichelsonType = match result.get_value().get_type() {
-                            mlir::ast::Type::Michelson(ty) => match ty {
-                                Type::Option { ty } => match ty.as_ref().to_owned() {
-                                    Type::Contract { ty } => ty,
-                                    _ => panic!(),
-                                },
-                                _ => panic!(),
-                            },
-                            _ => panic!(),
-                        }
-                        .as_ref()
-                        .to_owned()
-                        .into();
+                        let result_type = result.get_value().get_type();
+                        let contract_type = if let mlir::ast::Type::Michelson(Type::Option { ty }) =
+                            result_type
+                        {
+                            if let Type::Contract { ty } = *ty {
+                                MichelsonType::from(*ty)
+                            } else {
+                                panic!("The return type of the `michelson.get_contract` must be of type `option<contract<ty>>`")
+                            }
+                        } else {
+                            panic!("The return type of the `michelson.get_contract` must be of type `option<contract<ty>>`")
+                        };
 
                         instructions.append(
                             &mut vec![

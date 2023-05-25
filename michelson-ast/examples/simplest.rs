@@ -1,15 +1,5 @@
-# michelson-ast
-
-## Overview
-`michelson-ast` is a Rust library for generating Michelson code. This library can handle the Abstract Syntax Tree (AST) of Michelson, the smart contract language for Tezos.
-
-## Usage
-To generate Michelson code using this library, you can write a program like the following:
-```rust
 use michelson_ast::{
-    instruction::Instruction,
-    program::Program, ty::Ty,
-    wrapped_instruction::WrappedInstruction,
+    instruction::Instruction, program::Program, ty::Ty, wrapped_instruction::WrappedInstruction,
 };
 
 fn main() {
@@ -34,15 +24,3 @@ fn main() {
 
     println!("{}", program.to_string());
 }
-```
-
-## Example output
-```
-parameter unit;
-storage unit;
-code {
-       CDR; # => Unit
-       NIL operation; # => {} : Unit
-       PAIR; # => (Pair {} Unit)
-     }
-```

@@ -28,17 +28,20 @@ pub enum Instruction {
         instr1: Vec<WrappedInstruction>,
         instr2: Vec<WrappedInstruction>,
     },
-    //ITER inster,
-    //LAMBDA ty1 ty2 instr,
-    //LOOP instr,
+    Iter {
+        instr: Vec<WrappedInstruction>,
+    },
+    Lambda {
+        ty1: Ty,
+        ty2: Ty,
+        instr: Vec<WrappedInstruction>,
+    },
     Loop {
         instr: Vec<WrappedInstruction>,
     },
     LoopLeft {
         instr: Vec<WrappedInstruction>,
     },
-    //instr1 ; instr2,
-    //{},
     ////////////////////////////////////////////////
     //////////Operations on data structures/////////
     ////////////////////////////////////////////////
@@ -58,8 +61,12 @@ pub enum Instruction {
     Get,
     GetN(usize),
     GetAndUpdate,
-    //LEFT ty2,
-    //MAP instr,
+    Left {
+        ty2: Ty,
+    },
+    Map {
+        instr: Vec<WrappedInstruction>,
+    },
     Mem,
     Never,
     Nil {
@@ -71,16 +78,20 @@ pub enum Instruction {
     Pack,
     Pair,
     PairN(usize),
-    //RIGHT ty1,
+    Right {
+        ty1: Ty,
+    },
     Size,
     Slice,
     Some,
     Unit,
-    //UNPACK ty,
+    Unpack {
+        ty: Ty,
+    },
     Unpair,
-    //UNPAIR n,
+    UnpairN(usize),
     Update,
-    //UPDATE n,
+    UpdateN(usize),
     ////////////////////////////////////////////////
     /////////////Blockchain operations//////////////
     ////////////////////////////////////////////////
@@ -91,7 +102,11 @@ pub enum Instruction {
     Contract {
         ty: Ty,
     },
-    //CREATE_CONTRACT { parameter ty1; storage ty2; code instr1 },
+    CreateContract {
+        parameter: Ty,
+        storage: Ty,
+        code: Vec<WrappedInstruction>,
+    },
     ImplicitAccount,
     Level,
     Now,
@@ -187,10 +202,8 @@ impl Instruction {
             Instruction::IfNone { .. } => Token::IfNone,
             Instruction::Loop { .. } => Token::Loop,
             Instruction::LoopLeft { .. } => Token::LoopLeft,
-            //ITER inster,
-            //LAMBDA ty1 ty2 instr,
-            //instr1 ; instr2,
-            //{},
+            Instruction::Iter { .. } => Token::Iter,
+            Instruction::Lambda { .. } => Token::Lambda,
             ////////////////////////////////////////////////
             //////////Operations on data structures/////////
             ////////////////////////////////////////////////
@@ -204,8 +217,8 @@ impl Instruction {
             Instruction::Get => Token::Get,
             Instruction::GetN(_) => Token::GetN,
             Instruction::GetAndUpdate => Token::GetAndUpdate,
-            //LEFT ty2,
-            //MAP instr,
+            Instruction::Left { .. } => Token::Left,
+            Instruction::Map { .. } => Token::Map,
             Instruction::Mem => Token::Mem,
             Instruction::Never => Token::Never,
             Instruction::Nil { .. } => Token::Nil,
@@ -213,16 +226,16 @@ impl Instruction {
             Instruction::Pack => Token::Pack,
             Instruction::Pair => Token::Pair,
             Instruction::PairN(_) => Token::PairN,
-            //RIGHT ty1,
+            Instruction::Right { .. } => Token::Right,
             Instruction::Size => Token::Size,
             Instruction::Slice => Token::Slice,
             Instruction::Some => Token::Some,
             Instruction::Unit => Token::Unit,
-            //UNPACK ty,
+            Instruction::Unpack { .. } => Token::Unpack,
             Instruction::Unpair => Token::Unpair,
-            //UNPAIR n,
+            Instruction::UnpairN(_) => Token::UnpairN,
             Instruction::Update => Token::Update,
-            //UPDATE n,
+            Instruction::UpdateN(_) => Token::UpdateN,
             ////////////////////////////////////////////////
             /////////////Blockchain operations//////////////
             ////////////////////////////////////////////////
@@ -231,7 +244,7 @@ impl Instruction {
             Instruction::Balance => Token::Balance,
             Instruction::ChainId => Token::ChainId,
             Instruction::Contract { .. } => Token::Contract,
-            //CREATE_CONTRACT { parameter ty1; storage ty2; code instr1 },
+            Instruction::CreateContract { .. } => Token::CreateContract,
             Instruction::ImplicitAccount => Token::ImplicitAccount,
             Instruction::Level => Token::Level,
             Instruction::Now => Token::Now,
@@ -321,8 +334,9 @@ impl Instruction {
         WrappedInstruction::from(self.clone())
     }
 
-    /// 命令数を返す関数
-    /// コメントは0， PUSH, DIG, DUG などは1，IFなど内部に命令列を持つ命令は再帰的に計算
+    /// Function that returns the number of instructions
+    /// Comments are 0, PUSH, DIG, DUG, etc. are 1, instructions that have
+    /// a sequence of instructions internally like IF are calculated recursively.
     pub fn count(&self) -> usize {
         match self {
             Instruction::Comment(_) => 0,
@@ -355,13 +369,26 @@ impl Instruction {
             Instruction::LoopLeft { instr } => {
                 instr.iter().map(|instr| instr.count()).sum::<usize>() + 1
             }
-            //ITER inster,
-            //LAMBDA ty1 ty2 instr,
-            //instr1 ; instr2,
-            //{},
+            Instruction::Iter { instr } => {
+                instr.iter().map(|instr| instr.count()).sum::<usize>() + 1
+            }
+            Instruction::Lambda {
+                ty1: _,
+                ty2: _,
+                instr,
+            } => instr.iter().map(|instr| instr.count()).sum::<usize>() + 1,
             ////////////////////////////////////////////////
             //////////Operations on data structures/////////
             ////////////////////////////////////////////////
+            ////////////////////////////////////////////////
+            /////////////Blockchain operations//////////////
+            ////////////////////////////////////////////////
+            Instruction::CreateContract {
+                parameter: _,
+                storage: _,
+                code,
+            } => code.iter().map(|instr| instr.count()).sum::<usize>() + 1,
+
             _ => 1,
         }
     }

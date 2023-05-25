@@ -108,8 +108,12 @@ impl WrappedInstruction {
                         format(instr2, accumulation + instruction.get_label_len() + 3)
                 )
             }
-            //ITER inster,
-            //LAMBDA ty1 ty2 instr,
+            Instruction::Iter { .. } => {
+                todo!()
+            }
+            Instruction::Lambda { .. } => {
+                todo!()
+            }
             Instruction::Loop { instr } => {
                 format!(
                     r#"{indent}{label} {{
@@ -130,8 +134,6 @@ impl WrappedInstruction {
                     formatted_instr = format(instr, accumulation + instruction.get_label_len() + 3)
                 )
             }
-            //instr1 ; instr2,
-            //{},
             ////////////////////////////////////////////////
             //////////Operations on data structures/////////
             ////////////////////////////////////////////////
@@ -153,13 +155,19 @@ impl WrappedInstruction {
                 format!("{indent}{} {}", instruction.get_label(), ty.to_string())
             }
             Instruction::GetN(n) => format!("{indent}{} {}", instruction.get_label(), n),
+            Instruction::Left { .. } => todo!(),
+            Instruction::Map { .. } => todo!(),
             Instruction::Nil { ty } => {
                 format!("{indent}{} {}", instruction.get_label(), ty.to_string())
             }
+            Instruction::Right { .. } => todo!(),
+            Instruction::Unpack { .. } => todo!(),
+            Instruction::UnpairN { .. } => todo!(),
+            Instruction::UpdateN { .. } => todo!(),
             ////////////////////////////////////////////////
             /////////////Blockchain operations//////////////
             ////////////////////////////////////////////////
-            //CREATE_CONTRACT { parameter ty1; storage ty2; code instr1 },
+            Instruction::CreateContract { .. } => todo!(),
             Instruction::Contract { ty } => {
                 format!("{indent}{} {}", instruction.get_label(), ty.to_string())
             }

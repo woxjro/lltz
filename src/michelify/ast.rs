@@ -31,9 +31,6 @@ pub enum StackType {
 impl From<michelson_dialect::Type> for StackType {
     fn from(ty: michelson_dialect::Type) -> StackType {
         match ty {
-            michelson_dialect::Type::Address => StackType::Option {
-                ty: Box::new(StackType::Address),
-            },
             michelson_dialect::Type::Operation => StackType::Option {
                 ty: Box::new(StackType::Operation),
             },
@@ -66,6 +63,7 @@ impl StackType {
     pub fn default_value_instruction(&self) -> MichelsonInstruction {
         match self {
             StackType::Unit => MichelsonInstruction::Unit,
+            StackType::Address => MichelsonInstruction::Source,
             StackType::Mutez => MichelsonInstruction::Push {
                 ty: MichelsonType::Mutez,
                 val: MichelsonVal::Mutez(0),

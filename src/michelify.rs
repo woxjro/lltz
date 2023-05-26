@@ -9,28 +9,28 @@ use std::collections::HashMap;
 
 pub fn compile(smart_contract: Operation) -> michelson_ast::program::Program {
     /*
-     * Value を Key として,その Value の Michelson の Stack 上での位置を返す HashMap
-     * Value の 1-index でのレジスタ領域における相対位置を返す事に注意
+     * HashMap that returns the position of a Value on the Michelson Stack as its Key
+     * Note that it returns the relative position in the register area of Value, using a 1-index
      */
     let mut value_addresses: HashMap<Value, usize> = HashMap::new();
 
     /*
-     * type を Key として,その type の(Michelsonの Stack における)ヒープ領域内の
-     * 相対位置を返す HashMap．1-indexであることに注意
+     * HashMap that returns the relative position in the heap area of Types on
+     * the Michelson Stack as its Key. Note that it uses a 1-index.
      */
     let mut type_heap_addresses: HashMap<Type, usize> = HashMap::new();
 
     /*
-     * Michelson のスタック領域における Value 領域での Value 確保において
-     * 既に確保した Value の Value 領域での相対的ポインタを保持しておく為の変数
-     * scan を行った後は使わない
+     * Variable used to store the relative pointer in the Value area of the Michelson stack
+     * for the allocation of a Value in the Value area.
+     * It is not used after `scan`.
      */
     let mut value_address_counter = 0;
 
     /*
-     * Michelsonのスタック領域におけるヒープ領域での BIG_MAP 確保において
-     * 既に確保した BIG_MAP のヒープ領域での相対的ポインタを保持しておく為の変数
-     * scan を行った後は使わない
+     * Variable used to store the relative pointer in the heap area of the Michelson stack
+     * for the allocation of a BIG_MAP in the heap area.
+     * It is not used after `scan`.
      */
     let mut type_heap_address_counter = 0;
 

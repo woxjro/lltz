@@ -174,20 +174,19 @@ pub fn compile_operations(
                         );
                     }
                     michelson::ast::Operation::GetSourceOp { result } => {
-                        let address =
+                        let _address =
                             (*get_address_closure)(GetAddressClosureArg::Value(result.get_value()));
                         instructions.append(
                             &mut vec![
                                 MichelsonInstruction::Comment(format!(
-                                    "{} = michelson.get_source() {{",
+                                    "{} = michelson.get_source() {{ }}",
                                     result.get_value().get_id()
                                 )),
-                                MichelsonInstruction::Source,
-                                MichelsonInstruction::Some,
-                                MichelsonInstruction::DigN(address),
-                                MichelsonInstruction::Drop,
-                                MichelsonInstruction::DugN(address - 1),
-                                MichelsonInstruction::Comment("}".to_string()),
+                                //MichelsonInstruction::Source,
+                                //MichelsonInstruction::DigN(address),
+                                //MichelsonInstruction::Drop,
+                                //MichelsonInstruction::DugN(address - 1),
+                                //MichelsonInstruction::Comment("}".to_string()),
                             ]
                             .iter()
                             .map(|instr| instr.to_wrapped_instruction())
@@ -223,7 +222,6 @@ pub fn compile_operations(
                                     address.get_value().get_id(),
                                 )),
                                 MichelsonInstruction::DupN(address_address),
-                                MichelsonInstruction::AssertSome,
                                 MichelsonInstruction::Contract { ty: contract_type },
                                 MichelsonInstruction::Some,
                                 MichelsonInstruction::DigN(result_address),

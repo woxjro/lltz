@@ -3,7 +3,7 @@ use lltz::michelify::compile;
 use lltz::tools;
 use std::process::Command;
 
-pub fn main() {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let res = Command::new("./mlir/build/bin/michelson-mlir-opt")
         .args([
             "--dump-json",
@@ -17,7 +17,7 @@ pub fn main() {
 
     let deserialized: Block = serde_json::from_str(&json).unwrap();
     let smart_contract = get_smart_contract_operation(deserialized).unwrap();
-    let program = compile(smart_contract.into());
+    let program = compile(smart_contract.into())?;
 
     #[cfg(debug_assertions)]
     eprintln!(
@@ -36,4 +36,5 @@ pub fn main() {
         "gas consumption: {}",
         tools::measure::get_gas_consumption("./examples/out/mlir_boomerang.tz", "Unit", "Unit")
     );
+    Ok(())
 }

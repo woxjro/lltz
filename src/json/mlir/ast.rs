@@ -1,3 +1,5 @@
+use crate::json::mlir::error;
+
 use lalrpop_util;
 use lalrpop_util::lalrpop_mod;
 lalrpop_mod!(pub mlir_parser);
@@ -53,12 +55,20 @@ pub struct Region {
     pub blocks: Vec<Block>,
 }
 
-pub fn get_smart_contract_operation(block: Block) -> std::result::Result<Operation, ()> {
+pub fn get_smart_contract_operation(
+    block: Block,
+) -> std::result::Result<Operation, Box<dyn std::error::Error>> {
     let ops = &block.operations[0].regions[0].blocks[0].operations;
     let smart_contract = ops.iter().find(|&op| {
         op.attributes
             .iter()
             .any(|attr| attr.name == "sym_name" && attr.value.contains("smart_contract"))
     });
-    Ok(smart_contract.unwrap().clone())
+
+    match smart_contract {
+        Some(smart_contract) => Ok(smart_contract.clone()),
+        None => Err(Box::new(error::NotFound {
+            entity: "smart_contract".to_owned(),
+        })),
+    }
 }

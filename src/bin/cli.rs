@@ -1,9 +1,9 @@
 use clap::Parser;
-use lltz::json::mlir::ast::{get_smart_contract_operation, Block};
-use lltz::michelify::compile;
-use std::fs::File;
-use std::io::prelude::*;
-use std::process::Command;
+use lltz::{
+    json::mlir::ast::{get_smart_contract_operation, Block},
+    michelify::compile,
+};
+use std::{fs::File, io::prelude::*, process::Command};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -17,7 +17,7 @@ struct Args {
     output: Option<String>,
 }
 
-pub fn main() {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     let res = Command::new("./mlir/build/bin/michelson-mlir-opt")
@@ -26,15 +26,14 @@ pub fn main() {
             "--irdl-file=./mlir/dialect/irdl/michelson.irdl.mlir",
             &args.input,
         ])
-        .output()
-        .unwrap()
+        .output()?
         .stderr;
-    let json = String::from_utf8(res).unwrap();
+    let json = String::from_utf8(res)?;
 
-    let deserialized: Block = serde_json::from_str(&json).unwrap();
-    let smart_contract = get_smart_contract_operation(deserialized).unwrap();
+    let deserialized: Block = serde_json::from_str(&json)?;
+    let smart_contract = get_smart_contract_operation(deserialized)?;
 
-    let michelson_code = compile(smart_contract.into()).to_string();
+    let michelson_code = compile(smart_contract.into())?.to_string();
 
     match args.output {
         Some(output) => {
@@ -49,11 +48,12 @@ pub fn main() {
                         run script {output} on storage '' and input '' --trace-stack\n"
                 )
             );
-            let mut file = File::create(output).unwrap();
-            file.write_all(contents.as_bytes()).unwrap();
+            let mut file = File::create(output)?;
+            file.write_all(contents.as_bytes())?;
         }
         None => {
             println!("{michelson_code}");
         }
     }
+    Ok(())
 }

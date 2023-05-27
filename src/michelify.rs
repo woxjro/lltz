@@ -7,7 +7,9 @@ use crate::mlir::{
 use michelson_ast;
 use std::collections::HashMap;
 
-pub fn compile(smart_contract: Operation) -> michelson_ast::program::Program {
+pub fn compile(
+    smart_contract: Operation,
+) -> Result<michelson_ast::program::Program, Box<dyn std::error::Error>> {
     /*
      * HashMap that returns the position of a Value on the Michelson Stack as its Key
      * Note that it returns the relative position in the register area of Value, using a 1-index
@@ -34,9 +36,6 @@ pub fn compile(smart_contract: Operation) -> michelson_ast::program::Program {
      */
     let mut type_heap_address_counter = 0;
 
-    let (parameter, storage) = phase::get_entrypoint_types(&smart_contract);
-    let mut code = vec![];
-
     /*
      * scan operations
      */
@@ -48,13 +47,12 @@ pub fn compile(smart_contract: Operation) -> michelson_ast::program::Program {
         &mut type_heap_addresses,
     );
 
+    let (parameter, storage) = phase::get_entrypoint_types(&smart_contract);
+
     /*
      * stack initialization
      */
-    code.append(&mut phase::stack_initialization(
-        &value_addresses,
-        &type_heap_addresses,
-    ));
+    let mut code = phase::stack_initialization(&value_addresses, &type_heap_addresses);
 
     let get_address_closure =
         phase::get_get_address_closure(value_addresses.clone(), type_heap_addresses.clone());
@@ -67,9 +65,9 @@ pub fn compile(smart_contract: Operation) -> michelson_ast::program::Program {
         get_address_closure.as_ref(),
     ));
 
-    michelson_ast::program::Program {
+    Ok(michelson_ast::program::Program {
         parameter,
         storage,
         code,
-    }
+    })
 }

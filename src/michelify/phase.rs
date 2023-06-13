@@ -154,19 +154,18 @@ pub fn compile_operations(
                 use mlir::dialect::michelson;
                 match operation {
                     michelson::ast::Operation::GetUnitOp { result } => {
-                        let address =
+                        let _address =
                             (*get_address_closure)(GetAddressClosureArg::Value(result.get_value()));
                         instructions.append(
                             &mut vec![
                                 MichelsonInstruction::Comment(format!(
-                                    "{} = michelson.get_unit() {{",
+                                    "{} = michelson.get_unit() {{ }}",
                                     result.get_value().get_id()
                                 )),
-                                MichelsonInstruction::Unit,
-                                MichelsonInstruction::DigN(address),
-                                MichelsonInstruction::Drop,
-                                MichelsonInstruction::DugN(address - 1),
-                                MichelsonInstruction::Comment("}".to_string()),
+                                //MichelsonInstruction::Unit,
+                                //MichelsonInstruction::DigN(address),
+                                //MichelsonInstruction::Drop,
+                                //MichelsonInstruction::DugN(address - 1),
                             ]
                             .iter()
                             .map(|instr| instr.to_wrapped_instruction())

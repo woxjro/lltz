@@ -1,9 +1,22 @@
 # LLTZ: Compiler from MLIR to Michelson
 
-## build & usage
+### Requirements
+- Working C and C++ toolchains(compiler, linker)
+- cmake
+- make or ninja
 
-build `llvm-project`:
+### Clone LLTZ
 ```sh
+git clone --recursive https://github.com/woxjro/lltz
+cd lltz
+```
+
+## Build & Usage
+
+Build LLVM and MLIR:
+```sh
+$ cd llvm-project
+$ mkdir build && cd build
 $ cmake -G Ninja ../llvm \
     -DCMAKE_BUILD_TYPE=Release \
     -DLLVM_ENABLE_PROJECTS=mlir \
@@ -16,11 +29,27 @@ $ cmake -G Ninja ../llvm \
 $ cmake --build . --parallel 7 --target check-mlir
 ```
 
-There are sample and test programs under the `examples` directory.
+Build `michelson-mlir-opt` and `michelson-mlir-lsp-server`:
+```sh
+$ pwd
+<path/to/lltz>
+$ cd mlir && mkdir build && cd build
+$ cmake -G Ninja .. \
+    -DMLIR_DIR=$PWD/../../llvm-project/build/lib/cmake/mlir \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=YES
+$ cmake --build .
+```
+
+There are sample and test code under the `examples` directory.
 
 You can compile them by the following command.
 ```sh
 $ cargo run --bin cli -- --input ./examples/mlir/boomerang.mlir
+```
+
+To show details, run the following command.
+```sh
+$ cargo run --bin cli -- --help
 ```
 
 ## License

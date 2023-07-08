@@ -5,7 +5,12 @@
 - cmake
 - make or ninja
 
-### Clone LLTZ
+### Supported OS
+This software has been tested and verified to work correctly on the following operating systems:
+- `Ubuntu 22.04.2 LTS`
+
+
+## Clone LLTZ
 ```sh
 git clone --recursive https://github.com/woxjro/lltz
 cd lltz
@@ -24,8 +29,8 @@ $ cmake -G Ninja ../llvm \
     -DLLVM_TARGETS_TO_BUILD=X86 \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=YES \
     -DLLVM_CCACHE_BUILD=ON \
-    -DCMAKE_C_COMPILER=ccache-clang \
-    -DCMAKE_CXX_COMPILER=ccache-clang++
+    -DCMAKE_C_COMPILER=clang \
+    -DCMAKE_CXX_COMPILER=clang++
 $ cmake --build . --parallel 7 --target check-mlir
 ```
 
@@ -51,5 +56,3 @@ To show details, run the following command.
 ```sh
 $ cargo run --bin cli -- --help
 ```
-
-## License

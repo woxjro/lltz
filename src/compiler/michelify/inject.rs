@@ -11,12 +11,12 @@ pub fn inject_storage(
     let storage_arg = smart_contract_function
         .argument_list
         .iter()
-        .find(|Arg { reg: _, ty }| match Type::deref(&ty) {
-            Type::Struct { id, fields: _ } => id == String::from("Storage"),
+        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+            Type::Struct { id, fields: _ } => id == *"Storage",
             _ => false,
         })
         .unwrap();
-    helper::storage::alloca_storage_by_value(storage_arg, &register2stack_ptr, &memory_ty2stack_ptr)
+    helper::storage::alloca_storage_by_value(storage_arg, register2stack_ptr, memory_ty2stack_ptr)
 }
 
 ///ここが終わった段階では(Parameter, Strorage)はもう要らないのでDROP.
@@ -28,15 +28,15 @@ pub fn inject_parameter(
     let parameter_arg = smart_contract_function
         .argument_list
         .iter()
-        .find(|Arg { reg: _, ty }| match Type::deref(&ty) {
-            Type::Struct { id, fields: _ } => id == String::from("Parameter"),
+        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+            Type::Struct { id, fields: _ } => id == *"Parameter",
             _ => false,
         })
         .unwrap();
     helper::parameter::alloca_parameter_by_value(
         parameter_arg,
-        &register2stack_ptr,
-        &memory_ty2stack_ptr,
+        register2stack_ptr,
+        memory_ty2stack_ptr,
     )
 }
 
@@ -50,15 +50,15 @@ pub fn inject_pair(
     let pair_arg = smart_contract_function
         .argument_list
         .iter()
-        .find(|Arg { reg: _, ty }| match Type::deref(&ty) {
-            Type::Struct { id, fields: _ } => id == String::from("Pair"),
+        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+            Type::Struct { id, fields: _ } => id == *"Pair",
             _ => false,
         })
         .unwrap();
     helper::alloca::exec_alloca(
         &pair_arg.reg,
         &Type::deref(&pair_arg.ty),
-        &register2stack_ptr,
-        &memory_ty2stack_ptr,
+        register2stack_ptr,
+        memory_ty2stack_ptr,
     )
 }

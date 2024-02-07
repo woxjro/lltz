@@ -26,9 +26,9 @@ pub fn scan(
     memory_ty2stack_ptr: &mut HashMap<InnerType, usize>,
     register2ty: &mut HashMap<Register, InnerType>,
 ) {
-    scan::scan_structure_types(memory_ty2stack_ptr, memory_ptr, &structure_types);
+    scan::scan_structure_types(memory_ty2stack_ptr, memory_ptr, structure_types);
 
-    scan::scan_argument_list(register2stack_ptr, register2ty, stack_ptr, &argument_list);
+    scan::scan_argument_list(register2stack_ptr, register2ty, stack_ptr, argument_list);
 
     scan::scan_registers_and_memory(
         register2stack_ptr,
@@ -36,8 +36,8 @@ pub fn scan(
         memory_ty2stack_ptr,
         stack_ptr,
         memory_ptr,
-        &structure_types,
-        &instructions,
+        structure_types,
+        instructions,
     );
 }
 
@@ -49,12 +49,8 @@ pub fn inject_argument_list(
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MWrappedInstr> {
     let mut res = vec![
-        instruction_row!(MInstr::Comment(format!(
-            "######## Inject Arguments ########"
-        ))),
-        instruction_row!(MInstr::Comment(format!(
-            "#################################{{"
-        ))),
+        instruction_row!(MInstr::Comment("######## Inject Arguments ########".to_string())),
+        instruction_row!(MInstr::Comment("#################################{".to_string())),
     ];
     res.append(&mut inject::inject_storage(
         smart_contract_function,
@@ -74,9 +70,7 @@ pub fn inject_argument_list(
         memory_ty2stack_ptr,
     ));
 
-    res.push(instruction_row!(MInstr::Comment(format!(
-        "}}#################################"
-    ))));
+    res.push(instruction_row!(MInstr::Comment("}#################################".to_string())));
     res
 }
 
@@ -91,20 +85,14 @@ pub fn stack_initialization(
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MWrappedInstr> {
     let mut michelson_instructions = vec![
-        instruction_row!(MInstr::Comment(format!(
-            "##################################"
-        ))),
-        instruction_row!(MInstr::Comment(format!(
-            "###### Stack Initialization ######"
-        ))),
-        instruction_row!(MInstr::Comment(format!(
-            "#################################{{"
-        ))),
+        instruction_row!(MInstr::Comment("##################################".to_string())),
+        instruction_row!(MInstr::Comment("###### Stack Initialization ######".to_string())),
+        instruction_row!(MInstr::Comment("#################################{".to_string())),
     ];
     let memory_ty2stack_ptr = memory_ty2stack_ptr.clone();
     let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr
         .iter()
-        .map(|(k, v)| (k.clone(), v.clone()))
+        .map(|(k, v)| (k.clone(), *v))
         .collect::<Vec<_>>();
     memory_ty2stack_ptr_sorted.sort_by(|a, b| (a.1).cmp(&b.1));
     for (ty, _v) in memory_ty2stack_ptr_sorted.iter().rev() {
@@ -141,12 +129,12 @@ pub fn stack_initialization(
         match ty {
             InnerType::Option(_inner) => {
                 michelson_instructions.push(instruction_row!(
-                    InnerType::default_value_instruction(&ty),
+                    InnerType::default_value_instruction(ty),
                     comment
                 ));
             }
             _ => michelson_instructions.push(instruction_row!(
-                InnerType::default_value_instruction(&ty),
+                InnerType::default_value_instruction(ty),
                 comment
             )),
         };
@@ -155,9 +143,7 @@ pub fn stack_initialization(
     michelson_instructions.push(instruction_row!(MInstr::DigN(
         register2stack_ptr.len() + memory_ty2stack_ptr.len()
     )));
-    michelson_instructions.push(instruction_row!(MInstr::Comment(format!(
-        "}}#################################"
-    ))));
+    michelson_instructions.push(instruction_row!(MInstr::Comment("}#################################".to_string())));
 
     michelson_instructions
 }
@@ -174,12 +160,8 @@ pub fn compile_instructions(
     instructions: &Vec<Instruction>,
 ) -> Vec<MWrappedInstr> {
     let mut res = vec![
-        instruction_row!(MInstr::Comment(format!(
-            "###### Compile Instructions ######"
-        ))),
-        instruction_row!(MInstr::Comment(format!(
-            "#################################{{"
-        ))),
+        instruction_row!(MInstr::Comment("###### Compile Instructions ######".to_string())),
+        instruction_row!(MInstr::Comment("#################################{".to_string())),
     ];
     for instruction in instructions {
         match instruction {
@@ -195,7 +177,7 @@ pub fn compile_instructions(
                 let memory_ptr = memory_ty2stack_ptr.get(&InnerType::from(ty)).unwrap();
 
                 let mut instructions = vec![
-                    vec![MInstr::Comment(format!(
+                    [MInstr::Comment(format!(
                         "store {} {}, {}* {} {{",
                         Type::get_name(ty),
                         value.to_string(),
@@ -207,7 +189,7 @@ pub fn compile_instructions(
                     .collect::<Vec<_>>(),
                     match value {
                         Value::Register(register) => {
-                            vec![MInstr::DupN(*register2stack_ptr.get(&register).unwrap())]
+                            vec![MInstr::DupN(*register2stack_ptr.get(register).unwrap())]
                         }
                         Value::Const(cnst) => {
                             if cnst.has_default_value() {
@@ -225,7 +207,7 @@ pub fn compile_instructions(
                         MInstr::DigN(register2stack_ptr.len() + memory_ptr),
                         MInstr::Unpair,
                         MInstr::DigN(2),
-                        MInstr::DupN(*register2stack_ptr.get(&ptr).unwrap() + 3),
+                        MInstr::DupN(*register2stack_ptr.get(ptr).unwrap() + 3),
                         MInstr::Update,
                         MInstr::Pair,
                         MInstr::DugN(register2stack_ptr.len() + memory_ptr - 1),
@@ -254,12 +236,12 @@ pub fn compile_instructions(
                     )),
                     MInstr::DupN(register2stack_ptr.len() + memory_ptr),
                     MInstr::Car,
-                    MInstr::DupN(register2stack_ptr.get(&ptr).unwrap() + 1),
+                    MInstr::DupN(register2stack_ptr.get(ptr).unwrap() + 1),
                     MInstr::Get,
                     MInstr::AssertSome,
-                    MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                    MInstr::DigN(*register2stack_ptr.get(result).unwrap()),
                     MInstr::Drop,
-                    MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    MInstr::DugN(*register2stack_ptr.get(result).unwrap() - 1),
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
@@ -290,21 +272,21 @@ pub fn compile_instructions(
                     )),
                     MInstr::DupN(register2stack_ptr.len() + memory_ptr),
                     MInstr::Car, // bm
-                    MInstr::DupN(register2stack_ptr.get(&ptrval).unwrap() + 1),
+                    MInstr::DupN(register2stack_ptr.get(ptrval).unwrap() + 1),
                     MInstr::Get,        //some(map)
                     MInstr::AssertSome, //map
                     match value {
                         Value::Register(register) => {
-                            MInstr::DupN(register2stack_ptr.get(&register).unwrap() + 1)
+                            MInstr::DupN(register2stack_ptr.get(register).unwrap() + 1)
                             //int:map
                         }
                         Value::Const(cnst) => cnst.get_push_instruction(),
                     },
                     MInstr::Get,
                     MInstr::AssertSome, //ptr
-                    MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                    MInstr::DigN(*register2stack_ptr.get(result).unwrap()),
                     MInstr::Drop,
-                    MInstr::DugN(register2stack_ptr.get(&result).unwrap() - 1),
+                    MInstr::DugN(register2stack_ptr.get(result).unwrap() - 1),
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
@@ -332,8 +314,8 @@ pub fn compile_instructions(
                 );
 
                 let mut instructions = vec![
-                    MInstr::Comment(format!("if {{",)),
-                    MInstr::DupN(*register2stack_ptr.get(&reg).unwrap()),
+                    MInstr::Comment("if {".to_string()),
+                    MInstr::DupN(*register2stack_ptr.get(reg).unwrap()),
                     MInstr::If { instr1, instr2 },
                     MInstr::Comment("}".to_string()),
                 ]
@@ -375,14 +357,14 @@ pub fn compile_instructions(
                 instr.append(&mut loop_instr.clone());
                 instr.append(&mut cond_instr.clone());
                 instr.push(
-                    MInstr::DupN(*register2stack_ptr.get(&cond).unwrap()).to_wrapped_instruction(),
+                    MInstr::DupN(*register2stack_ptr.get(cond).unwrap()).to_wrapped_instruction(),
                 );
 
                 let mut instructions = vec![
-                    vec![MInstr::Comment(format!("while {{",)).to_wrapped_instruction()],
+                    vec![MInstr::Comment("while {".to_string()).to_wrapped_instruction()],
                     cond_instr.clone(),
                     vec![
-                        MInstr::DupN(*register2stack_ptr.get(&cond).unwrap())
+                        MInstr::DupN(*register2stack_ptr.get(cond).unwrap())
                             .to_wrapped_instruction(),
                         MInstr::Loop { instr }.to_wrapped_instruction(),
                     ],
@@ -412,13 +394,13 @@ pub fn compile_instructions(
                     )),
                     match op2 {
                         Value::Register(register) => {
-                            MInstr::DupN(*register2stack_ptr.get(&register).unwrap())
+                            MInstr::DupN(*register2stack_ptr.get(register).unwrap())
                         }
                         Value::Const(cnst) => cnst.get_push_instruction(),
                     },
                     match op1 {
                         Value::Register(register) => {
-                            MInstr::DupN(*register2stack_ptr.get(&register).unwrap() + 1)
+                            MInstr::DupN(*register2stack_ptr.get(register).unwrap() + 1)
                         }
                         Value::Const(cnst) => cnst.get_push_instruction(),
                     },
@@ -427,9 +409,9 @@ pub fn compile_instructions(
                         Opcode::Sub => MInstr::Sub,
                         Opcode::Mul => MInstr::Mul,
                     },
-                    MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                    MInstr::DigN(*register2stack_ptr.get(result).unwrap()),
                     MInstr::Drop,
-                    MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    MInstr::DugN(*register2stack_ptr.get(result).unwrap() - 1),
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
@@ -465,13 +447,13 @@ pub fn compile_instructions(
                         )),
                         match op1 {
                             Value::Register(register) => {
-                                MInstr::DupN(*register2stack_ptr.get(&register).unwrap())
+                                MInstr::DupN(*register2stack_ptr.get(register).unwrap())
                             }
                             Value::Const(cnst) => cnst.get_push_instruction(),
                         },
                         match op2 {
                             Value::Register(register) => {
-                                MInstr::DupN(register2stack_ptr.get(&register).unwrap() + 1)
+                                MInstr::DupN(register2stack_ptr.get(register).unwrap() + 1)
                             }
                             Value::Const(cnst) => cnst.get_push_instruction(),
                         },
@@ -495,9 +477,9 @@ pub fn compile_instructions(
                     .map(|instr| instr.to_wrapped_instruction())
                     .collect::<Vec<_>>(),
                     vec![
-                        MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                        MInstr::DigN(*register2stack_ptr.get(result).unwrap()),
                         MInstr::Drop,
-                        MInstr::DugN(register2stack_ptr.get(&result).unwrap() - 1),
+                        MInstr::DugN(register2stack_ptr.get(result).unwrap() - 1),
                     ]
                     .iter()
                     .map(|instr| instr.to_wrapped_instruction())
@@ -514,9 +496,9 @@ pub fn compile_instructions(
                 let mut instructions = vec![
                     MInstr::Comment(format!("{} = MichelsonGetAmount {{", result.get_id())),
                     MInstr::Amount,
-                    MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                    MInstr::DigN(*register2stack_ptr.get(result).unwrap()),
                     MInstr::Drop,
-                    MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    MInstr::DugN(*register2stack_ptr.get(result).unwrap() - 1),
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
@@ -529,9 +511,9 @@ pub fn compile_instructions(
                 let mut instructions = vec![
                     MInstr::Comment(format!("{} = MichelsonGetBalance {{", result.get_id())),
                     MInstr::Balance,
-                    MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                    MInstr::DigN(*register2stack_ptr.get(result).unwrap()),
                     MInstr::Drop,
-                    MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    MInstr::DugN(*register2stack_ptr.get(result).unwrap() - 1),
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
@@ -547,9 +529,9 @@ pub fn compile_instructions(
                         result.get_id()
                     )),
                     MInstr::TotalVotingPower,
-                    MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                    MInstr::DigN(*register2stack_ptr.get(result).unwrap()),
                     MInstr::Drop,
-                    MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    MInstr::DugN(*register2stack_ptr.get(result).unwrap() - 1),
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
@@ -562,9 +544,9 @@ pub fn compile_instructions(
                 let mut instructions = vec![
                     MInstr::Comment(format!("{} = MichelsonGetLevel {{", result.get_id())),
                     MInstr::Level,
-                    MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                    MInstr::DigN(*register2stack_ptr.get(result).unwrap()),
                     MInstr::Drop,
-                    MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    MInstr::DugN(*register2stack_ptr.get(result).unwrap() - 1),
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
@@ -578,9 +560,9 @@ pub fn compile_instructions(
                     MInstr::Comment(format!("{} = MichelsonGetSender {{", result.get_id())),
                     MInstr::Sender,
                     MInstr::Some, // to (option address)
-                    MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                    MInstr::DigN(*register2stack_ptr.get(result).unwrap()),
                     MInstr::Drop,
-                    MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    MInstr::DugN(*register2stack_ptr.get(result).unwrap() - 1),
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
@@ -594,9 +576,9 @@ pub fn compile_instructions(
                     MInstr::Comment(format!("{} = MichelsonGetSource {{", result.get_id())),
                     MInstr::Source,
                     MInstr::Some, // to (option address)
-                    MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                    MInstr::DigN(*register2stack_ptr.get(result).unwrap()),
                     MInstr::Drop,
-                    MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    MInstr::DugN(*register2stack_ptr.get(result).unwrap() - 1),
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
@@ -610,9 +592,9 @@ pub fn compile_instructions(
                     MInstr::Comment(format!("{} = MichelsonGetSelfAddress {{", result.get_id())),
                     MInstr::SelfAddress,
                     MInstr::Some, // to (option address)
-                    MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                    MInstr::DigN(*register2stack_ptr.get(result).unwrap()),
                     MInstr::Drop,
-                    MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    MInstr::DugN(*register2stack_ptr.get(result).unwrap() - 1),
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
@@ -626,9 +608,9 @@ pub fn compile_instructions(
                     MInstr::Comment(format!("{} = MichelsonGetSelf {{", result.get_id())),
                     MInstr::Slf,
                     MInstr::Some, // to (option contract <ty>)
-                    MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                    MInstr::DigN(*register2stack_ptr.get(result).unwrap()),
                     MInstr::Drop,
-                    MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    MInstr::DugN(*register2stack_ptr.get(result).unwrap() - 1),
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
@@ -644,15 +626,15 @@ pub fn compile_instructions(
             } => {
                 let mut instructions = vec![
                     MInstr::Comment(format!("{} = MichelsonContract {{", result.get_id())),
-                    MInstr::DupN(*register2stack_ptr.get(&address).unwrap()),
+                    MInstr::DupN(*register2stack_ptr.get(address).unwrap()),
                     MInstr::AssertSome,
                     MInstr::Contract {
                         ty: ty.to_entrypoint_ty(),
                     },
                     MInstr::Some,
-                    MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                    MInstr::DigN(*register2stack_ptr.get(result).unwrap()),
                     MInstr::Drop,
-                    MInstr::DugN(register2stack_ptr.get(&result).unwrap() - 1),
+                    MInstr::DugN(register2stack_ptr.get(result).unwrap() - 1),
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
@@ -669,11 +651,11 @@ pub fn compile_instructions(
                         InnerType::from(ty).to_michelson_ty().to_string(),
                         value.get_id()
                     )),
-                    MInstr::DupN(*register2stack_ptr.get(&value).unwrap()),
+                    MInstr::DupN(*register2stack_ptr.get(value).unwrap()),
                     MInstr::AssertSome,
-                    MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                    MInstr::DigN(*register2stack_ptr.get(result).unwrap()),
                     MInstr::Drop,
-                    MInstr::DugN(*register2stack_ptr.get(&result).unwrap() - 1),
+                    MInstr::DugN(*register2stack_ptr.get(result).unwrap() - 1),
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
@@ -696,20 +678,20 @@ pub fn compile_instructions(
                         tokens.to_string(),
                         contract.get_id()
                     )),
-                    MInstr::DupN(*register2stack_ptr.get(&contract).unwrap()),
+                    MInstr::DupN(*register2stack_ptr.get(contract).unwrap()),
                     MInstr::AssertSome,
                     match tokens {
                         Value::Register(register) => {
-                            MInstr::DupN(register2stack_ptr.get(&register).unwrap() + 1)
+                            MInstr::DupN(register2stack_ptr.get(register).unwrap() + 1)
                         }
                         Value::Const(cnst) => cnst.get_push_instruction(),
                     },
                     MInstr::Unit, // FIXME: unit しか対応していない...
                     MInstr::TransferTokens,
                     MInstr::Some,
-                    MInstr::DigN(*register2stack_ptr.get(&result).unwrap()),
+                    MInstr::DigN(*register2stack_ptr.get(result).unwrap()),
                     MInstr::Drop,
-                    MInstr::DugN(register2stack_ptr.get(&result).unwrap() - 1),
+                    MInstr::DugN(register2stack_ptr.get(result).unwrap() - 1),
                     MInstr::Comment("}".to_string()),
                 ]
                 .iter()
@@ -721,9 +703,7 @@ pub fn compile_instructions(
         };
     }
 
-    res.push(instruction_row!(MInstr::Comment(format!(
-        "}}#################################"
-    ))));
+    res.push(instruction_row!(MInstr::Comment("}#################################".to_string())));
 
     res
 }
@@ -744,8 +724,8 @@ pub fn retrieve_storage_from_memory(
     } = smart_contract_function
         .argument_list
         .iter()
-        .find(|Arg { reg: _, ty }| match Type::deref(&ty) {
-            Type::Struct { id, fields: _ } => id == String::from("Pair"),
+        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+            Type::Struct { id, fields: _ } => id == *"Pair",
             _ => false,
         })
         .unwrap();
@@ -756,28 +736,28 @@ pub fn retrieve_storage_from_memory(
     } = smart_contract_function
         .argument_list
         .iter()
-        .find(|Arg { reg: _, ty }| match Type::deref(&ty) {
-            Type::Struct { id, fields: _ } => id == String::from("Storage"),
+        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+            Type::Struct { id, fields: _ } => id == *"Storage",
             _ => false,
         })
         .unwrap();
 
-    let storage_ty = Type::deref(&storage_ty_ptr);
+    let storage_ty = Type::deref(storage_ty_ptr);
     let storage_memory_ptr = memory_ty2stack_ptr
         .get(&InnerType::from(&storage_ty))
         .unwrap();
     let pair_memory_ptr = memory_ty2stack_ptr
-        .get(&InnerType::deref(&InnerType::from(&pair_ty_ptr)))
+        .get(&InnerType::deref(&InnerType::from(pair_ty_ptr)))
         .unwrap();
     let mut michelson_instructions = vec![];
     michelson_instructions.append(
         &mut vec![
-            MInstr::Comment(format!("Construct a storage {{")),
+            MInstr::Comment("Construct a storage {".to_string()),
             MInstr::DupN(register2stack_ptr.len() + pair_memory_ptr),
             MInstr::Car,
             MInstr::Push {
                 ty: MTy::Int,
-                val: MVal::Int((*register2stack_ptr.get(&reg).unwrap()).try_into().unwrap()),
+                val: MVal::Int((*register2stack_ptr.get(reg).unwrap()).try_into().unwrap()),
             },
             MInstr::Get,
             MInstr::AssertSome,
@@ -873,7 +853,7 @@ fn retrieve_storage_field_from_memory(
             ];
             for (child_field_idx, child_field) in child_fields.iter().enumerate().rev() {
                 let new_path =
-                    vec![path.clone(), vec![child_fields.len() - child_field_idx]].concat();
+                    [path.clone(), vec![child_fields.len() - child_field_idx]].concat();
                 michelson_instructions.append(&mut retrieve_storage_field_from_memory(
                     child_field_idx,
                     child_field,
@@ -934,17 +914,17 @@ pub fn retrieve_operations_from_memory(
     } = smart_contract_function
         .argument_list
         .iter()
-        .find(|Arg { reg: _, ty }| match Type::deref(&ty) {
-            Type::Struct { id, fields: _ } => id == String::from("Pair"),
+        .find(|Arg { reg: _, ty }| match Type::deref(ty) {
+            Type::Struct { id, fields: _ } => id == *"Pair",
             _ => false,
         })
         .unwrap();
 
     let pair_memory_ptr = memory_ty2stack_ptr
-        .get(&InnerType::from(&Type::deref(&pair_ty_ptr)))
+        .get(&InnerType::from(&Type::deref(pair_ty_ptr)))
         .unwrap();
 
-    let _pair_fields = match Type::deref(&pair_ty_ptr) {
+    let _pair_fields = match Type::deref(pair_ty_ptr) {
         Type::Struct { id: _, fields } => fields,
         _ => panic!(),
     };
@@ -971,7 +951,7 @@ pub fn retrieve_operations_from_memory(
             format!("pair_memory : (nil operation) : storage : ...",)
         ),
         instruction_row!(MInstr::Car),
-        instruction_row!(MInstr::DupN(register2stack_ptr.get(&reg).unwrap() + 3)),
+        instruction_row!(MInstr::DupN(register2stack_ptr.get(reg).unwrap() + 3)),
         instruction_row!(MInstr::Get),
         instruction_row!(
             MInstr::AssertSome,
@@ -1050,15 +1030,9 @@ pub fn exit(
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MWrappedInstr> {
     let mut instructions = vec![
-        instruction_row!(MInstr::Comment(format!(
-            "###################################"
-        ))),
-        instruction_row!(MInstr::Comment(format!(
-            "############### Exit ##############"
-        ))),
-        instruction_row!(MInstr::Comment(format!(
-            "##################################{{"
-        ))),
+        instruction_row!(MInstr::Comment("###################################".to_string())),
+        instruction_row!(MInstr::Comment("############### Exit ##############".to_string())),
+        instruction_row!(MInstr::Comment("##################################{".to_string())),
     ];
 
     instructions.push(instruction_row!(
@@ -1070,9 +1044,7 @@ pub fn exit(
         instructions.push(instruction_row!(MInstr::Drop));
     }
 
-    instructions.push(instruction_row!(MInstr::Comment(format!(
-        "}}##################################"
-    ))));
+    instructions.push(instruction_row!(MInstr::Comment("}##################################".to_string())));
 
     instructions
 }

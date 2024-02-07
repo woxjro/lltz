@@ -13,13 +13,13 @@ pub fn print_michelson_initial_stack_status(
     let register2stack_ptr = register2stack_ptr.clone();
     let mut register2stack_ptr_sorted = register2stack_ptr
         .iter()
-        .map(|(k, v)| (k.clone(), v.clone()))
+        .map(|(k, v)| (k.clone(), *v))
         .collect::<Vec<_>>();
     register2stack_ptr_sorted.sort_by(|a, b| (a.1).cmp(&b.1));
 
     for (reg, _ptr) in register2stack_ptr_sorted.iter() {
         let ty = register2ty.get(reg).unwrap();
-        let val = InnerType::default_value(&ty);
+        let val = InnerType::default_value(ty);
         let michelson_ty = ty.to_michelson_ty().to_string();
         let llvm_ty_string = ty.get_name();
 
@@ -30,7 +30,7 @@ pub fn print_michelson_initial_stack_status(
     let memory_ty2stack_ptr = memory_ty2stack_ptr.clone();
     let mut memory_ty2stack_ptr_sorted = memory_ty2stack_ptr
         .iter()
-        .map(|(k, v)| (k.clone(), v.clone()))
+        .map(|(k, v)| (k.clone(), *v))
         .collect::<Vec<_>>();
     memory_ty2stack_ptr_sorted.sort_by(|a, b| (a.1).cmp(&b.1));
     for (ty, _v) in memory_ty2stack_ptr_sorted.iter() {

@@ -217,19 +217,19 @@ impl Type {
             Type::Nat => "nat".to_string(),
             Type::Struct { id, fields: _ } => format!("%struct.{id}"),
             Type::Array { size, elementtype } => {
-                format!("[{} x {}]", size, Type::get_name(&**elementtype))
+                format!("[{} x {}]", size, Type::get_name(elementtype))
             }
             Type::Contract(ty) => {
-                let inner = Type::get_name(&*ty);
+                let inner = Type::get_name(ty);
                 format!("(%struct.contract {inner})")
             }
             Type::Operation => String::from("%struct.operation"),
             Type::Ptr(ty) => {
-                let inner = Type::get_name(&*ty);
+                let inner = Type::get_name(ty);
                 format!("{inner}*")
             }
             Type::Option(ty) => {
-                let inner = Type::get_name(&*ty);
+                let inner = Type::get_name(ty);
                 format!("(option {inner})")
             }
         }
@@ -279,7 +279,7 @@ impl InnerType {
                 id: id.clone(),
                 fields: fields
                     .iter()
-                    .map(|field| InnerType::from(field))
+                    .map(InnerType::from)
                     .collect::<Vec<InnerType>>(),
             },
             Type::Operation => InnerType::Option(Box::new(InnerType::Operation)),
@@ -335,7 +335,7 @@ impl InnerType {
 
                     res
                 } else if fields.len() == 1 {
-                    InnerType::to_entrypoint_ty(&fields.iter().nth(0).unwrap())
+                    InnerType::to_entrypoint_ty(fields.iter().nth(0).unwrap())
                 } else {
                     MTy::Unit
                 }
@@ -377,7 +377,8 @@ impl InnerType {
     }
 
     pub fn default_value(ty: &InnerType) -> String {
-        let res = match ty {
+        
+        match ty {
             InnerType::Address => String::from("NONE address"),
             InnerType::Array {
                 size: _,
@@ -403,12 +404,12 @@ impl InnerType {
                 let inner = child_ty.to_michelson_ty().to_string();
                 format!("NONE {inner}")
             }
-        };
-        res
+        }
     }
 
     pub fn default_value_instruction(ty: &InnerType) -> MInstr {
-        let res = match ty {
+        
+        match ty {
             InnerType::Address => MInstr::None { ty: MTy::Address },
             InnerType::Array {
                 size: _,
@@ -448,8 +449,7 @@ impl InnerType {
             InnerType::Option(child_ty) => MInstr::None {
                 ty: child_ty.to_michelson_ty(),
             },
-        };
-        res
+        }
     }
 
     pub fn get_name(&self) -> String {
@@ -471,13 +471,13 @@ impl InnerType {
             }
             InnerType::Option(ty) => match &**ty {
                 InnerType::Address => {
-                    format!("address")
+                    "address".to_string()
                 }
                 InnerType::Contract(child_ty) => {
                     let inner = child_ty.get_name();
                     format!("(%struct.contract {inner})")
                 }
-                InnerType::Operation => format!("operation"),
+                InnerType::Operation => "operation".to_string(),
                 _ => {
                     let inner = ty.get_name();
                     format!("(option {inner})")

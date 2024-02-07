@@ -43,7 +43,7 @@ pub fn compile(lltz_ir: Program) -> String {
     let smart_contract_function = lltz_ir
         .functions
         .iter()
-        .find(|f| f.function_name == String::from("smart_contract"))
+        .find(|f| f.function_name == *"smart_contract")
         .expect("A `smart_contract` function corresponding to your smart contract entry point is not defined.");
 
     michelify::scan(
@@ -56,9 +56,6 @@ pub fn compile(lltz_ir: Program) -> String {
         &mut memory_ty2stack_ptr,
         &mut register2ty,
     );
-
-    drop(stack_ptr);
-    drop(memory_ptr);
 
     println!(
         "{}",

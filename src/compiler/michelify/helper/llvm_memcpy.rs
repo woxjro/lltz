@@ -18,7 +18,7 @@ pub fn exec_llvm_memcpy(
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MWrappedInstr> {
     //validation
-    match register2ty.get(&dest).unwrap() {
+    match register2ty.get(dest).unwrap() {
         InnerType::Ptr(inner) => {
             if **inner != InnerType::from(ty) {
                 panic!(
@@ -33,7 +33,7 @@ pub fn exec_llvm_memcpy(
         }
     }
 
-    match register2ty.get(&src).unwrap() {
+    match register2ty.get(src).unwrap() {
         InnerType::Ptr(inner) => {
             if **inner != InnerType::from(ty) {
                 panic!(
@@ -49,7 +49,7 @@ pub fn exec_llvm_memcpy(
     }
 
     let mut michelson_instructions =
-        vec![MInstr::Comment(format!("@llvm.memcpy {{",)).to_wrapped_instruction()];
+        vec![MInstr::Comment("@llvm.memcpy {".to_string()).to_wrapped_instruction()];
     match ty {
         Type::Struct { id: _, fields } => {
             let depth = 1;
@@ -58,7 +58,7 @@ pub fn exec_llvm_memcpy(
                 &mut vec![
                     MInstr::DupN(register2stack_ptr.len() + memory_ptr),
                     MInstr::Car,
-                    MInstr::DupN(register2stack_ptr.get(&src).unwrap() + 1),
+                    MInstr::DupN(register2stack_ptr.get(src).unwrap() + 1),
                     MInstr::Get,
                     MInstr::AssertSome,
                 ]
@@ -74,7 +74,7 @@ pub fn exec_llvm_memcpy(
                     &mut vec![
                         vec![MInstr::Comment(format!(
                             "### llvm.memcpy GET {}[{idx}] {{",
-                            Type::get_name(&ty)
+                            Type::get_name(ty)
                         ))
                         .to_wrapped_instruction()],
                         vec![
@@ -113,7 +113,7 @@ pub fn exec_llvm_memcpy(
                 ));
 
                 michelson_instructions.append(&mut vec![
-                    MInstr::Comment(format!("}}")).to_wrapped_instruction()
+                    MInstr::Comment("}".to_string()).to_wrapped_instruction()
                 ]);
             }
             michelson_instructions.push(MInstr::Drop.to_wrapped_instruction());
@@ -123,7 +123,7 @@ pub fn exec_llvm_memcpy(
             panic!("Primitive(Pointer)型に対して@llvm.memcpyは実行出来ません.");
         }
     };
-    michelson_instructions.push(MInstr::Comment(format!("}}")).to_wrapped_instruction());
+    michelson_instructions.push(MInstr::Comment("}".to_string()).to_wrapped_instruction());
     michelson_instructions
 }
 
@@ -181,17 +181,17 @@ fn get_field_element(
         _ => {
             /*この関数の役目は終わりPUTの処理へ*/
             res.append(&mut vec![
-                MInstr::Comment(format!("@llvm.memcpy PUT {{")).to_wrapped_instruction()
+                MInstr::Comment("@llvm.memcpy PUT {".to_string()).to_wrapped_instruction()
             ]);
             res.append(&mut self::put_field_element(
                 depth,
                 field,
-                &path,
+                path,
                 register2stack_ptr,
                 memory_ty2stack_ptr,
                 dest,
             ));
-            res.push(MInstr::Comment(format!("}}")).to_wrapped_instruction());
+            res.push(MInstr::Comment("}".to_string()).to_wrapped_instruction());
         }
     }
 

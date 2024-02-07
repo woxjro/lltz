@@ -57,10 +57,10 @@ pub fn exec_alloca(
             MInstr::Update,
             MInstr::Pair,
             MInstr::DugN(register2stack_ptr.len() + memory_ptr),
-            MInstr::DigN(*register2stack_ptr.get(&ptr).unwrap()),
+            MInstr::DigN(*register2stack_ptr.get(ptr).unwrap()),
             MInstr::Drop,
-            MInstr::DugN(register2stack_ptr.get(&ptr).unwrap() - 1),
-            MInstr::Comment(format!("}}")),
+            MInstr::DugN(register2stack_ptr.get(ptr).unwrap() - 1),
+            MInstr::Comment("}".to_string()),
         ]
         .iter()
         .map(|instr| instr.to_wrapped_instruction())
@@ -89,7 +89,7 @@ pub fn exec_aggregate_type_alloca(
         MInstr::Comment(format!(
             "{} = alloca {} {{",
             ptr.get_id(),
-            Type::get_name(&aggregate_ty)
+            Type::get_name(aggregate_ty)
         )),
         MInstr::EmptyMap {
             kty: MTy::Int,
@@ -112,7 +112,7 @@ pub fn exec_aggregate_type_alloca(
     for (idx, field) in fields.iter().enumerate() {
         res.append(&mut vec![MInstr::Comment(format!(
             "{}[{idx}] = alloca {} {{",
-            Type::get_name(&aggregate_ty),
+            Type::get_name(aggregate_ty),
             Type::get_name(field),
         ))]);
         res.append(&mut exec_struct_field_alloca(
@@ -123,7 +123,7 @@ pub fn exec_aggregate_type_alloca(
             register2stack_ptr,
             memory_ty2stack_ptr,
         ));
-        res.append(&mut vec![MInstr::Comment(format!("}}",))]);
+        res.append(&mut vec![MInstr::Comment("}".to_string())]);
     }
 
     res.append(&mut vec![
@@ -144,10 +144,10 @@ pub fn exec_aggregate_type_alloca(
         MInstr::Update, //bm:ptr:ptr
         MInstr::Pair,   //(bm,ptr):ptr
         MInstr::DugN(register2stack_ptr.len() + memory_ptr),
-        MInstr::DigN(*register2stack_ptr.get(&ptr).unwrap()),
+        MInstr::DigN(*register2stack_ptr.get(ptr).unwrap()),
         MInstr::Drop,
-        MInstr::DugN(register2stack_ptr.get(&ptr).unwrap() - 1),
-        MInstr::Comment(format!("}}")),
+        MInstr::DugN(register2stack_ptr.get(ptr).unwrap() - 1),
+        MInstr::Comment("}".to_string()),
     ]);
 
     res.iter()
@@ -189,7 +189,7 @@ fn exec_struct_field_alloca(
                     register2stack_ptr,
                     memory_ty2stack_ptr,
                 ));
-                res.append(&mut vec![MInstr::Comment(format!("}}"))]);
+                res.append(&mut vec![MInstr::Comment("}".to_string())]);
             }
             //TODO: MAP int int をUPDATEでどっかに入れる必要がある
             //child_map:parent_map
@@ -246,7 +246,7 @@ fn exec_struct_field_alloca(
                     register2stack_ptr,
                     memory_ty2stack_ptr,
                 ));
-                res.append(&mut vec![MInstr::Comment(format!("}}"))]);
+                res.append(&mut vec![MInstr::Comment("}".to_string())]);
             }
             //TODO: MAP int int をUPDATEでどっかに入れる必要がある
             //child_map:parent_map

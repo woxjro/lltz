@@ -18,7 +18,7 @@ pub fn alloca_storage_by_value(
     let Arg { reg, ty } = storage_arg;
     let mut michelson_instructions = vec![];
     michelson_instructions
-        .push(MInstr::Comment(format!("alloca storage {{")).to_wrapped_instruction());
+        .push(MInstr::Comment("alloca storage {".to_string()).to_wrapped_instruction());
 
     //Step 0.(parameter, storage)をスタックの一番下に入れる
     michelson_instructions.push(
@@ -46,13 +46,13 @@ pub fn alloca_storage_by_value(
 
     //Step 3.LLVMのメモリモデルへとデコードして値を入れていく
     michelson_instructions.append(&mut decode_storage_from_input(
-        &reg,
-        &ty,
+        reg,
+        ty,
         register2stack_ptr,
         memory_ty2stack_ptr,
     ));
 
-    michelson_instructions.push(MInstr::Comment(format!("}}")).to_wrapped_instruction());
+    michelson_instructions.push(MInstr::Comment("}".to_string()).to_wrapped_instruction());
     michelson_instructions
 }
 
@@ -74,7 +74,7 @@ fn decode_storage_from_input(
 
     match Type::deref(ty) {
         Type::Struct { id: _, fields } => {
-            if fields.len() == 0 {
+            if fields.is_empty() {
                 // unit
                 // do nothing
                 michelson_instructions.push(MInstr::Drop.to_wrapped_instruction());
@@ -124,7 +124,7 @@ fn decode_storage_field_from_input(
     register2stack_ptr: &HashMap<Register, usize>,
     memory_ty2stack_ptr: &HashMap<InnerType, usize>,
 ) -> Vec<MWrappedInstr> {
-    let mut michelson_instructions = vec![MInstr::Dup, MInstr::GetN(get_n_idx)]
+    let mut michelson_instructions = [MInstr::Dup, MInstr::GetN(get_n_idx)]
         .iter()
         .map(|instr| instr.to_wrapped_instruction())
         .collect::<Vec<_>>();
@@ -142,7 +142,7 @@ fn decode_storage_field_from_input(
                 };
                 let is_last_child_field = child_field_idx + 1 == child_fields.len();
                 //NOTE: DROP;child_tyを入れるのではない.
-                let new_path = vec![path.clone(), vec![(child_field_idx, ty.clone())]].concat();
+                let new_path = [path.clone(), vec![(child_field_idx, ty.clone())]].concat();
                 michelson_instructions.append(&mut decode_storage_field_from_input(
                     ptr,
                     get_n_idx,
@@ -163,7 +163,7 @@ fn decode_storage_field_from_input(
         _ => {
             /* primitiveの値がスタックの上に乗っているのでそれを使って,Memoryに入れる */
             michelson_instructions.append(&mut vec![
-                MInstr::Comment(format!("PUT {{")).to_wrapped_instruction(),
+                MInstr::Comment("PUT {".to_string()).to_wrapped_instruction(),
                 MInstr::Some.to_wrapped_instruction(),
             ]);
             for (i, (child_idx, child_ty)) in path.iter().enumerate() {
@@ -233,7 +233,7 @@ fn decode_storage_field_from_input(
             if is_last_field {
                 michelson_instructions.push(MInstr::Drop.to_wrapped_instruction())
             }
-            michelson_instructions.push(MInstr::Comment(format!("}}")).to_wrapped_instruction());
+            michelson_instructions.push(MInstr::Comment("}".to_string()).to_wrapped_instruction());
         }
     }
     michelson_instructions

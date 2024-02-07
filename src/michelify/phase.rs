@@ -90,9 +90,7 @@ pub fn stack_initialization(
     type_heap_addresses: &HashMap<Type, usize>,
 ) -> Vec<MWrappedInstr> {
     let mut michelson_instructions = vec![
-        instruction_row!(MichelsonInstruction::Comment(format!(
-            "------ stack initialization ------ {{"
-        ))),
+        instruction_row!(MichelsonInstruction::Comment("------ stack initialization ------ {".to_string())),
         //TODO: 引数が Option で包まなければいけない型の場合の処理をする
         instruction_row!(
             MichelsonInstruction::Unpair,
@@ -102,7 +100,7 @@ pub fn stack_initialization(
 
     let mut type_heap_addresses = type_heap_addresses
         .iter()
-        .map(|(k, v)| (k.clone(), v.clone()))
+        .map(|(k, v)| (k.clone(), *v))
         .collect::<Vec<_>>();
     type_heap_addresses.sort_by(|a, b| (a.1).cmp(&b.1));
 
@@ -112,7 +110,7 @@ pub fn stack_initialization(
 
     let mut value_addresses = value_addresses
         .iter()
-        .map(|(k, v)| (k.clone(), v.clone()))
+        .map(|(k, v)| (k.clone(), *v))
         .collect::<Vec<_>>();
     value_addresses.sort_by(|a, b| (a.1).cmp(&b.1));
     for (i, (value, _address)) in value_addresses.iter().rev().enumerate() {
@@ -130,9 +128,7 @@ pub fn stack_initialization(
         ));
     }
 
-    michelson_instructions.push(instruction_row!(MichelsonInstruction::Comment(format!(
-        "---------------------------------- }}"
-    ))));
+    michelson_instructions.push(instruction_row!(MichelsonInstruction::Comment("---------------------------------- }".to_string())));
 
     michelson_instructions
 }
@@ -157,16 +153,10 @@ pub fn compile_operations(
                         let _address =
                             (*get_address_closure)(GetAddressClosureArg::Value(result.get_value()));
                         instructions.append(
-                            &mut vec![
-                                MichelsonInstruction::Comment(format!(
+                            &mut [MichelsonInstruction::Comment(format!(
                                     "{} = michelson.get_unit() {{ }}",
                                     result.get_value().get_id()
-                                )),
-                                //MichelsonInstruction::Unit,
-                                //MichelsonInstruction::DigN(address),
-                                //MichelsonInstruction::Drop,
-                                //MichelsonInstruction::DugN(address - 1),
-                            ]
+                                ))]
                             .iter()
                             .map(|instr| instr.to_wrapped_instruction())
                             .collect::<Vec<_>>(),
@@ -176,17 +166,10 @@ pub fn compile_operations(
                         let _address =
                             (*get_address_closure)(GetAddressClosureArg::Value(result.get_value()));
                         instructions.append(
-                            &mut vec![
-                                MichelsonInstruction::Comment(format!(
+                            &mut [MichelsonInstruction::Comment(format!(
                                     "{} = michelson.get_source() {{ }}",
                                     result.get_value().get_id()
-                                )),
-                                //MichelsonInstruction::Source,
-                                //MichelsonInstruction::DigN(address),
-                                //MichelsonInstruction::Drop,
-                                //MichelsonInstruction::DugN(address - 1),
-                                //MichelsonInstruction::Comment("}".to_string()),
-                            ]
+                                ))]
                             .iter()
                             .map(|instr| instr.to_wrapped_instruction())
                             .collect::<Vec<_>>(),
@@ -256,7 +239,7 @@ pub fn compile_operations(
                     michelson::ast::Operation::MakeListOp { result } => {
                         //スタック初期化の際に `nil ty` を既に積んでいるため何もする必要無し
                         instructions.append(
-                            &mut vec![MichelsonInstruction::Comment(format!(
+                            &mut [MichelsonInstruction::Comment(format!(
                                 "{} = michelson.make_list() {{ }}",
                                 result.get_value().get_id()
                             ))]

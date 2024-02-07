@@ -4,12 +4,11 @@ use crate::mlir::{
     ast::{Operation, Value},
     dialect::michelson::ast::Type,
 };
+use anyhow::Result;
 use michelson_ast;
 use std::collections::HashMap;
 
-pub fn compile(
-    smart_contract: Operation,
-) -> Result<michelson_ast::program::Program, Box<dyn std::error::Error>> {
+pub fn compile(smart_contract: Operation) -> Result<michelson_ast::program::Program> {
     /*
      * HashMap that returns the position of a Value on the Michelson Stack as its Key
      * Note that it returns the relative position in the register area of Value, using a 1-index

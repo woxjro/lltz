@@ -8,6 +8,7 @@ build = "build.rs"
 lalrpop = "0.20.0"
 
 [dependencies]
+anyhow = "1.0.79"
 clap = { version = "4.2.7", features = ["derive"] }
 lalrpop-util = { version = "0.20.0", features = ["lexer", "unicode"] }
 michelson-ast = { path = "./michelson-ast" }

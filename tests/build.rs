@@ -30,7 +30,7 @@ fn build() {
 
         //FIXME: .len() == 0よりも良い方法
         let build_result = String::from_utf8(build_output.stdout).unwrap();
-        if build_result.len() == 0 {
+        if build_result.is_empty() {
             panic!("failed to bulid {}.rs", file_name);
         } else {
             println!("====Build Completed===");

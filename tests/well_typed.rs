@@ -52,7 +52,7 @@ fn well_typed_test() {
         let result = String::from_utf8(output.stdout).unwrap();
         println!("{}", &result);
         let well_typed = result.contains("Well typed");
-        assert_eq!(well_typed, true);
+        assert!(well_typed);
     }
 }
 
@@ -86,6 +86,6 @@ fn mlir_well_typed_test() {
         let result = String::from_utf8(output.stdout).unwrap();
         println!("{}", &result);
         let well_typed = result.contains("Well typed");
-        assert_eq!(well_typed, true);
+        assert!(well_typed);
     }
 }

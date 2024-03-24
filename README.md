@@ -84,10 +84,12 @@ $ cmake -G Ninja ../llvm \
     -DLLVM_ENABLE_PROJECTS=mlir \
     -DLLVM_BUILD_EXAMPLES=ON \
     -DLLVM_TARGETS_TO_BUILD=X86 \
+    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=YES \
     -DLLVM_CCACHE_BUILD=ON \
-    -DCMAKE_C_COMPILER=clang \
-    -DCMAKE_CXX_COMPILER=clang++
+    -DLLVM_CCACHE_DIR=$CCACHE_DIR \
+    -DCMAKE_C_COMPILER=clang-15 \
+    -DCMAKE_CXX_COMPILER=clang++-15
 $ cmake --build . --parallel 7 --target check-mlir
 ```
 

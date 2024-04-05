@@ -992,7 +992,7 @@ pub fn retrieve_operations_from_memory(
                 MInstr::Dup,
                 MInstr::Push {
                     ty: MTy::Int,
-                    val: MVal::Int(idx.try_into().unwrap()),
+                    val: MVal::Int(idx.into()),
                 },
                 MInstr::Get,
                 MInstr::AssertSome, // ptr : map-instance

@@ -90,7 +90,9 @@ pub fn stack_initialization(
     type_heap_addresses: &HashMap<Type, usize>,
 ) -> Vec<MWrappedInstr> {
     let mut michelson_instructions = vec![
-        instruction_row!(MichelsonInstruction::Comment("------ stack initialization ------ {".to_string())),
+        instruction_row!(MichelsonInstruction::Comment(
+            "------ stack initialization ------ {".to_string()
+        )),
         //TODO: 引数が Option で包まなければいけない型の場合の処理をする
         instruction_row!(
             MichelsonInstruction::Unpair,
@@ -128,7 +130,9 @@ pub fn stack_initialization(
         ));
     }
 
-    michelson_instructions.push(instruction_row!(MichelsonInstruction::Comment("---------------------------------- }".to_string())));
+    michelson_instructions.push(instruction_row!(MichelsonInstruction::Comment(
+        "---------------------------------- }".to_string()
+    )));
 
     michelson_instructions
 }
@@ -154,9 +158,9 @@ pub fn compile_operations(
                             (*get_address_closure)(GetAddressClosureArg::Value(result.get_value()));
                         instructions.append(
                             &mut [MichelsonInstruction::Comment(format!(
-                                    "{} = michelson.get_unit() {{ }}",
-                                    result.get_value().get_id()
-                                ))]
+                                "{} = michelson.get_unit() {{ }}",
+                                result.get_value().get_id()
+                            ))]
                             .iter()
                             .map(|instr| instr.to_wrapped_instruction())
                             .collect::<Vec<_>>(),
@@ -167,9 +171,9 @@ pub fn compile_operations(
                             (*get_address_closure)(GetAddressClosureArg::Value(result.get_value()));
                         instructions.append(
                             &mut [MichelsonInstruction::Comment(format!(
-                                    "{} = michelson.get_source() {{ }}",
-                                    result.get_value().get_id()
-                                ))]
+                                "{} = michelson.get_source() {{ }}",
+                                result.get_value().get_id()
+                            ))]
                             .iter()
                             .map(|instr| instr.to_wrapped_instruction())
                             .collect::<Vec<_>>(),
@@ -373,6 +377,81 @@ pub fn compile_operations(
                                 MichelsonInstruction::DupN(parameter_address + 2),
                                 MichelsonInstruction::TransferTokens,
                                 MichelsonInstruction::Some,
+                                MichelsonInstruction::DigN(result_address),
+                                MichelsonInstruction::Drop,
+                                MichelsonInstruction::DugN(result_address - 1),
+                                MichelsonInstruction::Comment("}".to_string()),
+                            ]
+                            .iter()
+                            .map(|instr| instr.to_wrapped_instruction())
+                            .collect::<Vec<_>>(),
+                        );
+                    }
+                    michelson::ast::Operation::Sha256Op { result, bytes } => {
+                        let operand_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(bytes.get_value()));
+                        let result_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(result.get_value()));
+
+                        instructions.append(
+                            &mut vec![
+                                MichelsonInstruction::Comment(format!(
+                                    "{} = michelson.sha256({}) {{",
+                                    result.get_value().get_id(),
+                                    bytes.get_value().get_id()
+                                )),
+                                MichelsonInstruction::DupN(operand_address),
+                                MichelsonInstruction::Sha256,
+                                MichelsonInstruction::DigN(result_address),
+                                MichelsonInstruction::Drop,
+                                MichelsonInstruction::DugN(result_address - 1),
+                                MichelsonInstruction::Comment("}".to_string()),
+                            ]
+                            .iter()
+                            .map(|instr| instr.to_wrapped_instruction())
+                            .collect::<Vec<_>>(),
+                        );
+                    }
+                    michelson::ast::Operation::Sha3Op { result, bytes } => {
+                        let operand_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(bytes.get_value()));
+                        let result_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(result.get_value()));
+
+                        instructions.append(
+                            &mut vec![
+                                MichelsonInstruction::Comment(format!(
+                                    "{} = michelson.sha3({}) {{",
+                                    result.get_value().get_id(),
+                                    bytes.get_value().get_id()
+                                )),
+                                MichelsonInstruction::DupN(operand_address),
+                                MichelsonInstruction::Sha3,
+                                MichelsonInstruction::DigN(result_address),
+                                MichelsonInstruction::Drop,
+                                MichelsonInstruction::DugN(result_address - 1),
+                                MichelsonInstruction::Comment("}".to_string()),
+                            ]
+                            .iter()
+                            .map(|instr| instr.to_wrapped_instruction())
+                            .collect::<Vec<_>>(),
+                        );
+                    }
+                    michelson::ast::Operation::Sha512Op { result, bytes } => {
+                        let operand_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(bytes.get_value()));
+                        let result_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(result.get_value()));
+
+                        instructions.append(
+                            &mut vec![
+                                MichelsonInstruction::Comment(format!(
+                                    "{} = michelson.sha512({}) {{",
+                                    result.get_value().get_id(),
+                                    bytes.get_value().get_id()
+                                )),
+                                MichelsonInstruction::DupN(operand_address),
+                                MichelsonInstruction::Sha512,
                                 MichelsonInstruction::DigN(result_address),
                                 MichelsonInstruction::Drop,
                                 MichelsonInstruction::DugN(result_address - 1),

@@ -98,6 +98,11 @@ fn stupidly_from(ty: michelson_dialect::Type) -> StackType {
         michelson_dialect::Type::Contract { ty } => StackType::Contract {
             ty: Box::new(stupidly_from(ty.as_ref().to_owned())),
         },
+        michelson_dialect::Type::Bytes
+        | michelson_dialect::Type::Int
+        | michelson_dialect::Type::Nat => {
+            todo!()
+        }
     }
 }
 
@@ -147,6 +152,11 @@ impl From<michelson_dialect::Type> for MichelsonType {
                 ty: Box::new(MichelsonType::from(*ty)),
             },
             michelson_dialect::Type::Address => MichelsonType::Address,
+            michelson_dialect::Type::Bytes
+            | michelson_dialect::Type::Int
+            | michelson_dialect::Type::Nat => {
+                todo!()
+            }
         }
     }
 }

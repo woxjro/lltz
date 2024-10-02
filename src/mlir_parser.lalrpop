@@ -5,7 +5,10 @@ grammar;
 
 pub MType: MType = {
     <address:Address> => MType::Address,
+    <bytes:Bytes> => MType::Bytes,
     <unit:Unit> => MType::Unit,
+    <int:Int> => MType::Int,
+    <nat:Nat> => MType::Nat,
     <mutez:Mutez> => MType::Mutez,
     <operation:Operation> => MType::Operation,
     <list:List> "<" <ty:MType> ">" => MType::List { ty: Box::new(ty) },
@@ -24,8 +27,11 @@ pub FType: FType = {
 
 Unit: Tok = <s:r"[!][a-zA-Z]+[.]unit"> => Tok::Unit;
 Address: Tok = <s:r"[!][a-zA-Z]+[.]address"> => Tok::Address;
+Bytes: Tok = <s:r"[!][a-zA-Z]+[.]bytes"> => Tok::Bytes;
 Option: Tok = <s:r"[!][a-zA-Z]+[.]option"> => Tok::Option;
 Mutez: Tok = <s:r"[!][a-zA-Z]+[.]mutez"> => Tok::Mutez;
+Int: Tok = <s:r"[!][a-zA-Z]+[.]int"> => Tok::Int;
+Nat: Tok = <s:r"[!][a-zA-Z]+[.]nat"> => Tok::Nat;
 Contract: Tok = <s:r"[!][a-zA-Z]+[.]contract"> => Tok::Contract;
 Operation: Tok = <s:r"[!][a-zA-Z]+[.]operation"> => Tok::Operation;
 List: Tok = <s:r"[!][a-zA-Z]+[.]list"> => Tok::List;

@@ -7,7 +7,10 @@ lalrpop_mod!(pub mlir_parser);
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Type {
     Address,
+    Bytes,
     Unit,
+    Int,
+    Nat,
     Mutez,
     Operation,
     Option { ty: Box<Type> },
@@ -20,17 +23,6 @@ impl Type {
     pub fn get_dialect(&self) -> dialect::DialectKind {
         dialect::DialectKind::Michelson
     }
-
-    /// 型がスタックに積める値を持つか否かを判定する関数
-    /// 例えば
-    /// - Type::Mutez は 0 をというスタックに積める値をもつため true
-    /// - Type::Address は 初期値に相当する値は無いため false
-    pub fn has_initial_value(&self) -> bool {
-        match self {
-            Type::Pair { .. } => false,
-            _ => true,
-        }
-    }
 }
 
 impl From<String> for Type {
@@ -41,7 +33,10 @@ impl From<String> for Type {
 
 pub enum Tok {
     Unit,
+    Int,
+    Nat,
     Address,
+    Bytes,
     Contract,
     Option,
     Mutez,
@@ -88,6 +83,18 @@ pub enum Operation {
         fst: ast::Operand,
         snd: ast::Operand,
     },
+    Sha256Op {
+        result: ast::Result,
+        bytes: ast::Operand,
+    },
+    Sha3Op {
+        result: ast::Result,
+        bytes: ast::Operand,
+    },
+    Sha512Op {
+        result: ast::Result,
+        bytes: ast::Operand,
+    },
 }
 
 enum OperationKind {
@@ -100,6 +107,9 @@ enum OperationKind {
     GetContractOp,
     MakeListOp,
     MakePairOp,
+    Sha256Op,
+    Sha3Op,
+    Sha512Op,
 }
 
 impl ToString for OperationKind {
@@ -114,6 +124,9 @@ impl ToString for OperationKind {
             OperationKind::GetContractOp => "get_contract".to_owned(),
             OperationKind::MakeListOp => "make_list".to_owned(),
             OperationKind::MakePairOp => "make_pair".to_owned(),
+            OperationKind::Sha256Op => "sha256".to_owned(),
+            OperationKind::Sha3Op => "sha3".to_owned(),
+            OperationKind::Sha512Op => "sha512".to_owned(),
         }
     }
 }
@@ -165,6 +178,21 @@ impl From<ast::Operation> for Operation {
                 } else if operation.get_mnemonic() == OperationKind::GetContractOp.to_string() {
                     Operation::GetContractOp {
                         address: operation.operands[0].to_owned(),
+                        result: operation.results[0].to_owned(),
+                    }
+                } else if operation.get_mnemonic() == OperationKind::Sha256Op.to_string() {
+                    Operation::Sha256Op {
+                        bytes: operation.operands[0].to_owned(),
+                        result: operation.results[0].to_owned(),
+                    }
+                } else if operation.get_mnemonic() == OperationKind::Sha3Op.to_string() {
+                    Operation::Sha3Op {
+                        bytes: operation.operands[0].to_owned(),
+                        result: operation.results[0].to_owned(),
+                    }
+                } else if operation.get_mnemonic() == OperationKind::Sha512Op.to_string() {
+                    Operation::Sha512Op {
+                        bytes: operation.operands[0].to_owned(),
                         result: operation.results[0].to_owned(),
                     }
                 } else {

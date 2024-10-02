@@ -150,6 +150,7 @@ pub enum Instruction {
     ////////////////////////////////////////////////
     Abs,
     Add,
+    Bytes,
     Compare,
     Ediv,
     Eq,
@@ -162,6 +163,7 @@ pub enum Instruction {
     Lsr,
     Lt,
     Mul,
+    Nat,
     Neg,
     Neq,
     Sub,
@@ -288,6 +290,7 @@ impl Instruction {
             ////////////////////////////////////////////////
             Instruction::Abs => Token::Abs,
             Instruction::Add => Token::Add,
+            Instruction::Bytes => Token::Bytes,
             Instruction::Compare => Token::Compare,
             Instruction::Ediv => Token::Ediv,
             Instruction::Eq => Token::Eq,
@@ -300,6 +303,7 @@ impl Instruction {
             Instruction::Lsr => Token::Lsr,
             Instruction::Lt => Token::Lt,
             Instruction::Mul => Token::Mul,
+            Instruction::Nat => Token::Nat,
             Instruction::Neg => Token::Neg,
             Instruction::Neq => Token::Neq,
             Instruction::Sub => Token::Sub,

@@ -99,6 +99,7 @@ pub enum Token {
     ////////////////////////////////////////////////
     Abs,
     Add,
+    Bytes,
     Compare,
     Ediv,
     Eq,
@@ -111,6 +112,7 @@ pub enum Token {
     Lsr,
     Lt,
     Mul,
+    Nat,
     Neg,
     Neq,
     Sub,
@@ -234,6 +236,7 @@ impl ToString for Token {
             ////////////////////////////////////////////////
             Token::Abs => "ABS",
             Token::Add => "ADD",
+            Token::Bytes => "BYTES",
             Token::Compare => "COMPARE",
             Token::Ediv => "EDIV",
             Token::Eq => "EQ",
@@ -246,6 +249,7 @@ impl ToString for Token {
             Token::Lsr => "LSR",
             Token::Lt => "LT",
             Token::Mul => "MUL",
+            Token::Nat => "NAT",
             Token::Neg => "NEG",
             Token::Neq => "NEQ",
             Token::Sub => "SUB",

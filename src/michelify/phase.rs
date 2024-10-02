@@ -120,14 +120,19 @@ pub fn stack_initialization(
             continue; // parameter と storage の初期値の処理をスキップ
         }
         let stack_type: StackType = value.get_type().into();
-        michelson_instructions.push(instruction_row!(
-            stack_type.default_value_instruction(),
-            format!(
-                "{} : {}",
-                value.get_id(),
-                MichelsonType::from(value.get_type()).to_string()
-            )
-        ));
+        stack_type
+            .default_value_instruction()
+            .iter()
+            .for_each(|instr| {
+                michelson_instructions.push(instruction_row!(
+                    instr.to_owned(),
+                    format!(
+                        "{} : {}",
+                        value.get_id(),
+                        MichelsonType::from(value.get_type()).to_string()
+                    )
+                ));
+            });
     }
 
     michelson_instructions.push(instruction_row!(MichelsonInstruction::Comment(
@@ -377,6 +382,31 @@ pub fn compile_operations(
                                 MichelsonInstruction::DupN(parameter_address + 2),
                                 MichelsonInstruction::TransferTokens,
                                 MichelsonInstruction::Some,
+                                MichelsonInstruction::DigN(result_address),
+                                MichelsonInstruction::Drop,
+                                MichelsonInstruction::DugN(result_address - 1),
+                                MichelsonInstruction::Comment("}".to_string()),
+                            ]
+                            .iter()
+                            .map(|instr| instr.to_wrapped_instruction())
+                            .collect::<Vec<_>>(),
+                        );
+                    }
+                    michelson::ast::Operation::GetBytesOp { number, result } => {
+                        let operand_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(number.get_value()));
+                        let result_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(result.get_value()));
+
+                        instructions.append(
+                            &mut vec![
+                                MichelsonInstruction::Comment(format!(
+                                    "{} = michelson.get_bytes({}) {{",
+                                    result.get_value().get_id(),
+                                    number.get_value().get_id()
+                                )),
+                                MichelsonInstruction::DupN(operand_address),
+                                MichelsonInstruction::Bytes,
                                 MichelsonInstruction::DigN(result_address),
                                 MichelsonInstruction::Drop,
                                 MichelsonInstruction::DugN(result_address - 1),

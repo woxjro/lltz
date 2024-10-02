@@ -105,6 +105,14 @@ module {
     }
 
     // Cryptographic operations
+    irdl.operation @get_bytes {
+      %number = irdl.any
+      %res = irdl.any
+
+      irdl.operands(%number)
+      irdl.results(%res)
+    }
+
     irdl.operation @sha256 {
       %byt = irdl.any
       %res = irdl.any

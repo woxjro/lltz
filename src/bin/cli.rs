@@ -30,6 +30,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         .stderr;
     let json = String::from_utf8(res)?;
 
+    println!("{json}");
+
     let deserialized: Block = serde_json::from_str(&json)?;
     let smart_contract = get_smart_contract_operation(deserialized)?;
 
@@ -40,11 +42,11 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             let contents = format!(
                 "{command_typecheck}{command_mock}{michelson_code}",
                 command_typecheck = format!(
-                    "#tezos-client --mode mockup --base-dir \
+                    "#octez-client --mode mockup --base-dir \
                         /tmp/mockup typecheck script {output}\n"
                 ),
                 command_mock = format!(
-                    "#tezos-client --mode mockup --base-dir /tmp/mockup \
+                    "#octez-client --mode mockup --base-dir /tmp/mockup \
                         run script {output} on storage '' and input '' --trace-stack\n"
                 )
             );

@@ -83,6 +83,10 @@ pub enum Operation {
         fst: ast::Operand,
         snd: ast::Operand,
     },
+    GetBytesOp {
+        result: ast::Result,
+        number: ast::Operand,
+    },
     Sha256Op {
         result: ast::Result,
         bytes: ast::Operand,
@@ -107,6 +111,7 @@ enum OperationKind {
     GetContractOp,
     MakeListOp,
     MakePairOp,
+    GetBytesOp,
     Sha256Op,
     Sha3Op,
     Sha512Op,
@@ -124,6 +129,7 @@ impl ToString for OperationKind {
             OperationKind::GetContractOp => "get_contract".to_owned(),
             OperationKind::MakeListOp => "make_list".to_owned(),
             OperationKind::MakePairOp => "make_pair".to_owned(),
+            OperationKind::GetBytesOp => "get_bytes".to_owned(),
             OperationKind::Sha256Op => "sha256".to_owned(),
             OperationKind::Sha3Op => "sha3".to_owned(),
             OperationKind::Sha512Op => "sha512".to_owned(),
@@ -178,6 +184,11 @@ impl From<ast::Operation> for Operation {
                 } else if operation.get_mnemonic() == OperationKind::GetContractOp.to_string() {
                     Operation::GetContractOp {
                         address: operation.operands[0].to_owned(),
+                        result: operation.results[0].to_owned(),
+                    }
+                } else if operation.get_mnemonic() == OperationKind::GetBytesOp.to_string() {
+                    Operation::GetBytesOp {
+                        number: operation.operands[0].to_owned(),
                         result: operation.results[0].to_owned(),
                     }
                 } else if operation.get_mnemonic() == OperationKind::Sha256Op.to_string() {

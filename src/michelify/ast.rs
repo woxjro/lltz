@@ -10,7 +10,10 @@ use michelson_ast::val::Val as MichelsonVal;
 #[derive(Debug, Clone)]
 pub enum StackType {
     Address,
+    Bytes,
     Unit,
+    Int,
+    Nat,
     Mutez,
     Operation,
     Option {
@@ -60,20 +63,35 @@ impl From<Type> for StackType {
 }
 
 impl StackType {
-    pub fn default_value_instruction(&self) -> MichelsonInstruction {
+    pub fn default_value_instruction(&self) -> Vec<MichelsonInstruction> {
         match self {
-            StackType::Unit => MichelsonInstruction::Unit,
-            StackType::Address => MichelsonInstruction::Source,
-            StackType::Mutez => MichelsonInstruction::Push {
+            StackType::Unit => vec![MichelsonInstruction::Unit],
+            StackType::Address => vec![MichelsonInstruction::Source],
+            StackType::Bytes => vec![
+                MichelsonInstruction::Push {
+                    ty: MichelsonType::Int,
+                    val: MichelsonVal::Int(0),
+                },
+                MichelsonInstruction::Bytes,
+            ],
+            StackType::Int => vec![MichelsonInstruction::Push {
+                ty: MichelsonType::Int,
+                val: MichelsonVal::Int(0),
+            }],
+            StackType::Nat => vec![MichelsonInstruction::Push {
+                ty: MichelsonType::Nat,
+                val: MichelsonVal::Nat(0),
+            }],
+            StackType::Mutez => vec![MichelsonInstruction::Push {
                 ty: MichelsonType::Mutez,
                 val: MichelsonVal::Mutez(0),
-            },
-            StackType::Option { ty } => MichelsonInstruction::None {
+            }],
+            StackType::Option { ty } => vec![MichelsonInstruction::None {
                 ty: MichelsonType::from(ty.as_ref().to_owned()),
-            },
-            StackType::List { ty } => MichelsonInstruction::Nil {
+            }],
+            StackType::List { ty } => vec![MichelsonInstruction::Nil {
                 ty: MichelsonType::from(ty.as_ref().to_owned()),
-            },
+            }],
             ty => todo!("{:?}", ty),
         }
     }
@@ -98,11 +116,9 @@ fn stupidly_from(ty: michelson_dialect::Type) -> StackType {
         michelson_dialect::Type::Contract { ty } => StackType::Contract {
             ty: Box::new(stupidly_from(ty.as_ref().to_owned())),
         },
-        michelson_dialect::Type::Bytes
-        | michelson_dialect::Type::Int
-        | michelson_dialect::Type::Nat => {
-            todo!()
-        }
+        michelson_dialect::Type::Bytes => StackType::Bytes,
+        michelson_dialect::Type::Int => StackType::Int,
+        michelson_dialect::Type::Nat => StackType::Nat,
     }
 }
 
@@ -111,7 +127,10 @@ impl From<StackType> for MichelsonType {
     fn from(stack_type: StackType) -> MichelsonType {
         match stack_type {
             StackType::Address => MichelsonType::Address,
+            StackType::Bytes => MichelsonType::Bytes,
             StackType::Unit => MichelsonType::Unit,
+            StackType::Int => MichelsonType::Int,
+            StackType::Nat => MichelsonType::Nat,
             StackType::Mutez => MichelsonType::Mutez,
             StackType::Operation => MichelsonType::Operation,
             StackType::Option { ty } => MichelsonType::Option {
@@ -152,11 +171,9 @@ impl From<michelson_dialect::Type> for MichelsonType {
                 ty: Box::new(MichelsonType::from(*ty)),
             },
             michelson_dialect::Type::Address => MichelsonType::Address,
-            michelson_dialect::Type::Bytes
-            | michelson_dialect::Type::Int
-            | michelson_dialect::Type::Nat => {
-                todo!()
-            }
+            michelson_dialect::Type::Bytes => MichelsonType::Bytes,
+            michelson_dialect::Type::Int => MichelsonType::Int,
+            michelson_dialect::Type::Nat => MichelsonType::Nat,
         }
     }
 }

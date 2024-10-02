@@ -5,7 +5,13 @@ module {
     ///////////////////////////////
     irdl.type @address {}
 
+    irdl.type @bytes {}
+
     irdl.type @mutez {}
+
+    irdl.type @int {}
+
+    irdl.type @nat {}
 
     irdl.type @contract {
       %parameter = irdl.any
@@ -95,6 +101,31 @@ module {
       %ct = irdl.parametric @contract<%parameter>
       %res = irdl.any
       irdl.operands(%parameter, %tokens, %ct)
+      irdl.results(%res)
+    }
+
+    // Cryptographic operations
+    irdl.operation @sha256 {
+      %byt = irdl.any
+      %res = irdl.any
+
+      irdl.operands(%byt)
+      irdl.results(%res)
+    }
+
+    irdl.operation @sha3 {
+      %byt = irdl.any
+      %res = irdl.any
+
+      irdl.operands(%byt)
+      irdl.results(%res)
+    }
+
+    irdl.operation @sha512 {
+      %byt = irdl.any
+      %res = irdl.any
+
+      irdl.operands(%byt)
       irdl.results(%res)
     }
 

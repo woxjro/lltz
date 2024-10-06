@@ -5,7 +5,15 @@ module {
     ///////////////////////////////
     irdl.type @address {}
 
+    irdl.type @bool {}
+
     irdl.type @bytes {}
+
+    irdl.type @key {}
+
+    irdl.type @signature {}
+
+    irdl.type @string {}
 
     irdl.type @mutez {}
 
@@ -110,6 +118,16 @@ module {
       %res = irdl.any
 
       irdl.operands(%number)
+      irdl.results(%res)
+    }
+
+    irdl.operation @check_signature {
+      %key = irdl.any
+      %signature = irdl.any
+      %bytes = irdl.any
+      %res = irdl.any
+
+      irdl.operands(%key, %signature, %bytes)
       irdl.results(%res)
     }
 

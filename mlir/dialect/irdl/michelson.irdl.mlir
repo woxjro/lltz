@@ -61,6 +61,30 @@ module {
       irdl.results(%res)
     }
 
+    irdl.operation @pack {
+      %arg = irdl.any
+      %res = irdl.any
+      irdl.operands(%arg)
+      irdl.results(%res)
+    }
+
+    irdl.operation @get_fst {
+      %fst = irdl.any
+      %snd = irdl.any
+      %pair = irdl.parametric @pair<%fst, %snd>
+
+      irdl.operands(%pair)
+      irdl.results(%fst)
+    }
+
+    irdl.operation @get_snd {
+      %pair = irdl.any
+      %snd = irdl.any
+
+      irdl.operands(%pair)
+      irdl.results(%snd)
+    }
+
     irdl.operation @make_list {
       %res = irdl.any
 
@@ -161,6 +185,13 @@ module {
       %op = irdl.parametric @option<%inner>
       irdl.operands(%op)
       irdl.results(%inner)
+    }
+
+    irdl.operation @assert {
+      %bool = irdl.any
+      
+      irdl.operands(%bool)
+      irdl.results()
     }
   }
 }

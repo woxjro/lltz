@@ -10,9 +10,11 @@ use michelson_ast::val::Val as MichelsonVal;
 #[derive(Debug, Clone)]
 pub enum StackType {
     Address,
+    Bool,
     Bytes,
     Unit,
     Int,
+    Key,
     Nat,
     Mutez,
     Operation,
@@ -23,6 +25,8 @@ pub enum StackType {
         ty1: Box<StackType>,
         ty2: Box<StackType>,
     },
+    Signature,
+    String,
     List {
         ty: Box<StackType>,
     },
@@ -67,6 +71,20 @@ impl StackType {
         match self {
             StackType::Unit => vec![MichelsonInstruction::Unit],
             StackType::Address => vec![MichelsonInstruction::Source],
+            StackType::String => vec![MichelsonInstruction::Push {
+                ty: MichelsonType::String,
+                val: MichelsonVal::String("".to_string()),
+            }],
+            StackType::Bool => vec![MichelsonInstruction::Push {
+                ty: MichelsonType::Bool,
+                val: MichelsonVal::Bool(false),
+            }],
+            StackType::Key => {
+                todo!()
+            }
+            StackType::Signature => {
+                todo!()
+            }
             StackType::Bytes => vec![
                 MichelsonInstruction::Push {
                     ty: MichelsonType::Int,
@@ -101,6 +119,10 @@ fn stupidly_from(ty: michelson_dialect::Type) -> StackType {
     match ty {
         michelson_dialect::Type::Unit => StackType::Unit,
         michelson_dialect::Type::Address => StackType::Address,
+        michelson_dialect::Type::Bool => StackType::Bool,
+        michelson_dialect::Type::Key => StackType::Key,
+        michelson_dialect::Type::Signature => StackType::Signature,
+        michelson_dialect::Type::String => StackType::String,
         michelson_dialect::Type::Mutez => StackType::Mutez,
         michelson_dialect::Type::Operation => StackType::Operation,
         michelson_dialect::Type::Option { ty } => StackType::Option {
@@ -127,6 +149,10 @@ impl From<StackType> for MichelsonType {
     fn from(stack_type: StackType) -> MichelsonType {
         match stack_type {
             StackType::Address => MichelsonType::Address,
+            StackType::Bool => MichelsonType::Bool,
+            StackType::Key => MichelsonType::Key,
+            StackType::Signature => MichelsonType::Signature,
+            StackType::String => MichelsonType::String,
             StackType::Bytes => MichelsonType::Bytes,
             StackType::Unit => MichelsonType::Unit,
             StackType::Int => MichelsonType::Int,
@@ -174,6 +200,10 @@ impl From<michelson_dialect::Type> for MichelsonType {
             michelson_dialect::Type::Bytes => MichelsonType::Bytes,
             michelson_dialect::Type::Int => MichelsonType::Int,
             michelson_dialect::Type::Nat => MichelsonType::Nat,
+            michelson_dialect::Type::Bool => MichelsonType::Bool,
+            michelson_dialect::Type::Key => MichelsonType::Key,
+            michelson_dialect::Type::Signature => MichelsonType::Signature,
+            michelson_dialect::Type::String => MichelsonType::String,
         }
     }
 }

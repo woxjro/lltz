@@ -7,16 +7,20 @@ lalrpop_mod!(pub mlir_parser);
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Type {
     Address,
+    Bool,
     Bytes,
-    Unit,
+    Contract { ty: Box<Type> },
     Int,
-    Nat,
+    Key,
+    List { ty: Box<Type> },
     Mutez,
+    Nat,
     Operation,
     Option { ty: Box<Type> },
     Pair { ty1: Box<Type>, ty2: Box<Type> },
-    Contract { ty: Box<Type> },
-    List { ty: Box<Type> },
+    Signature,
+    String,
+    Unit,
 }
 
 impl Type {
@@ -32,17 +36,21 @@ impl From<String> for Type {
 }
 
 pub enum Tok {
-    Unit,
-    Int,
-    Nat,
     Address,
+    Bool,
     Bytes,
     Contract,
-    Option,
-    Mutez,
-    Operation,
-    Pair,
+    Int,
+    Key,
     List,
+    Mutez,
+    Nat,
+    Operation,
+    Option,
+    Pair,
+    Signature,
+    String,
+    Unit,
 }
 
 #[derive(Debug, Clone)]
@@ -59,6 +67,9 @@ pub enum Operation {
     GetContractOp {
         address: ast::Operand,
         result: ast::Result,
+    },
+    AssertOp {
+        operand: ast::Operand,
     },
     AssertSomeOp {
         operand: ast::Operand,
@@ -83,6 +94,18 @@ pub enum Operation {
         fst: ast::Operand,
         snd: ast::Operand,
     },
+    PackOp {
+        value: ast::Operand,
+        result: ast::Result,
+    },
+    GetFstOp {
+        pair: ast::Operand,
+        result: ast::Result,
+    },
+    GetSndOp {
+        pair: ast::Operand,
+        result: ast::Result,
+    },
     GetBytesOp {
         result: ast::Result,
         number: ast::Operand,
@@ -99,40 +122,56 @@ pub enum Operation {
         result: ast::Result,
         bytes: ast::Operand,
     },
+    CheckSignatureOp {
+        key: ast::Operand,
+        signature: ast::Operand,
+        bytes: ast::Operand,
+        result: ast::Result,
+    },
 }
 
 enum OperationKind {
+    AssertOp,
     AssertSomeOp,
-    TransferTokensOp,
+    CheckSignatureOp,
     ConsOp,
-    GetUnitOp,
     GetAmountOp,
-    GetSourceOp,
+    GetBytesOp,
     GetContractOp,
+    GetFstOp,
+    GetSndOp,
+    GetSourceOp,
+    GetUnitOp,
     MakeListOp,
     MakePairOp,
-    GetBytesOp,
+    PackOp,
     Sha256Op,
     Sha3Op,
     Sha512Op,
+    TransferTokensOp,
 }
 
 impl ToString for OperationKind {
     fn to_string(&self) -> String {
         match self {
-            OperationKind::AssertSomeOp => "assert_some".to_owned(),
-            OperationKind::TransferTokensOp => "transfer_tokens".to_owned(),
-            OperationKind::ConsOp => "cons".to_owned(),
-            OperationKind::GetUnitOp => "get_unit".to_owned(),
-            OperationKind::GetAmountOp => "get_amount".to_owned(),
-            OperationKind::GetSourceOp => "get_source".to_owned(),
-            OperationKind::GetContractOp => "get_contract".to_owned(),
-            OperationKind::MakeListOp => "make_list".to_owned(),
-            OperationKind::MakePairOp => "make_pair".to_owned(),
-            OperationKind::GetBytesOp => "get_bytes".to_owned(),
-            OperationKind::Sha256Op => "sha256".to_owned(),
-            OperationKind::Sha3Op => "sha3".to_owned(),
-            OperationKind::Sha512Op => "sha512".to_owned(),
+            Self::AssertOp => "assert".to_owned(),
+            Self::AssertSomeOp => "assert_some".to_owned(),
+            Self::CheckSignatureOp => "check_signature".to_owned(),
+            Self::ConsOp => "cons".to_owned(),
+            Self::GetAmountOp => "get_amount".to_owned(),
+            Self::GetBytesOp => "get_bytes".to_owned(),
+            Self::GetContractOp => "get_contract".to_owned(),
+            Self::GetFstOp => "get_fst".to_owned(),
+            Self::GetSndOp => "get_snd".to_owned(),
+            Self::GetSourceOp => "get_source".to_owned(),
+            Self::GetUnitOp => "get_unit".to_owned(),
+            Self::MakeListOp => "make_list".to_owned(),
+            Self::MakePairOp => "make_pair".to_owned(),
+            Self::PackOp => "pack".to_owned(),
+            Self::Sha256Op => "sha256".to_owned(),
+            Self::Sha3Op => "sha3".to_owned(),
+            Self::Sha512Op => "sha512".to_owned(),
+            Self::TransferTokensOp => "transfer_tokens".to_owned(),
         }
     }
 }
@@ -148,6 +187,10 @@ impl From<ast::Operation> for Operation {
                 } else if operation.get_mnemonic() == OperationKind::GetSourceOp.to_string() {
                     Operation::GetSourceOp {
                         result: operation.results[0].to_owned(),
+                    }
+                } else if operation.get_mnemonic() == OperationKind::AssertOp.to_string() {
+                    Operation::AssertOp {
+                        operand: operation.operands[0].to_owned(),
                     }
                 } else if operation.get_mnemonic() == OperationKind::AssertSomeOp.to_string() {
                     Operation::AssertSomeOp {
@@ -176,6 +219,28 @@ impl From<ast::Operation> for Operation {
                         result: operation.results[0].to_owned(),
                         fst: operation.operands[0].to_owned(),
                         snd: operation.operands[1].to_owned(),
+                    }
+                } else if operation.get_mnemonic() == OperationKind::GetFstOp.to_string() {
+                    Operation::GetFstOp {
+                        pair: operation.operands[0].to_owned(),
+                        result: operation.results[0].to_owned(),
+                    }
+                } else if operation.get_mnemonic() == OperationKind::GetSndOp.to_string() {
+                    Operation::GetSndOp {
+                        pair: operation.operands[0].to_owned(),
+                        result: operation.results[0].to_owned(),
+                    }
+                } else if operation.get_mnemonic() == OperationKind::PackOp.to_string() {
+                    Operation::PackOp {
+                        value: operation.operands[0].to_owned(),
+                        result: operation.results[0].to_owned(),
+                    }
+                } else if operation.get_mnemonic() == OperationKind::CheckSignatureOp.to_string() {
+                    Operation::CheckSignatureOp {
+                        key: operation.operands[0].to_owned(),
+                        signature: operation.operands[1].to_owned(),
+                        bytes: operation.operands[2].to_owned(),
+                        result: operation.results[0].to_owned(),
                     }
                 } else if operation.get_mnemonic() == OperationKind::GetUnitOp.to_string() {
                     Operation::GetUnitOp {

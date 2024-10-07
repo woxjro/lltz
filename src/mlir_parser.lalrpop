@@ -5,16 +5,20 @@ grammar;
 
 pub MType: MType = {
     <address:Address> => MType::Address,
+    <bool:Bool> => MType::Bool,
     <bytes:Bytes> => MType::Bytes,
-    <unit:Unit> => MType::Unit,
     <int:Int> => MType::Int,
-    <nat:Nat> => MType::Nat,
-    <mutez:Mutez> => MType::Mutez,
-    <operation:Operation> => MType::Operation,
+    <key:Key> => MType::Key,
     <list:List> "<" <ty:MType> ">" => MType::List { ty: Box::new(ty) },
-    <option:Option> "<" <ty:MType> ">" => MType::Option { ty: Box::new(ty) },
+    <mutez:Mutez> => MType::Mutez,
+    <nat:Nat> => MType::Nat,
+    <operation:Operation> => MType::Operation,
     <option:Contract> "<" <ty:MType> ">" => MType::Contract { ty: Box::new(ty) },
-    <pair:Pair> "<" <ty1:MType> "," <ty2:MType> ">" => MType::Pair { ty1: Box::new(ty1), ty2: Box::new(ty2) }
+    <option:Option> "<" <ty:MType> ">" => MType::Option { ty: Box::new(ty) },
+    <pair:Pair> "<" <ty1:MType> "," <ty2:MType> ">" => MType::Pair { ty1: Box::new(ty1), ty2: Box::new(ty2) },
+    <signature:Signature> => MType::Signature,
+    <string:String> => MType::String,
+    <unit:Unit> => MType::Unit
 };
 
 pub FType: FType = {
@@ -25,14 +29,18 @@ pub FType: FType = {
         },
 }
 
-Unit: Tok = <s:r"[!][a-zA-Z]+[.]unit"> => Tok::Unit;
 Address: Tok = <s:r"[!][a-zA-Z]+[.]address"> => Tok::Address;
+Bool: Tok = <s:r"[!][a-zA-Z]+[.]bool"> => Tok::Bool;
 Bytes: Tok = <s:r"[!][a-zA-Z]+[.]bytes"> => Tok::Bytes;
-Option: Tok = <s:r"[!][a-zA-Z]+[.]option"> => Tok::Option;
-Mutez: Tok = <s:r"[!][a-zA-Z]+[.]mutez"> => Tok::Mutez;
-Int: Tok = <s:r"[!][a-zA-Z]+[.]int"> => Tok::Int;
-Nat: Tok = <s:r"[!][a-zA-Z]+[.]nat"> => Tok::Nat;
 Contract: Tok = <s:r"[!][a-zA-Z]+[.]contract"> => Tok::Contract;
-Operation: Tok = <s:r"[!][a-zA-Z]+[.]operation"> => Tok::Operation;
+Int: Tok = <s:r"[!][a-zA-Z]+[.]int"> => Tok::Int;
+Key: Tok = <s:r"[!][a-zA-Z]+[.]key"> => Tok::Key;
 List: Tok = <s:r"[!][a-zA-Z]+[.]list"> => Tok::List;
+Mutez: Tok = <s:r"[!][a-zA-Z]+[.]mutez"> => Tok::Mutez;
+Nat: Tok = <s:r"[!][a-zA-Z]+[.]nat"> => Tok::Nat;
+Operation: Tok = <s:r"[!][a-zA-Z]+[.]operation"> => Tok::Operation;
+Option: Tok = <s:r"[!][a-zA-Z]+[.]option"> => Tok::Option;
 Pair: Tok = <s:r"[!][a-zA-Z]+[.]pair"> => Tok::Pair;
+Signature: Tok = <s:r"[!][a-zA-Z]+[.]signature"> => Tok::Signature;
+String: Tok = <s:r"[!][a-zA-Z]+[.]string"> => Tok::String;
+Unit: Tok = <s:r"[!][a-zA-Z]+[.]unit"> => Tok::Unit;

@@ -492,6 +492,139 @@ pub fn compile_operations(
                             .collect::<Vec<_>>(),
                         );
                     }
+                    michelson::ast::Operation::AssertOp { operand } => {
+                        let operand_address = (*get_address_closure)(GetAddressClosureArg::Value(
+                            operand.get_value(),
+                        ));
+                        instructions.append(
+                            &mut vec![
+                                MichelsonInstruction::Comment(format!(
+                                    "michelson.assert({}) {{",
+                                    operand.get_value().get_id()
+                                )),
+                                MichelsonInstruction::DupN(operand_address),
+                                MichelsonInstruction::Assert,
+                                MichelsonInstruction::Comment("}".to_string()),
+                            ]
+                            .iter()
+                            .map(|instr| instr.to_wrapped_instruction())
+                            .collect::<Vec<_>>(),
+                        );
+                    }
+                    michelson::ast::Operation::PackOp { value, result } => {
+                        let operand_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(value.get_value()));
+                        let result_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(result.get_value()));
+
+                        instructions.append(
+                            &mut vec![
+                                MichelsonInstruction::Comment(format!(
+                                    "{} = michelson.pack({}) {{",
+                                    result.get_value().get_id(),
+                                    value.get_value().get_id()
+                                )),
+                                MichelsonInstruction::DupN(operand_address),
+                                MichelsonInstruction::Pack,
+                                MichelsonInstruction::DigN(result_address),
+                                MichelsonInstruction::Drop,
+                                MichelsonInstruction::DugN(result_address - 1),
+                                MichelsonInstruction::Comment("}".to_string()),
+                            ]
+                            .iter()
+                            .map(|instr| instr.to_wrapped_instruction())
+                            .collect::<Vec<_>>(),
+                        );
+                    }
+                    michelson::ast::Operation::GetFstOp { pair, result } => {
+                        let operand_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(pair.get_value()));
+                        let result_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(result.get_value()));
+
+                        instructions.append(
+                            &mut vec![
+                                MichelsonInstruction::Comment(format!(
+                                    "{} = michelson.get_fst({}) {{",
+                                    result.get_value().get_id(),
+                                    pair.get_value().get_id()
+                                )),
+                                MichelsonInstruction::DupN(operand_address),
+                                MichelsonInstruction::Car,
+                                MichelsonInstruction::DigN(result_address),
+                                MichelsonInstruction::Drop,
+                                MichelsonInstruction::DugN(result_address - 1),
+                                MichelsonInstruction::Comment("}".to_string()),
+                            ]
+                            .iter()
+                            .map(|instr| instr.to_wrapped_instruction())
+                            .collect::<Vec<_>>(),
+                        );
+                    }
+                    michelson::ast::Operation::GetSndOp { pair, result } => {
+                        let operand_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(pair.get_value()));
+                        let result_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(result.get_value()));
+
+                        instructions.append(
+                            &mut vec![
+                                MichelsonInstruction::Comment(format!(
+                                    "{} = michelson.get_snd({}) {{",
+                                    result.get_value().get_id(),
+                                    pair.get_value().get_id()
+                                )),
+                                MichelsonInstruction::DupN(operand_address),
+                                MichelsonInstruction::Cdr,
+                                MichelsonInstruction::DigN(result_address),
+                                MichelsonInstruction::Drop,
+                                MichelsonInstruction::DugN(result_address - 1),
+                                MichelsonInstruction::Comment("}".to_string()),
+                            ]
+                            .iter()
+                            .map(|instr| instr.to_wrapped_instruction())
+                            .collect::<Vec<_>>(),
+                        );
+                    }
+                    michelson::ast::Operation::CheckSignatureOp {
+                        key,
+                        signature,
+                        bytes,
+                        result,
+                    } => {
+                        let key_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(key.get_value()));
+                        let signature_address = (*get_address_closure)(
+                            GetAddressClosureArg::Value(signature.get_value()),
+                        );
+                        let bytes_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(bytes.get_value()));
+                        let result_address =
+                            (*get_address_closure)(GetAddressClosureArg::Value(result.get_value()));
+
+                        instructions.append(
+                            &mut vec![
+                                MichelsonInstruction::Comment(format!(
+                                    "{} = michelson.check_signature({}, {}, {}) {{",
+                                    result.get_value().get_id(),
+                                    key.get_value().get_id(),
+                                    signature.get_value().get_id(),
+                                    bytes.get_value().get_id(),
+                                )),
+                                MichelsonInstruction::DupN(bytes_address),
+                                MichelsonInstruction::DupN(signature_address + 1),
+                                MichelsonInstruction::DupN(key_address + 2),
+                                MichelsonInstruction::CheckSignature,
+                                MichelsonInstruction::DigN(result_address),
+                                MichelsonInstruction::Drop,
+                                MichelsonInstruction::DugN(result_address - 1),
+                                MichelsonInstruction::Comment("}".to_string()),
+                            ]
+                            .iter()
+                            .map(|instr| instr.to_wrapped_instruction())
+                            .collect::<Vec<_>>(),
+                        );
+                    }
                 }
             }
             mlir::dialect::Operation::FuncOp { operation } => {

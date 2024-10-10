@@ -80,10 +80,23 @@ impl StackType {
                 val: MichelsonVal::Bool(false),
             }],
             StackType::Key => {
-                todo!()
+                // ref: https://tezos.gitlab.io/michelson-reference/#example-opcodes/check_signature.tz
+                vec![MichelsonInstruction::Push {
+                    ty: MichelsonType::Key,
+                    val: MichelsonVal::Key(
+                        "edpkuBknW28nW72KG6RoHtYW7p12T6GKc7nAbwYX5m8Wd9sDVC9yav".to_string(),
+                    ),
+                }]
             }
             StackType::Signature => {
-                todo!()
+                // ref: https://tezos.gitlab.io/michelson-reference/#example-opcodes/check_signature.tz
+                vec![MichelsonInstruction::Push {
+                    ty: MichelsonType::Signature,
+                    val: MichelsonVal::Signature(
+                        "edsigu3QszDjUpeqYqbvhyRxMpVFamEnvm9FYnt7YiiNt9nmjYfh8ZTbsybZ5WnBkhA7zfHsRVyuTnRsGLR6fNHt1Up1FxgyRtF"
+                            .to_string(),
+                    ),
+                }]
             }
             StackType::Bytes => vec![
                 MichelsonInstruction::Push {

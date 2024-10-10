@@ -10,7 +10,7 @@ pub enum Val {
     //Chain_id,
     //Contract { ty: Ty },
     Int(i128),
-    //Key,
+    Key(String),
     //Key_hash,
     //Lambda { ty1: Ty, ty2: Ty },
     //List { ty: Type },
@@ -25,7 +25,7 @@ pub enum Val {
     //Sapling_state {n},
     //Sapling_transaction {n},
     //Set cty,
-    //Signature,
+    Signature(String),
     String(String),
     //Ticket cty,
     //Timepstamp,
@@ -40,7 +40,10 @@ impl ToString for Val {
             Val::Int(i) => i.to_string(),
             Val::Mutez(m) => m.to_string(),
             Val::Nat(n) => n.to_string(),
-            v => todo!("{:?} is not implemented", v),
+            Val::String(s) => format!("\"{}\"", s.clone()),
+            Val::Key(k) => format!("\"{}\"", k.clone()),
+            Val::Signature(s) => format!("\"{}\"", s.clone()),
+            // v => todo!("{:?} is not implemented", v),
         }
     }
 }

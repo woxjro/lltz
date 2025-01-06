@@ -64,6 +64,9 @@ pub fn compile(smart_contract: Operation) -> Result<michelson_ast::program::Prog
         get_address_closure.as_ref(),
     ));
 
+    let compiled_instruction_sum = code.iter().map(|instr| instr.count()).sum::<usize>();
+    println!("Compiled instruction sum: {}", compiled_instruction_sum);
+
     Ok(michelson_ast::program::Program {
         parameter,
         storage,
